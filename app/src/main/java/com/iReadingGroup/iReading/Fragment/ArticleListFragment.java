@@ -60,6 +60,10 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.max;
 import static java.util.Collections.reverse;
 
+
+/**
+ * The type Article list fragment.
+ */
 public  class ArticleListFragment extends Fragment implements BGARefreshLayout.BGARefreshLayoutDelegate{
 
     private BGARefreshLayout mRefreshLayout; //Layout for refreshing and loading
@@ -71,6 +75,9 @@ public  class ArticleListFragment extends Fragment implements BGARefreshLayout.B
     private SearchFragment searchFragment;
     private OfflineDictBeanDao daoDictionary;
     private ArticleStorageBeanDao daoArticle;
+
+
+
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         //Must add in every fragments' onCreateView to avoid duplicate creating.
@@ -89,12 +96,20 @@ public  class ArticleListFragment extends Fragment implements BGARefreshLayout.B
         }
         return view;
     }
+
+    /**
+     * Initialize ui.
+     */
     public void initializeUI(){
         setHasOptionsMenu(true);//setmenu
         initializeRefreshingLayout();//Initialize refreshing and loading layout
         initializeSearchView();
         initializeListView();
     }
+
+    /**
+     * Initialize refreshing layout.
+     */
     public void initializeRefreshingLayout(){
         mRefreshLayout = (BGARefreshLayout) view.findViewById(com.iReadingGroup.iReading.R.id.rl_modulename_refresh);
         mRefreshLayout.setDelegate(this);
@@ -106,6 +121,9 @@ public  class ArticleListFragment extends Fragment implements BGARefreshLayout.B
         mRefreshLayout.setRefreshViewHolder(refreshViewHolder);
     }
 
+    /**
+     * Initialize search view.
+     */
     public void initializeSearchView(){            //search view
         searchFragment = SearchFragment.newInstance();
         searchFragment.setOnSearchClickListener(new IOnSearchClickListener() {
@@ -127,6 +145,9 @@ public  class ArticleListFragment extends Fragment implements BGARefreshLayout.B
             }
         });}
 
+    /**
+     * Initialize list view.
+     */
     public void initializeListView(){//Establish the connection among listView,adapter and arrayList.
 
         infoListView = (ListView)view.findViewById(com.iReadingGroup.iReading.R.id.list);//
@@ -179,100 +200,92 @@ public  class ArticleListFragment extends Fragment implements BGARefreshLayout.B
 
         if (isNetworkAvailable()) {
             // if the network is good, continue.
-            new AsyncTask<String, String, String>() {
-
-                @Override
-                protected String doInBackground(String... params) {
-                    HttpURLConnection connection = null;
-                    BufferedReader reader = null;
-
-                    try {
-                        URL url = new URL(params[0]);
-                        connection = (HttpURLConnection) url.openConnection();
-                        connection.connect();
-
-
-                        InputStream stream = connection.getInputStream();
-
-                        reader = new BufferedReader(new InputStreamReader(stream));
-
-                        StringBuffer buffer = new StringBuffer();
-                        String line = "";
-
-                        while ((line = reader.readLine()) != null) {
-                            buffer.append(line+"\n");
-                            Log.d("Response: ", "> " + line);   //here u ll get whole response...... :-)
-
-                        }
-
-                        return buffer.toString();
-
-
-                    } catch (MalformedURLException e) {
-                        e.printStackTrace();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    } finally {
-                        if (connection != null) {
-                            connection.disconnect();
-                        }
-                        try {
-                            if (reader != null) {
-                                reader.close();
-                            }
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
-                    }
-                    return null;
-                }
-                @Override
-                protected void onPostExecute(String result) {
-
-                    mRefreshLayout.endRefreshing();// finish fetching from sever
-                    try
-                    {   //parse word from json
-                        //sample link.:http://dict-co.iciba.com/api/dictionary.php?w=go&key=341DEFE6E5CA504E62A567082590D0BD&type=json
-                        String uri,title,source_title,time;
-                        JSONObject reader = new JSONObject(result);
-                        JSONObject articles= reader.getJSONObject("articles");
-                        JSONArray results=articles.getJSONArray("results");
-                        for (int i=results.length()-1;i>-1;i--){
-                            JSONObject article=results.getJSONObject(i);
-                            uri=article.getString("uri");
-                            if (getArticleCachedStatus(uri)) break;
-                            if (article.getBoolean("isDuplicate")) continue;
-                            title=article.getString("title");
-                            time=article.getString("dateTime");
-                            JSONObject source=article.getJSONObject("source");
-                            source_title=source.getString("title");
-                            String imageurl=article.getString("image");
-                            Log.d("Response: ",imageurl);
-                            ArticleInfo lin=new ArticleInfo(title, uri,imageurl,getDate(time),source_title,com.iReadingGroup.iReading.R.drawable.collect_false);
-                            alArticleInfo.add(0,lin);
-                            daoArticle.insert(new ArticleStorageBean(uri,title,time,source_title,imageurl));
-                        }
-
-
-
-
-                        ;
-                        //return word_name+part+meaning
-                    }catch(JSONException e)
-                    {
-
-                    }
-
-
-                    //start add(insert) items to arrayList
-
-                    //sync to the listView
-                    articleInfoAdapter.notifyDataSetChanged();
-                }
-            }.execute("http://eventregistry.org/json/article?query=%7B%22%24query%22%3A%7B%22lang%22%3A%22eng%22%7D%7D&action=getArticles&resultType=articles&articlesSortBy=rel&articlesCount=20&articlesIncludeArticleEventUri=false&articlesIncludeArticleImage=true&articlesArticleBodyLen=0&articlesIncludeConceptLabel=false&apiKey=19411967-5bfe-4f2a-804e-580654db39c9");
+            new RefreshingTask().execute("http://eventregistry.org/json/article?query=%7B%22%24query%22%3A%7B%22lang%22%3A%22eng%22%7D%7D&action=getArticles&resultType=articles&articlesSortBy=rel&articlesCount=20&articlesIncludeArticleEventUri=false&articlesIncludeArticleImage=true&articlesArticleBodyLen=0&articlesIncludeConceptLabel=false&apiKey=19411967-5bfe-4f2a-804e-580654db39c9");
         } else {
             // network is not connected,end
             mRefreshLayout.endRefreshing();
+        }
+    }
+    class RefreshingTask extends AsyncTask<String, String, String> {
+        @Override
+        protected String doInBackground(String... params) {
+            HttpURLConnection connection = null;
+            BufferedReader reader = null;
+
+            try {
+                URL url = new URL(params[0]);
+                connection = (HttpURLConnection) url.openConnection();
+                connection.connect();
+
+
+                InputStream stream = connection.getInputStream();
+
+                reader = new BufferedReader(new InputStreamReader(stream));
+
+                StringBuffer buffer = new StringBuffer();
+                String line = "";
+
+                while ((line = reader.readLine()) != null) {
+                    buffer.append(line+"\n");
+                    Log.d("Response: ", "> " + line);   //here u ll get whole response...... :-)
+
+                }
+
+                return buffer.toString();
+
+
+            } catch (MalformedURLException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
+            } finally {
+                if (connection != null) {
+                    connection.disconnect();
+                }
+                try {
+                    if (reader != null) {
+                        reader.close();
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+            return null;
+        }
+        @Override
+        protected void onPostExecute(String result) {
+
+            mRefreshLayout.endRefreshing();// finish fetching from sever
+            try
+            {   //parse word from json
+                //sample link.:http://dict-co.iciba.com/api/dictionary.php?w=go&key=341DEFE6E5CA504E62A567082590D0BD&type=json
+                String uri,title,source_title,time;
+                JSONObject reader = new JSONObject(result);
+                JSONObject articles= reader.getJSONObject("articles");
+                JSONArray results=articles.getJSONArray("results");
+                for (int i=results.length()-1;i>-1;i--){
+                    JSONObject article=results.getJSONObject(i);
+                    uri=article.getString("uri");
+                    if (getArticleCachedStatus(uri)) break;
+                    if (article.getBoolean("isDuplicate")) continue;
+                    title=article.getString("title");
+                    time=article.getString("dateTime");
+                    JSONObject source=article.getJSONObject("source");
+                    source_title=source.getString("title");
+                    String imageurl=article.getString("image");
+                    Log.d("Response: ",imageurl);
+                    ArticleInfo lin=new ArticleInfo(title, uri,imageurl,getDate(time),source_title,com.iReadingGroup.iReading.R.drawable.collect_false);
+                    alArticleInfo.add(0,lin);
+                    daoArticle.insert(new ArticleStorageBean(uri,title,time,source_title,imageurl));
+                }
+
+            }catch(JSONException e)
+            {
+
+            }
+
+            //sync to the listView
+            articleInfoAdapter.notifyDataSetChanged();
         }
     }
     private String getDate(String OurDate)
@@ -349,6 +362,12 @@ public  class ArticleListFragment extends Fragment implements BGARefreshLayout.B
         return true;
 
     }
+
+    /**
+     * On message event.
+     *
+     * @param event the event
+     */
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void onMessageEvent(MessageEvent event) {
         Log.d("eventbusinA", event.message);
@@ -367,12 +386,19 @@ public  class ArticleListFragment extends Fragment implements BGARefreshLayout.B
         super.onStop();
 
     }
-    // 通过代码方式控制进入正在刷新状态。应用场景：某些应用在 activity 的 onStart 方法中调用，自动进入正在刷新状态获取最新数据
+
+    /**
+     * Begin refreshing.
+     */
+// 通过代码方式控制进入正在刷新状态。应用场景：某些应用在 activity 的 onStart 方法中调用，自动进入正在刷新状态获取最新数据
     public void beginRefreshing() {
         mRefreshLayout.beginRefreshing();
     }
 
-    // 通过代码方式控制进入加载更多状态
+    /**
+     * Begin loading more.
+     */
+// 通过代码方式控制进入加载更多状态
     public void beginLoadingMore() {
         mRefreshLayout.beginLoadingMore();
     }

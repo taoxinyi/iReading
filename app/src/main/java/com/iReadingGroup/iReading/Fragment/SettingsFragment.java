@@ -8,7 +8,13 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
+/**
+ * The type Settings fragment.
+ */
 public class SettingsFragment extends Fragment {
+    /**
+     * The constant BUNDLE_TITLE.
+     */
     public static final String BUNDLE_TITLE = "title";
     private String mTitle = "DefaultValue";
 
@@ -28,6 +34,12 @@ public class SettingsFragment extends Fragment {
         return tv;
     }
 
+    /**
+     * New instance settings fragment.
+     *
+     * @param title the title
+     * @return the settings fragment
+     */
     public static SettingsFragment newInstance(String title) {
         Bundle bundle = new Bundle();
         bundle.putString(BUNDLE_TITLE, title);

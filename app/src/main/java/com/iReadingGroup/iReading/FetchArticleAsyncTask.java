@@ -1,5 +1,9 @@
 package com.iReadingGroup.iReading;
 
+/**
+ * Created by taota on 2018/3/29.
+ */
+
 import android.os.AsyncTask;
 import android.util.Log;
 
@@ -14,22 +18,24 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.Iterator;
+
 
 /**
  * Created by taota on 2018/3/22.
  */
-public class FetchingBriefMeaningAsyncTask extends AsyncTask<String, String, String> {
+public class FetchArticleAsyncTask extends AsyncTask<String, String, String> {
     /**
      * The Delegate.
      */
     public AsyncResponse delegate = null;
 
     /**
-     * Instantiates a new Fetching brief meaning async task.
+     * Instantiates a new Fetch news async task.
      *
      * @param asyncResponse the async response
      */
-    public FetchingBriefMeaningAsyncTask(AsyncResponse asyncResponse) {
+    public FetchArticleAsyncTask(AsyncResponse asyncResponse) {
         delegate = asyncResponse;//Assigning call back interfacethrough constructor
     }
 
@@ -90,23 +96,24 @@ public class FetchingBriefMeaningAsyncTask extends AsyncTask<String, String, Str
         try {   //parse word from json
             //sample link.:http://dict-co.iciba.com/api/dictionary.php?w=go&key=341DEFE6E5CA504E62A567082590D0BD&type=json
             JSONObject reader = new JSONObject(result);
-            JSONArray symbols = reader.getJSONArray("symbols");
-            JSONObject symbols_0 = symbols.getJSONObject(0);
-            JSONArray parts = symbols_0.getJSONArray("parts");
-            JSONObject parts_0 = parts.getJSONObject(0);
-            String part = parts_0.getString("part");
-            JSONArray means = parts_0.getJSONArray("means");
-            String meaning = "";
-            for (int i = 0; i < means.length(); i++) {
-                meaning += means.getString(i) + ";";
+            Iterator<String> keys = reader.keys();
+            String key = (String) keys.next(); // First key in your json object
+            JSONObject detail = reader.getJSONObject(key);
+            JSONObject info = detail.getJSONObject("info");
+            String body = info.getString("body");
+            String imageUrl = info.getString("image");
+            JSONArray categories = info.getJSONArray("categories");
+            String a = categories.getString(0);
+            String cataString = "";
+            for (int i = 0; i < categories.length(); i++) {
+                JSONObject each = categories.getJSONObject(i);
+                String c = each.getString("label");
+                String[] buff = c.split("/");
+                String final_c = buff[buff.length - 1];
+                cataString += final_c + "; ";
+
             }
-            meaning = meaning.substring(0, meaning.length() - 1);
-
-            String word_name = reader.getString("word_name");
-
-            Log.d("Response: ", word_name + " " + part + " " + meaning);
-            //return word_name+part+meaning
-            delegate.processFinish(word_name + "\n" + part + " " + meaning);
+            delegate.processFinish(imageUrl + "\r\n\r\n" + cataString.substring(0, cataString.length() - 2) + "\r\n\r\n\n" + body);
         } catch (JSONException e) {
 
         }

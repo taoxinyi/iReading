@@ -8,18 +8,20 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
-import android.widget.Toast;
 
-import com.iReadingGroup.iReading.Activity.MainActivity;
 import com.iReadingGroup.iReading.MessageEvent;
-import com.wyt.searchbox.SearchFragment;
-import com.wyt.searchbox.custom.IOnSearchClickListener;
 
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
 
+/**
+ * The type Collection fragment.
+ */
 public class CollectionFragment extends Fragment {
+    /**
+     * The constant BUNDLE_TITLE.
+     */
     public static final String BUNDLE_TITLE = "title";
     private String mTitle = "DefaultValue";
 
@@ -37,15 +39,20 @@ public class CollectionFragment extends Fragment {
         tv.setGravity(Gravity.CENTER);
 
 
-
-
         return tv;
     }
 
-    // This method will be called when a MessageEvent is posted (in the UI thread for Toast)
-    @Subscribe(threadMode = ThreadMode.MAIN,sticky = true)
+    /**
+     * On message event.
+     *
+     * @param event the event
+     */
+// This method will be called when a MessageEvent is posted (in the UI thread for Toast)
+    @Subscribe(threadMode = ThreadMode.MAIN, sticky = true)
     public void onMessageEvent(MessageEvent event) {
-       Log.d("eventbus", event.message);}
+        Log.d("eventbus", event.message);
+    }
+
     @Override
     public void onStart() {
         super.onStart();
@@ -55,10 +62,17 @@ public class CollectionFragment extends Fragment {
 
     @Override
     public void onStop() {
-       EventBus.getDefault().unregister(this);
+        EventBus.getDefault().unregister(this);
         Log.d("eventbusBBBBBBBBBB", "STOP");
         super.onStop();
     }
+
+    /**
+     * New instance collection fragment.
+     *
+     * @param title the title
+     * @return the collection fragment
+     */
     public static CollectionFragment newInstance(String title) {
         Bundle bundle = new Bundle();
         bundle.putString(BUNDLE_TITLE, title);

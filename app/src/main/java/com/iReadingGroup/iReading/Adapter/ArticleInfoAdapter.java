@@ -19,12 +19,21 @@ import com.iReadingGroup.iReading.R;
 import java.util.List;
 
 
-
+/**
+ * The type Article info adapter.
+ */
 public class ArticleInfoAdapter extends ArrayAdapter<ArticleInfo> {
 
     private int resourceId;
     private Context mContext;
 
+    /**
+     * Instantiates a new Article info adapter.
+     *
+     * @param context  the context
+     * @param resource the resource
+     * @param objects  the objects
+     */
     public ArticleInfoAdapter (Context context, int resource, List<ArticleInfo> objects) {
         super(context, resource, objects);
         resourceId=resource;
@@ -61,10 +70,26 @@ public class ArticleInfoAdapter extends ArrayAdapter<ArticleInfo> {
         return view;
 
     }
+
+    /**
+     * The type View holder.
+     */
     class ViewHolder{
+        /**
+         * The Word info item image.
+         */
         ImageView wordInfoItemImage;
+        /**
+         * The Word info item text.
+         */
         TextView wordInfoItemText;
+        /**
+         * The Word info item source.
+         */
         TextView wordInfoItemSource;
+        /**
+         * The Word info item time.
+         */
         TextView WordInfoItemTime;
     }
 }

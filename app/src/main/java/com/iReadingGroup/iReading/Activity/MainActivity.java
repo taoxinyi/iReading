@@ -10,12 +10,12 @@ import android.util.Log;
 
 import com.iReadingGroup.iReading.Adapter.MainAdapter;
 import com.iReadingGroup.iReading.Bean.ArticleStorageBeanDao;
-import com.iReadingGroup.iReading.CollectWordEvent;
 import com.iReadingGroup.iReading.Bean.DaoMaster;
 import com.iReadingGroup.iReading.Bean.DaoSession;
 import com.iReadingGroup.iReading.Bean.OfflineDictBeanDao;
-import com.iReadingGroup.iReading.R;
 import com.iReadingGroup.iReading.Bean.WordCollectionBeanDao;
+import com.iReadingGroup.iReading.CollectWordEvent;
+import com.iReadingGroup.iReading.R;
 import com.lzy.widget.AlphaIndicator;
 
 import org.greenrobot.eventbus.EventBus;
@@ -32,10 +32,16 @@ import java.io.OutputStream;
 import cn.bingoogolapple.badgeview.BGABadgeAlphaView;
 
 
-public class MainActivity extends AppCompatActivity{
+/**
+ * MainActivity
+ * Initialize UI and database when app launched
+ *
+ * @version 1.0
+ * @author  iReadingGroup
+ */
+public class MainActivity extends AppCompatActivity {
     private Toolbar toolBar;
     private ViewPager viewPager;
-    private MainAdapter mainAdapter;
     private BGABadgeAlphaView collectionBadge;
     private WordCollectionBeanDao daoCollection;
     private OfflineDictBeanDao daoDictionary;
@@ -44,6 +50,11 @@ public class MainActivity extends AppCompatActivity{
     private static final String DB_PATH = "/data/data/com.iReadingGroup.iReading/databases/";//database external path
     private static final String DB_NAME = "wordDetail.db";//database name
 
+    /**
+     * Create the activity
+     * Initialize UI
+     * Copy database in assets folder to external storage and then initialize database
+     */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -51,10 +62,13 @@ public class MainActivity extends AppCompatActivity{
         initializeUI();//initialize UI
         copyDBToDatabases();//copy offline database to external
         initializeDatabase();//initializeDatabase
-
-
     }
-    private void initializeUI(){
+
+    /**
+     * Initialize UI
+     * Including toolbar,status bar, view pager, tab layout and badge
+     */
+    private void initializeUI() {
         //initializeUI in main activity
         initializeToolBar(); //initialize ToolBar
         initializeStatusBar();//set color for status bar for immersive looking
@@ -65,6 +79,9 @@ public class MainActivity extends AppCompatActivity{
 
     }
 
+    /**
+     * Copy the database in asset into external storage
+     */
     private void copyDBToDatabases() {
         //copy offline database to external.
         try {
@@ -95,69 +112,73 @@ public class MainActivity extends AppCompatActivity{
 
     }
 
-    private void initializeDatabase(){
-        DaoMaster.DevOpenHelper helper = new DaoMaster.DevOpenHelper(this, "wordDetail.db");
+    /**
+     * Initialize the database into instance
+     */
+    private void initializeDatabase() {
+        DaoMaster.DevOpenHelper helper = new DaoMaster.DevOpenHelper(this, DB_NAME);
         Database db = helper.getWritableDb();
         DaoSession daoSession = new DaoMaster(db).newSession();
-        daoDictionary = daoSession.getOfflineDictBeanDao();
+        daoDictionary = daoSession.getOfflineDictBeanDao();//this is the offline dictionary database
 
-        DaoMaster.DevOpenHelper helper_collection = new DaoMaster.DevOpenHelper(this, "notes-db");
+        DaoMaster.DevOpenHelper helper_collection = new DaoMaster.DevOpenHelper(this, "userCollection.db");
         Database db_collection = helper_collection.getWritableDb();
         DaoSession daoSession_collection = new DaoMaster(db_collection).newSession();
-        daoCollection=daoSession_collection.getWordCollectionBeanDao();
+        daoCollection = daoSession_collection.getWordCollectionBeanDao();// this is the database recording user's word collection
 
-        DaoMaster.DevOpenHelper helper_article = new DaoMaster.DevOpenHelper(this, "articledb");
+        DaoMaster.DevOpenHelper helper_article = new DaoMaster.DevOpenHelper(this, "userArticle.db");
         Database db_article = helper_article.getWritableDb();
         DaoSession daoSession_article = new DaoMaster(db_article).newSession();
-        daoArticle=daoSession_article.getArticleStorageBeanDao();
+        daoArticle = daoSession_article.getArticleStorageBeanDao();// this is the database(cache) recording user's articles
     }
 
     private void initializeToolBar() {
         //initialize ToolBar
-        toolBar=(Toolbar ) findViewById(com.iReadingGroup.iReading.R.id.toolbar);
+        toolBar = (Toolbar) findViewById(com.iReadingGroup.iReading.R.id.toolbar);
         toolBar.setTitle("阅读");
         setSupportActionBar(toolBar);
     }
 
-    private void initializeStatusBar(){
+    /**
+     * Initialize the status bar with primary color
+     */
+    private void initializeStatusBar() {
         //set StatusBar Color
-        getWindow().setStatusBarColor(ContextCompat.getColor(this,R.color.colorPrimary));
+        getWindow().setStatusBarColor(ContextCompat.getColor(this, R.color.colorPrimary));
     }
 
-    private void initializeViewPager(){
+    /**
+     * Initialize the viewpager
+     * Create the connection among each page's fragment, the adapter and the viewpager
+     */
+    private void initializeViewPager() {
         //initialize ViewPage for each tab's fragment
-        mainAdapter=new MainAdapter(getSupportFragmentManager());//set Fragment main adapter
+        MainAdapter mainAdapter = new MainAdapter(getSupportFragmentManager());//set Fragment main adapter
         viewPager = (ViewPager) findViewById(com.iReadingGroup.iReading.R.id.viewPager);
         viewPager.setAdapter(mainAdapter);//set adapter,link to each fragment
         viewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
             // This method will be invoked when a new page becomes selected.
-
             @Override
             public void onPageSelected(int position) {
                 //if the page is selected change the title to corresponding category.
                 switch (position) {
-
                     case 0:
                         viewPager.setCurrentItem(0);
                         toolBar.setTitle("阅读");
                         break;
-
                     case 1:
                         viewPager.setCurrentItem(1);
                         toolBar.setTitle("查词");
                         break;
-
                     case 2:
                         viewPager.setCurrentItem(2);
                         toolBar.setTitle("收藏");
                         collectionBadge.hiddenBadge();
                         break;
-
                     case 3:
                         viewPager.setCurrentItem(3);
                         toolBar.setTitle("我");
                         break;
-
                 }
             }
 
@@ -177,30 +198,41 @@ public class MainActivity extends AppCompatActivity{
 
     }
 
-    private void initializeTabLayout(){
+    private void initializeTabLayout() {
         AlphaIndicator alphaIndicator = (AlphaIndicator) findViewById(com.iReadingGroup.iReading.R.id.alphaIndicator);//
         alphaIndicator.setViewPager(viewPager);
     }
 
-    private void initializeCollectionBadge(){
-        collectionBadge=findViewById(R.id.collectionIcon);
+    private void initializeCollectionBadge() {
+        collectionBadge = findViewById(R.id.collectionIcon);
     }
 
-    //Subscribe the event
-    @Subscribe(threadMode = ThreadMode.MAIN,sticky = true)
+    /**
+     * On collect word event.
+     * Show red circle when new word(s) collected
+     * @param event the event that is fired in any other place
+     */
+    @Subscribe(threadMode = ThreadMode.MAIN, sticky = true)
     public void onCollectWordEvent(CollectWordEvent event) {
         //show the badge when the event is fired;
         collectionBadge.showCirclePointBadge();//show red when collected
     }
 
-    //register for EventBus on CollectWordEvent
+    /**
+     * On start.
+     * Register for EventBus on CollectWordEvent
+     */
     @Override
     public void onStart() {
         super.onStart();
         EventBus.getDefault().register(this);
+
     }
 
-    //unregister for EventBus on CollectWordEvent
+    /**
+     * On start.
+     * Unregister for EventBus on CollectWordEvent
+     */
     @Override
     public void onStop() {
         //get rid of the CollectWordEvent before it dies.
@@ -213,13 +245,32 @@ public class MainActivity extends AppCompatActivity{
         super.onStop();
     }
 
-    public WordCollectionBeanDao getdaoCollection(){
+    /**
+     * Get the database instance of WordCollection
+     * It can be used for other fragment.
+     * @return WordCollectionBeanDao the word collection instance
+     */
+    public WordCollectionBeanDao getDaoCollection() {
         return daoCollection;
     }
-    public OfflineDictBeanDao getDaoDictionary(){
+
+    /**
+     * Get the database instance of OfflineDictionary
+     * It can be used for other fragment.
+     * @return OfflineDictBeanDao the offline dictionary instance
+     */
+    public OfflineDictBeanDao getDaoDictionary() {
         return daoDictionary;
     }
-    public ArticleStorageBeanDao getDaoArticle() {return daoArticle;}
+
+    /**
+     * Get the database instance of OfflineDictionary
+     * It can be used for other fragment.
+     * @return ArticleStorageBeanDao the article cache instance
+     */
+    public ArticleStorageBeanDao getDaoArticle() {
+        return daoArticle;
+    }
 }
 
 

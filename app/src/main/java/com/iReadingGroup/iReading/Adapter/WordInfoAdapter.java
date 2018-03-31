@@ -15,12 +15,20 @@ import com.iReadingGroup.iReading.R;
 import com.iReadingGroup.iReading.WordInfo;
 
 
-
-
-
+/**
+ * The type Word info adapter.
+ */
 public class WordInfoAdapter extends ArrayAdapter<WordInfo> {
 
     private int resourceId;
+
+    /**
+     * Instantiates a new Word info adapter.
+     *
+     * @param context  the context
+     * @param resource the resource
+     * @param objects  the objects
+     */
     public WordInfoAdapter (Context context, int resource, List<WordInfo> objects) {
         super(context, resource, objects);
         resourceId=resource;
@@ -48,9 +56,22 @@ public class WordInfoAdapter extends ArrayAdapter<WordInfo> {
 
         return view;
     }
+
+    /**
+     * The type View holder.
+     */
     class ViewHolder{
+        /**
+         * The Word info item image.
+         */
         ImageView wordInfoItemImage;
+        /**
+         * The Word info item word.
+         */
         TextView wordInfoItemWord;
+        /**
+         * The Word info item meaning.
+         */
         TextView wordInfoItemMeaning;
     }
 }

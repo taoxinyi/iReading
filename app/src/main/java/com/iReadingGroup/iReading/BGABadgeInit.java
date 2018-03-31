@@ -1,14 +1,5 @@
 package com.iReadingGroup.iReading;
 
-import android.support.design.widget.FloatingActionButton;
-import android.view.View;
-import android.widget.FrameLayout;
-import android.widget.ImageView;
-import android.widget.LinearLayout;
-import android.widget.RadioButton;
-import android.widget.RelativeLayout;
-import android.widget.TextView;
-
 import com.lzy.widget.AlphaView;
 
 import cn.bingoogolapple.badgeview.annotation.BGABadge;

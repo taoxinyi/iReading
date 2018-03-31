@@ -23,7 +23,13 @@ import java.util.List;
 import static java.lang.Math.min;
 
 
+/**
+ * The type Word search fragment.
+ */
 public class WordSearchFragment extends Fragment {
+    /**
+     * The constant BUNDLE_TITLE.
+     */
     public static final String BUNDLE_TITLE = "title";
     private String mTitle = "DefaultValue";
     private View v;
@@ -31,6 +37,12 @@ public class WordSearchFragment extends Fragment {
     private WordInfoAdapter wordInfoAdapter;//Custom adapter for article info
     private ArrayList<WordInfo> alWordInfo = new ArrayList<>();//ArrayList linked to adapter for listview
 
+    /**
+     * New instance word search fragment.
+     *
+     * @param title the title
+     * @return the word search fragment
+     */
     public static WordSearchFragment newInstance(String title) {
         Bundle bundle = new Bundle();
         bundle.putString(BUNDLE_TITLE, title);
@@ -66,15 +78,15 @@ public class WordSearchFragment extends Fragment {
 
             //database load
 
-            final  OfflineDictBeanDao daoDictionary=((MainActivity)getActivity()).getDaoDictionary();
+            final OfflineDictBeanDao daoDictionary = ((MainActivity) getActivity()).getDaoDictionary();
 
             infoListView = (ListView) v.findViewById(R.id.list_word_search);//
 
             //sample of add initial articles' info.
             for (int i = 0; i < 12; i++) {
-                WordInfo a_1 = new WordInfo("What a good day Today","emmmm",com.iReadingGroup.iReading.R.drawable.collect_false);
+                WordInfo a_1 = new WordInfo("What a good day Today", "emmmm", com.iReadingGroup.iReading.R.drawable.collect_false);
                 alWordInfo.add(a_1);
-                WordInfo a_2 = new WordInfo("Test1","aaaaa",com.iReadingGroup.iReading.R.drawable.collect_false);
+                WordInfo a_2 = new WordInfo("Test1", "aaaaa", com.iReadingGroup.iReading.R.drawable.collect_false);
                 alWordInfo.add(a_2);
             }
 
@@ -84,47 +96,44 @@ public class WordSearchFragment extends Fragment {
             infoListView.setAdapter(wordInfoAdapter);//link the adapter to ListView
             //searchview's listener
             sv.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
-                @Override
-                public boolean onQueryTextSubmit(String query) {search(query);
-                    return true;
-                }
+                                          @Override
+                                          public boolean onQueryTextSubmit(String query) {
+                                              search(query);
+                                              return true;
+                                          }
 
-                @Override
-                public boolean onQueryTextChange(String query) {
-                    search(query);
-                    return true;
-                }
+                                          @Override
+                                          public boolean onQueryTextChange(String query) {
+                                              search(query);
+                                              return true;
+                                          }
 
-                public void search(String query) {
-                    if (query.length()==0)//if search blank
-                    {
-                        alWordInfo.clear();
-                        wordInfoAdapter.notifyDataSetChanged();
-                    }
-                    else{//if search not blank
-                        List<OfflineDictBean> joes = daoDictionary.queryBuilder()
-                                .where(OfflineDictBeanDao.Properties.Word.like(query+"%"))
-                                .list();
-                        if (joes.size()==0)
-                        {
-                            alWordInfo.clear();
-                            wordInfoAdapter.notifyDataSetChanged();
-                        }
-                        else{
-                            alWordInfo.clear();
-                            Log.i("textchange", query);
-                            for (int i=0;i<min(joes.size(),20);i++)
-                            {
-                                WordInfo lin=new WordInfo(joes.get(i).getWord(),joes.get(i).getMeaning(), com.iReadingGroup.iReading.R.drawable.collect_false);
-                                alWordInfo.add(lin);
-                            }
+                                          public void search(String query) {
+                                              if (query.length() == 0)//if search blank
+                                              {
+                                                  alWordInfo.clear();
+                                                  wordInfoAdapter.notifyDataSetChanged();
+                                              } else {//if search not blank
+                                                  List<OfflineDictBean> joes = daoDictionary.queryBuilder()
+                                                          .where(OfflineDictBeanDao.Properties.Word.like(query + "%"))
+                                                          .list();
+                                                  if (joes.size() == 0) {
+                                                      alWordInfo.clear();
+                                                      wordInfoAdapter.notifyDataSetChanged();
+                                                  } else {
+                                                      alWordInfo.clear();
+                                                      Log.i("textchange", query);
+                                                      for (int i = 0; i < min(joes.size(), 20); i++) {
+                                                          WordInfo lin = new WordInfo(joes.get(i).getWord(), joes.get(i).getMeaning(), com.iReadingGroup.iReading.R.drawable.collect_false);
+                                                          alWordInfo.add(lin);
+                                                      }
 
-                            //sync to the listView
-                            wordInfoAdapter.notifyDataSetChanged();
-                        }
-                    }
-                }
-            }
+                                                      //sync to the listView
+                                                      wordInfoAdapter.notifyDataSetChanged();
+                                                  }
+                                              }
+                                          }
+                                      }
             );
 
         }
