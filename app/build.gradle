@@ -1,12 +1,12 @@
 apply plugin: 'com.android.application'
-
+apply plugin: 'org.greenrobot.greendao'
 android {
-    compileSdkVersion 23
-    buildToolsVersion "23.0.2"
+    compileSdkVersion 26
+    buildToolsVersion "26.0.2"
 
     defaultConfig {
-        applicationId "com.lzy.alphaindicatorview"
-        minSdkVersion 8
+        applicationId "com.iReadingGroup.iReading"
+        minSdkVersion 21
         targetSdkVersion 22
         versionCode 1
         versionName "1.0"
@@ -22,6 +22,32 @@ android {
 dependencies {
     compile fileTree(include: ['*.jar'], dir: 'libs')
     compile 'com.android.support:appcompat-v7:23.1.1'
-
     compile 'com.lzy.widget:view-core:0.1.5'
+    compile 'com.wenwenwen888:searchbox:1.0.0'
+    compile 'org.greenrobot:eventbus:3.1.1'
+    compile 'org.greenrobot:greendao:3.2.2'
+    implementation 'cn.bingoogolapple:bga-badgeview-api:1.1.7'
+    annotationProcessor "cn.bingoogolapple:bga-badgeview-compiler:1.1.7"
+    // -------------------- 以下三个库是必须依赖的 ----------------------------
+    implementation 'com.android.support:recyclerview-v7:27.0.2'
+    implementation 'com.android.support:support-v4:27.0.2'
+    implementation 'cn.bingoogolapple:bga-refreshlayout:1.1.8@aar'
+    // -------------------- 以上三个库是必须依赖的 ----------------------------
+
+//    implementation project(':library')
+
+    // 以下几个库是演示案例所使用到的
+    implementation 'com.android.support:design:27.0.2'
+    implementation 'com.android.support:cardview-v7:27.0.2'
+    implementation 'cn.bingoogolapple:bga-banner:2.1.9@aar'
+    implementation 'cn.bingoogolapple:bga-baseadapter:1.2.7@aar'
+    implementation 'cn.bingoogolapple:bga-swipeitemlayout:1.0.4@aar'
+    implementation 'cn.bingoogolapple:bga-indicator:1.0.1@aar'
+    implementation 'com.squareup.retrofit2:retrofit:2.3.0'
+    implementation 'com.squareup.retrofit2:converter-gson:2.3.0'
+    implementation 'com.afollestad.material-dialogs:core:0.9.6.0'
+
+    implementation 'com.github.bumptech.glide:glide:4.6.1'
+    annotationProcessor 'com.github.bumptech.glide:compiler:4.6.1'
+
 }
