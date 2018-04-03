@@ -1,95 +1,44 @@
 package com.iReadingGroup.iReading.Adapter;
 
 import android.content.Context;
-import android.view.LayoutInflater;
-import android.view.View;
-import android.view.ViewGroup;
-import android.widget.ArrayAdapter;
+import android.support.v7.widget.CardView;
 import android.widget.ImageView;
-import android.widget.TextView;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.Priority;
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.bumptech.glide.request.RequestOptions;
+import com.chad.library.adapter.base.BaseQuickAdapter;
+import com.chad.library.adapter.base.BaseViewHolder;
 import com.iReadingGroup.iReading.Activity.MainActivity;
 import com.iReadingGroup.iReading.ArticleInfo;
 import com.iReadingGroup.iReading.R;
 
 import java.util.List;
 
-
 /**
- * The type Article info adapter.
+ * Created by taota on 2018/4/2.
  */
-public class ArticleInfoAdapter extends ArrayAdapter<ArticleInfo> {
-
-    private int resourceId;
-    private Context mContext;
-
-    /**
-     * Instantiates a new Article info adapter.
-     *
-     * @param context  the context
-     * @param resource the resource
-     * @param objects  the objects
-     */
-    public ArticleInfoAdapter (Context context, int resource, List<ArticleInfo> objects) {
-        super(context, resource, objects);
-        resourceId=resource;
+public class ArticleInfoAdapter extends BaseQuickAdapter<ArticleInfo, BaseViewHolder> {
+    public ArticleInfoAdapter(Context context, int layoutResId, List<ArticleInfo> data) {
+        super(layoutResId, data);
         mContext=context;
     }
 
-    public View getView(int position, View convertView, ViewGroup parent) {
-        ArticleInfo wordInfoItem=getItem(position); //获得当前项的wordInfoItem数据
-        View view;
-        ViewHolder viewHolder; //使用ViewHolder优化 ListView
-        if (convertView==null){ //使用convertView重复使用查找加载好的布局
-            view= LayoutInflater.from(getContext()).inflate(resourceId,parent,false);//使用布局填充器为子项加载我们传入的子布局「wordInfoItem_item」
-            viewHolder=new ViewHolder();
-            viewHolder.wordInfoItemImage= (ImageView) view.findViewById(com.iReadingGroup.iReading.R.id.img);//查找
-            viewHolder.wordInfoItemText= (TextView) view.findViewById(R.id.txt_title);
-            viewHolder.wordInfoItemSource=(TextView)view.findViewById(R.id.txt_source);
-            viewHolder.WordInfoItemTime = (TextView)view.findViewById(R.id.txt_time);
-            view.setTag(viewHolder);//把ViewHolder储存在View里面
 
-        }else {
-            view=convertView;
-            viewHolder= (ViewHolder) view.getTag();
-        }
+
+    @Override
+    protected void convert(BaseViewHolder helper, ArticleInfo item) {
+        helper.setText(R.id.txt_title, item.getName());
+        helper.setText(R.id.txt_source,item.getSource());
+        helper.setText(R.id.txt_time,item.getTime());
         RequestOptions options = new RequestOptions()
                 .centerCrop()
-                .error(R.drawable.collect_false)
+                .error(R.mipmap.icon)
                 .diskCacheStrategy(DiskCacheStrategy.ALL)
                 .priority(Priority.HIGH);
-        Glide.with(((MainActivity)mContext).getApplicationContext()).load(wordInfoItem.getImageUrl()).apply(options).into(viewHolder.wordInfoItemImage);
-        //iewHolder.wordInfoItemImage.setImageResource(wordInfoItem.getImageId()); //设置数据
-        viewHolder.wordInfoItemText.setText(wordInfoItem.getName());
-        viewHolder.wordInfoItemSource.setText(wordInfoItem.getSource());
-        viewHolder.WordInfoItemTime.setText(wordInfoItem.getTime());
-        return view;
+        Glide.with(((MainActivity)mContext).getApplicationContext()).load(item.getImageUrl()).apply(options).into((ImageView) helper.getView(R.id.img));
 
     }
 
-    /**
-     * The type View holder.
-     */
-    class ViewHolder{
-        /**
-         * The Word info item image.
-         */
-        ImageView wordInfoItemImage;
-        /**
-         * The Word info item text.
-         */
-        TextView wordInfoItemText;
-        /**
-         * The Word info item source.
-         */
-        TextView wordInfoItemSource;
-        /**
-         * The Word info item time.
-         */
-        TextView WordInfoItemTime;
-    }
 }

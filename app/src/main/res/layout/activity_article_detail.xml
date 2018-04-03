@@ -1,22 +1,45 @@
 <?xml version="1.0" encoding="utf-8"?>
+<com.ganxin.library.LoadDataLayout
+    android:id="@+id/loadDataLayout"
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/background_material_light"
+    >
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="0dp" >
+    android:padding="0dp"
+    >
+
     <android.support.v7.widget.Toolbar
         android:id="@+id/toolbar"
         android:fitsSystemWindows="true"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@color/colorPrimary"
-        />
+        android:background="@color/colorPrimary">
+
+        <ImageButton
+            android:id="@+id/collect_article_button"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:layout_alignParentEnd="true"
+            android:layout_alignParentTop="true"
+            android:background="@null"
+            android:padding="1dp"
+            android:src="@drawable/collect_false"
+            android:text="Button"
+            android:scaleType="fitXY"
+            android:textSize="20sp" />
+
+    </android.support.v7.widget.Toolbar>
     <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="10dp"
+        android:padding="5dp"
         android:fillViewport="false">
 
         <LinearLayout
@@ -38,7 +61,7 @@
                 android:textColor="@color/text_grey"
                 android:textSize="20dp"
                />
-            <ImageView
+            <com.github.chrisbanes.photoview.PhotoView
                 android:id="@+id/img_article"
                 android:layout_width="fill_parent"
                 android:layout_height="wrap_content"/>
@@ -55,3 +78,4 @@
         </LinearLayout>
     </ScrollView>
 </LinearLayout>
+</com.ganxin.library.LoadDataLayout>

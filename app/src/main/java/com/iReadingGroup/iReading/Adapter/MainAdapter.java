@@ -36,7 +36,7 @@ public class MainAdapter extends FragmentPagerAdapter {
         super(fm);
         fragments.add(new ArticleListFragment());
         fragments.add(new WordSearchFragment());
-        fragments.add(CollectionFragment.newInstance(titles[2]));
+        fragments.add(new CollectionFragment());
         fragments.add(SettingsFragment.newInstance(titles[3]));
     }
 

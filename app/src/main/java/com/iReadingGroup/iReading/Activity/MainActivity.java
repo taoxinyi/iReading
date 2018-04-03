@@ -4,9 +4,17 @@ import android.annotation.SuppressLint;
 import android.os.Bundle;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.view.ViewPager;
+import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.EventLog;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
+import android.view.View;
+import android.widget.LinearLayout;
+import android.widget.TextView;
+import android.widget.Toast;
 
 import com.iReadingGroup.iReading.Adapter.MainAdapter;
 import com.iReadingGroup.iReading.Bean.ArticleStorageBeanDao;
@@ -14,9 +22,24 @@ import com.iReadingGroup.iReading.Bean.DaoMaster;
 import com.iReadingGroup.iReading.Bean.DaoSession;
 import com.iReadingGroup.iReading.Bean.OfflineDictBeanDao;
 import com.iReadingGroup.iReading.Bean.WordCollectionBeanDao;
+import com.iReadingGroup.iReading.ButtonCheckEvent;
+import com.iReadingGroup.iReading.CollectArticleEvent;
 import com.iReadingGroup.iReading.CollectWordEvent;
 import com.iReadingGroup.iReading.R;
+import com.iReadingGroup.iReading.SourceSelectEvent;
 import com.lzy.widget.AlphaIndicator;
+import com.mikepenz.materialdrawer.AccountHeader;
+import com.mikepenz.materialdrawer.AccountHeaderBuilder;
+import com.mikepenz.materialdrawer.Drawer;
+import com.mikepenz.materialdrawer.DrawerBuilder;
+import com.mikepenz.materialdrawer.model.DividerDrawerItem;
+import com.mikepenz.materialdrawer.model.PrimaryDrawerItem;
+import com.mikepenz.materialdrawer.model.ProfileDrawerItem;
+import com.mikepenz.materialdrawer.model.SecondaryDrawerItem;
+import com.mikepenz.materialdrawer.model.SectionDrawerItem;
+import com.mikepenz.materialdrawer.model.interfaces.IDrawerItem;
+import com.mikepenz.materialdrawer.model.interfaces.IProfile;
+import com.suke.widget.SwitchButton;
 
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
@@ -40,12 +63,18 @@ import cn.bingoogolapple.badgeview.BGABadgeAlphaView;
  * @author  iReadingGroup
  */
 public class MainActivity extends AppCompatActivity {
-    private Toolbar toolBar;
+    public Toolbar toolBar;
     private ViewPager viewPager;
     private BGABadgeAlphaView collectionBadge;
     private WordCollectionBeanDao daoCollection;
     private OfflineDictBeanDao daoDictionary;
     private ArticleStorageBeanDao daoArticle;
+    public SwitchButton switchButton;
+    public  MenuItem button;
+    public boolean buttonStatus=false;
+    public int last_nested_page =0;
+    private Drawer drawer;
+
     @SuppressLint("SdCardPath")
     private static final String DB_PATH = "/data/data/com.iReadingGroup.iReading/databases/";//database external path
     private static final String DB_NAME = "wordDetail.db";//database name
@@ -106,7 +135,6 @@ public class MainActivity extends AppCompatActivity {
             myOutput.close();
             myInput.close();
         } catch (IOException e) {
-            Log.i("dbdbdb", "error--->" + e.toString());
             e.printStackTrace();
         }
 
@@ -135,8 +163,58 @@ public class MainActivity extends AppCompatActivity {
     private void initializeToolBar() {
         //initialize ToolBar
         toolBar = (Toolbar) findViewById(com.iReadingGroup.iReading.R.id.toolbar);
-        toolBar.setTitle("阅读");
+        ((TextView)findViewById(R.id.toolbar_title)).setText("阅读");
+        toolBar.setTitle("");
         setSupportActionBar(toolBar);
+
+        //if you want to update the items at a later time it is recommended to keep it in a variable
+        SectionDrawerItem item0=new SectionDrawerItem().withName("选择你的源");
+
+        PrimaryDrawerItem item1 = new PrimaryDrawerItem().withIdentifier(1).withName("所有").withIcon(R.mipmap.icon);
+        PrimaryDrawerItem item2 = new PrimaryDrawerItem().withIdentifier(2).withName("National Geographic").withIcon(R.mipmap.icon_ng);
+        PrimaryDrawerItem item3 = new PrimaryDrawerItem().withIdentifier(3).withName("Nature").withIcon(R.mipmap.icon_nature);
+        PrimaryDrawerItem item4 = new PrimaryDrawerItem().withIdentifier(4).withName("The Economist").withIcon(R.mipmap.icon_economist);
+        PrimaryDrawerItem item5 = new PrimaryDrawerItem().withIdentifier(5).withName("TIME").withIcon(R.mipmap.icon_time);
+        PrimaryDrawerItem item6 = new PrimaryDrawerItem().withIdentifier(6).withName("The New York Times").withIcon(R.mipmap.icon_nytimes);
+        PrimaryDrawerItem item7 = new PrimaryDrawerItem().withIdentifier(7).withName("The Wall Street Journal").withIcon(R.mipmap.icon_wsj);
+
+        // Create the AccountHeader
+        AccountHeader headerResult = new AccountHeaderBuilder()
+                .withActivity(this)
+                .addProfiles(
+                        new ProfileDrawerItem().withName("iReading").withEmail("xy_tao@sjtu.edu.cn").withIcon(getResources().getDrawable(R.mipmap.icon))
+                )
+                .withOnAccountHeaderListener(new AccountHeader.OnAccountHeaderListener() {
+                    @Override
+                    public boolean onProfileChanged(View view, IProfile profile, boolean currentProfile) {
+                        return true;
+                    }
+                })
+                .build();
+
+//create the drawer and remember the `Drawer` result object
+        drawer = new DrawerBuilder()
+                .withActivity(this)
+                .withTranslucentStatusBar(true)
+                .withAccountHeader(headerResult)
+                .addDrawerItems(
+                        item0,
+                        item1,
+                        item2,
+                        item3,
+                        item4,
+                        item5,
+                        item6,
+                        item7
+                )
+                .withOnDrawerItemClickListener(new Drawer.OnDrawerItemClickListener() {
+                    @Override
+                    public boolean onItemClick(View view, int position, IDrawerItem drawerItem) {
+                        EventBus.getDefault().post(new SourceSelectEvent(position-2));
+                        return  true;
+                    }
+                })
+                .build();
     }
 
     /**
@@ -161,23 +239,24 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onPageSelected(int position) {
                 //if the page is selected change the title to corresponding category.
+                invalidateOptionsMenu();
                 switch (position) {
                     case 0:
                         viewPager.setCurrentItem(0);
-                        toolBar.setTitle("阅读");
+                        ((TextView)findViewById(R.id.toolbar_title)).setText("阅读");
                         break;
                     case 1:
                         viewPager.setCurrentItem(1);
-                        toolBar.setTitle("查词");
+                        ((TextView)findViewById(R.id.toolbar_title)).setText("查词");
                         break;
                     case 2:
                         viewPager.setCurrentItem(2);
-                        toolBar.setTitle("收藏");
+                        ((TextView)findViewById(R.id.toolbar_title)).setText("收藏");
                         collectionBadge.hiddenBadge();
                         break;
                     case 3:
                         viewPager.setCurrentItem(3);
-                        toolBar.setTitle("我");
+                        ((TextView)findViewById(R.id.toolbar_title)).setText("我");
                         break;
                 }
             }
@@ -217,7 +296,11 @@ public class MainActivity extends AppCompatActivity {
         //show the badge when the event is fired;
         collectionBadge.showCirclePointBadge();//show red when collected
     }
-
+    @Subscribe(threadMode = ThreadMode.MAIN, sticky = true)
+    public void onCollectArticleEvent(CollectArticleEvent event) {
+        //show the badge when the event is fired;
+        collectionBadge.showCirclePointBadge();//show red when collected
+    }
     /**
      * On start.
      * Register for EventBus on CollectWordEvent
@@ -270,6 +353,44 @@ public class MainActivity extends AppCompatActivity {
      */
     public ArticleStorageBeanDao getDaoArticle() {
         return daoArticle;
+    }
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.menu_main, menu);
+        button=menu.findItem(R.id.switch_button_layout);
+        DrawerLayout drawerLayout=drawer.getDrawerLayout();
+        if (viewPager.getCurrentItem()==0){
+            menu.findItem(R.id.action_search).setVisible(true);
+            button.setVisible(false);
+            drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED);
+
+        } else if(viewPager.getCurrentItem()==1){
+            menu.findItem(R.id.action_search).setVisible(false);
+            button.setVisible(false);
+            drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED);
+        } else if(viewPager.getCurrentItem()==2) {
+            menu.findItem(R.id.action_search).setVisible(false);
+            if (last_nested_page ==0) button.setVisible(true);
+            else button.setVisible(false);
+            drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED);
+        }
+        else if(viewPager.getCurrentItem()==3) {
+            menu.findItem(R.id.action_search).setVisible(false);
+            button.setVisible(false);
+            drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED);
+
+        }
+        LinearLayout view=(LinearLayout) menu.findItem(R.id.switch_button_layout).getActionView();
+        switchButton=view.findViewById(R.id.switch_button);
+        switchButton.setChecked(buttonStatus);
+        switchButton.setOnCheckedChangeListener(new SwitchButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(SwitchButton view, boolean isChecked) {
+                EventBus.getDefault().post(new ButtonCheckEvent(isChecked));
+
+            }
+        });
+        return super.onCreateOptionsMenu(menu);
     }
 }
 

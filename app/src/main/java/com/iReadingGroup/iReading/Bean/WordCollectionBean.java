@@ -13,11 +13,13 @@ public class WordCollectionBean {
     @Property(nameInDb = "word")
     @Id
     private String word;
+    @Property(nameInDb = "meaning")
+    private String meaning;
 
-
-    @Generated(hash = 509351561)
-    public WordCollectionBean(String word) {
+    @Generated(hash = 1032722198)
+    public WordCollectionBean(String word, String meaning) {
         this.word = word;
+        this.meaning = meaning;
     }
 
 
@@ -41,6 +43,16 @@ public class WordCollectionBean {
      */
     public void setWord(String word) {
         this.word = word;
+    }
+
+
+    public String getMeaning() {
+        return this.meaning;
+    }
+
+
+    public void setMeaning(String meaning) {
+        this.meaning = meaning;
     }
 
 

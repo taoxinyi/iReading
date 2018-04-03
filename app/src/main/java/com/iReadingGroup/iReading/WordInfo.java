@@ -7,6 +7,7 @@ public class WordInfo {
     private String word;
     private String meaning;
     private int imageId;
+    private boolean isShowingMeaning;
 
     /**
      * Instantiates a new Word info.
@@ -15,10 +16,11 @@ public class WordInfo {
      * @param meaning the meaning
      * @param imageId the image id
      */
-    public WordInfo(String word, String meaning, int imageId) {
+    public WordInfo(String word, String meaning, int imageId,boolean isShowingMeaning) {
         this.word = word;//word
         this.meaning = meaning;//meaning
         this.imageId = imageId;//image
+        this.isShowingMeaning=isShowingMeaning;//whether showing meaning
     }
 
     /**
@@ -63,7 +65,8 @@ public class WordInfo {
      * @return the string
      */
     public String getMeaning() {
-        return meaning;
+        if (isShowingMeaning)return meaning;
+        else return "";
     }
 
     /**
@@ -73,5 +76,10 @@ public class WordInfo {
      */
     public int getImageId() {
         return imageId;
+    }
+    public void setShowingMeaning(boolean status)
+    {
+        if (status) isShowingMeaning=true;
+        else isShowingMeaning=false;
     }
 }

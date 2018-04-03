@@ -14,6 +14,7 @@ import com.iReadingGroup.iReading.Activity.MainActivity;
 import com.iReadingGroup.iReading.Adapter.WordInfoAdapter;
 import com.iReadingGroup.iReading.Bean.OfflineDictBean;
 import com.iReadingGroup.iReading.Bean.OfflineDictBeanDao;
+import com.iReadingGroup.iReading.Bean.WordCollectionBeanDao;
 import com.iReadingGroup.iReading.R;
 import com.iReadingGroup.iReading.WordInfo;
 
@@ -36,6 +37,7 @@ public class WordSearchFragment extends Fragment {
     private ListView infoListView;////infoListView for list of brief info of each article
     private WordInfoAdapter wordInfoAdapter;//Custom adapter for article info
     private ArrayList<WordInfo> alWordInfo = new ArrayList<>();//ArrayList linked to adapter for listview
+    private WordCollectionBeanDao daoCollection;
 
     /**
      * New instance word search fragment.
@@ -79,15 +81,13 @@ public class WordSearchFragment extends Fragment {
             //database load
 
             final OfflineDictBeanDao daoDictionary = ((MainActivity) getActivity()).getDaoDictionary();
-
+            daoCollection = ((MainActivity) getActivity()).getDaoCollection();
             infoListView = (ListView) v.findViewById(R.id.list_word_search);//
-
+            List<OfflineDictBean> l = daoDictionary.queryBuilder().limit(20).list();
             //sample of add initial articles' info.
-            for (int i = 0; i < 12; i++) {
-                WordInfo a_1 = new WordInfo("What a good day Today", "emmmm", com.iReadingGroup.iReading.R.drawable.collect_false);
-                alWordInfo.add(a_1);
-                WordInfo a_2 = new WordInfo("Test1", "aaaaa", com.iReadingGroup.iReading.R.drawable.collect_false);
-                alWordInfo.add(a_2);
+            for (OfflineDictBean word : l) {
+                WordInfo a = new WordInfo(word.getWord(), word.getMeaning(), getCollectionIcon(word.getWord()), true);
+                alWordInfo.add(a);
             }
 
 
@@ -112,6 +112,12 @@ public class WordSearchFragment extends Fragment {
                                               if (query.length() == 0)//if search blank
                                               {
                                                   alWordInfo.clear();
+                                                  List<OfflineDictBean> l = daoDictionary.queryBuilder().limit(20).list();
+                                                  //sample of add initial articles' info.
+                                                  for (OfflineDictBean word : l) {
+                                                      WordInfo a = new WordInfo(word.getWord(), word.getMeaning(), getCollectionIcon(word.getWord()), true);
+                                                      alWordInfo.add(a);
+                                                  }
                                                   wordInfoAdapter.notifyDataSetChanged();
                                               } else {//if search not blank
                                                   List<OfflineDictBean> joes = daoDictionary.queryBuilder()
@@ -122,9 +128,8 @@ public class WordSearchFragment extends Fragment {
                                                       wordInfoAdapter.notifyDataSetChanged();
                                                   } else {
                                                       alWordInfo.clear();
-                                                      Log.i("textchange", query);
                                                       for (int i = 0; i < min(joes.size(), 20); i++) {
-                                                          WordInfo lin = new WordInfo(joes.get(i).getWord(), joes.get(i).getMeaning(), com.iReadingGroup.iReading.R.drawable.collect_false);
+                                                          WordInfo lin = new WordInfo(joes.get(i).getWord(), joes.get(i).getMeaning(), getCollectionIcon(joes.get(i).getWord()), true);
                                                           alWordInfo.add(lin);
                                                       }
 
@@ -139,6 +144,12 @@ public class WordSearchFragment extends Fragment {
         }
 
         return v;
+    }
+
+    private int getCollectionIcon(String word) {
+        if (daoCollection.queryBuilder().where(WordCollectionBeanDao.Properties.Word.eq(word)).list().size() == 0)
+            return R.drawable.collect_false;
+        else return R.drawable.collect_true;
     }
 
 }

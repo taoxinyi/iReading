@@ -58,7 +58,6 @@ public class FetchingBriefMeaningAsyncTask extends AsyncTask<String, String, Str
 
             while ((line = reader.readLine()) != null) {
                 buffer.append(line + "\n");
-                Log.d("Response: ", "> " + line);   //here u ll get whole response...... :-)
 
             }
 
@@ -104,7 +103,6 @@ public class FetchingBriefMeaningAsyncTask extends AsyncTask<String, String, Str
 
             String word_name = reader.getString("word_name");
 
-            Log.d("Response: ", word_name + " " + part + " " + meaning);
             //return word_name+part+meaning
             delegate.processFinish(word_name + "\n" + part + " " + meaning);
         } catch (JSONException e) {

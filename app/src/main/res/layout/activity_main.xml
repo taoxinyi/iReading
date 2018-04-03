@@ -1,28 +1,37 @@
-
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-              xmlns:app="http://schemas.android.com/apk/res-auto"
-              android:layout_width="match_parent"
-              android:layout_height="match_parent"
-              android:orientation="vertical"
-                >
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:descendantFocusability="beforeDescendants"
+    android:focusableInTouchMode="true"
+    android:orientation="vertical">
 
     <android.support.v7.widget.Toolbar
         android:id="@+id/toolbar"
 
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@color/colorPrimary"
-        />
+        android:background="@color/colorPrimary" >
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:layout_gravity="center"
+        android:layout_centerInParent="true"
+        android:textColor="@color/colorWhite"
+        android:textSize="20sp"
+        android:id="@+id/toolbar_title" />
+    </android.support.v7.widget.Toolbar>
     <android.support.v4.view.ViewPager
         android:id="@+id/viewPager"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1"/>
+        android:layout_weight="1" />
 
     <View
         android:layout_width="match_parent"
         android:layout_height="1px"
-        android:background="#888"/>
+        android:background="#888" />
 
     <com.lzy.widget.AlphaIndicator
         android:id="@+id/alphaIndicator"
@@ -40,7 +49,7 @@
             app:av_tabText="阅读"
             app:av_tabTextSize="14sp"
             app:av_textColorNormal="#999999"
-            app:av_textColorSelected="#46c01b"/>
+            app:av_textColorSelected="@color/colorPrimary" />
 
         <com.lzy.widget.AlphaView
             android:layout_width="0dp"
@@ -52,7 +61,7 @@
             app:av_tabText="查词"
             app:av_tabTextSize="14sp"
             app:av_textColorNormal="#999999"
-            app:av_textColorSelected="#46c01b"/>
+            app:av_textColorSelected="@color/colorPrimary" />
 
         <cn.bingoogolapple.badgeview.BGABadgeAlphaView
             android:id="@+id/collectionIcon"
@@ -65,11 +74,11 @@
             app:av_tabText="收藏"
             app:av_tabTextSize="14sp"
             app:av_textColorNormal="#999999"
-            app:av_textColorSelected="#46c01b"
+            app:av_textColorSelected="@color/colorPrimary"
             app:badge_dragable="true"
-            app:badge_padding="5dp"
             app:badge_gravity="rightTop"
-            app:badge_horizontalMargin="25dp"/>
+            app:badge_horizontalMargin="25dp"
+            app:badge_padding="5dp" />
 
         <com.lzy.widget.AlphaView
             android:layout_width="0dp"
@@ -81,6 +90,6 @@
             app:av_tabText="我"
             app:av_tabTextSize="14sp"
             app:av_textColorNormal="#999999"
-            app:av_textColorSelected="#46c01b"/>
+            app:av_textColorSelected="@color/colorPrimary" />
     </com.lzy.widget.AlphaIndicator>
 </LinearLayout>

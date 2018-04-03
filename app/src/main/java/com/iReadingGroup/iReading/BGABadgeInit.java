@@ -1,5 +1,7 @@
 package com.iReadingGroup.iReading;
 
+import android.widget.TextView;
+
 import com.lzy.widget.AlphaView;
 
 import cn.bingoogolapple.badgeview.annotation.BGABadge;
@@ -14,7 +16,8 @@ import cn.bingoogolapple.badgeview.annotation.BGABadge;
  * 4.经过前面三个步骤后就可以通过「cn.bingoogolapple.badgeview.BGABadge原始类名」来使用徽章控件了
  */
 @BGABadge({
-        AlphaView.class, //
+        AlphaView.class,
+        TextView.class//
 })
 public class BGABadgeInit {
 }

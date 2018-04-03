@@ -14,6 +14,7 @@ import android.text.method.LinkMovementMethod;
 import android.text.style.BackgroundColorSpan;
 import android.text.style.ClickableSpan;
 import android.util.Log;
+import android.view.GestureDetector;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
@@ -26,23 +27,31 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
+import com.ganxin.library.LoadDataLayout;
+import com.github.chrisbanes.photoview.PhotoView;
 import com.iReadingGroup.iReading.AsyncResponse;
+import com.iReadingGroup.iReading.Bean.ArticleStorageBean;
+import com.iReadingGroup.iReading.Bean.ArticleStorageBeanDao;
 import com.iReadingGroup.iReading.Bean.DaoMaster;
 import com.iReadingGroup.iReading.Bean.DaoSession;
 import com.iReadingGroup.iReading.Bean.OfflineDictBean;
 import com.iReadingGroup.iReading.Bean.OfflineDictBeanDao;
 import com.iReadingGroup.iReading.Bean.WordCollectionBean;
 import com.iReadingGroup.iReading.Bean.WordCollectionBeanDao;
+import com.iReadingGroup.iReading.CollectArticleEvent;
 import com.iReadingGroup.iReading.CollectWordEvent;
 import com.iReadingGroup.iReading.FetchArticleAsyncTask;
 import com.iReadingGroup.iReading.FetchingBriefMeaningAsyncTask;
 import com.iReadingGroup.iReading.R;
+import com.r0adkll.slidr.Slidr;
 
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.greendao.database.Database;
 
 import java.text.BreakIterator;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
@@ -55,16 +64,21 @@ public class ArticleDetailActivity extends AppCompatActivity {
     private String articleTitleFromBundle;
     private String article;
     private String imageUrl;
+    private String uri;
+    private String source;
+    private String time;
     private String category;
     private String current_word;
+    private String current_meaning;
     private String meaning_result = "Loading";
     private TextView articleTextView;
     private PopupWindow popupWindow;
     private View ppwContentView;
     private OfflineDictBeanDao daoDictionary;//database instance
     private WordCollectionBeanDao daoCollection;//database instance
+    private ArticleStorageBeanDao daoArticle;//database instance
     private ArrayList<String> list_selected_words = new ArrayList<String>();
-    ;
+    private LoadDataLayout loadDataLayout;
 
 
     @Override
@@ -75,12 +89,22 @@ public class ArticleDetailActivity extends AppCompatActivity {
 
         //get arguments from intent to bundle
         articleTitleFromBundle = getArticleTitleFromBundle();
-        String uri = getUriFromBundle();
+        uri = getUriFromBundle();
+        source=getSourceFromBundle();
+        time=getTimeFromBundle();
         //get the whole article plain text from uri
         article = getArticle(uri);
         //initialize database
         initializeDatabase();
-
+        Slidr.attach(this);
+        loadDataLayout = (LoadDataLayout) findViewById(R.id.loadDataLayout);
+        loadDataLayout.setOnReloadListener(new LoadDataLayout.OnReloadListener() {
+            @Override
+            public void onReload(View v, int status) {
+                Toast.makeText(getApplication(),"aaa",Toast.LENGTH_SHORT).show();
+            }
+        });
+        loadDataLayout.setStatus(LoadDataLayout.LOADING);
 
     }
 
@@ -89,16 +113,51 @@ public class ArticleDetailActivity extends AppCompatActivity {
      * This function is processed once after the FetchingArticleAsyncTask is finished
      */
     private void initUI() {
+        loadDataLayout.setStatus(LoadDataLayout.SUCCESS);
         initializeToolBar();
         initializeStatusBar();
         initializeTextView();
         initializeImageView();
+
     }
 
     private void initializeToolBar() {
         Toolbar toolBar = (Toolbar) findViewById(com.iReadingGroup.iReading.R.id.toolbar);
         toolBar.setTitle(articleTitleFromBundle);//set corresponding title in toolbar
         setSupportActionBar(toolBar);
+        ImageButton button=findViewById(R.id.collect_article_button);
+        final ArticleStorageBean article=daoArticle.queryBuilder().where(ArticleStorageBeanDao.Properties.Uri.eq(uri)).list().get(0);
+        if (article.getCollectStatus())  button.setImageDrawable(
+                ContextCompat.getDrawable(getApplicationContext(), R.drawable.collect_true));
+        else  button.setImageDrawable(
+                ContextCompat.getDrawable(getApplicationContext(), R.drawable.collect_false));
+
+
+        final boolean flag_collected=false;
+        button.setOnClickListener(new View.OnClickListener() {
+            //collect word function.
+            @Override
+            public void onClick(View v) {
+                ImageButton button = (ImageButton) v;
+                if (article.getCollectStatus()) {
+                    button.setImageDrawable(
+                            ContextCompat.getDrawable(getApplicationContext(), R.drawable.collect_false));
+                    article.setCollectStatus(false);
+                    daoArticle.update(article);
+                }
+                else {
+                    button.setImageDrawable(
+                            ContextCompat.getDrawable(getApplicationContext(), R.drawable.collect_true));
+                    article.setCollectStatus(true);
+                    Date currentTime = Calendar.getInstance().getTime();
+                    article.setCollectTime(currentTime);
+                    daoArticle.update(article);
+
+                }
+                EventBus.getDefault().postSticky(new CollectArticleEvent(0));
+            }
+
+        });
     }
 
     private void initializeStatusBar() {
@@ -116,6 +175,11 @@ public class ArticleDetailActivity extends AppCompatActivity {
         Database db_collection = helper_collection.getWritableDb();
         DaoSession daoSession_collection = new DaoMaster(db_collection).newSession();
         daoCollection = daoSession_collection.getWordCollectionBeanDao();
+
+        DaoMaster.DevOpenHelper helper_article = new DaoMaster.DevOpenHelper(this, "userArticle.db");
+        Database db_article = helper_article.getWritableDb();
+        DaoSession daoSession_article = new DaoMaster(db_article).newSession();
+        daoArticle = daoSession_article.getArticleStorageBeanDao();// this is the database(cache) recording user's articles
     }
 
     /**
@@ -131,12 +195,12 @@ public class ArticleDetailActivity extends AppCompatActivity {
         makeTextViewSpannable(titleTextView, articleTitleFromBundle);
 
         TextView categoryTextView = findViewById(R.id.category);
-        makeTextViewSpannable(categoryTextView, "Category : " + category);
+        makeTextViewSpannable(categoryTextView, "Category : " + category+"\nSource: "+source+"\nTime: "+time);
 
     }
 
     private void initializeImageView() {
-        ImageView imageView = findViewById(R.id.img_article);
+        PhotoView imageView = findViewById(R.id.img_article);
         Glide.with(this).load(imageUrl).into(imageView);
     }
 
@@ -182,7 +246,6 @@ public class ArticleDetailActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 ImageButton button = (ImageButton) v;
-                Log.i("collectdb", current_word);
                 if (flag_collected) {
                     removeWordFromCollection(current_word);
                     removeWordFromCurrentSelectedList(current_word);
@@ -210,6 +273,14 @@ public class ArticleDetailActivity extends AppCompatActivity {
     private String getUriFromBundle() {
         Bundle bundle = getIntent().getExtras();
         return bundle.getString("uri");
+    }
+    private String getTimeFromBundle() {
+        Bundle bundle = getIntent().getExtras();
+        return bundle.getString("time");
+    }
+    private String getSourceFromBundle() {
+        Bundle bundle = getIntent().getExtras();
+        return bundle.getString("source");
     }
 
     /**
@@ -269,7 +340,7 @@ public class ArticleDetailActivity extends AppCompatActivity {
             final String mWord;
 
             {
-                mWord = word;
+                mWord = word.toLowerCase();
             }
 
             @Override
@@ -280,22 +351,23 @@ public class ArticleDetailActivity extends AppCompatActivity {
                 FetchingBriefMeaningAsyncTask asyncTask = new FetchingBriefMeaningAsyncTask(new AsyncResponse() {
                     @Override
                     public void processFinish(Object output) {
-                        Log.d("finish", "finsh");
                         meaning_result = (String) output;
+                        current_meaning=meaning_result.split("\n")[1];
                         //show popup window
                         showPopupWindow(widget);
                     }
                 });
                 //using iciba api to search the word, type json is small to transfer
                 List<OfflineDictBean> joes = daoDictionary.queryBuilder()
-                        .where(OfflineDictBeanDao.Properties.Word.eq(word))
+                        .where(OfflineDictBeanDao.Properties.Word.eq(mWord))
                         .list();
                 if (joes.size() == 0) {   //find nothing in offline dictionary,using online query
-                    asyncTask.execute("https://dict-co.iciba.com/api/dictionary.php?key=341DEFE6E5CA504E62A567082590D0BD&type=json&w=" + word.toLowerCase());
+                    asyncTask.execute("https://dict-co.iciba.com/api/dictionary.php?key=341DEFE6E5CA504E62A567082590D0BD&type=json&w=" + mWord);
 
                 } else {
                     //find meaning in offline dictionary
-                    meaning_result = mWord + "[离线]\n" + joes.get(0).getMeaning();
+                    current_meaning=joes.get(0).getMeaning();
+                    meaning_result = mWord + "[离线]\n" + current_meaning;
                     //show popup window
                     showPopupWindow(widget);
 
@@ -305,7 +377,6 @@ public class ArticleDetailActivity extends AppCompatActivity {
                         start, end,
                         Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
 
-                Log.d("tapped on:", mWord);
                 //Toast.makeText(widget.getContext(), mWord, Toast.LENGTH_SHORT)
                 //.show();
 
@@ -352,6 +423,7 @@ public class ArticleDetailActivity extends AppCompatActivity {
     private void addWordIntoCollection(String word) {
         WordCollectionBean newWord = new WordCollectionBean();
         newWord.setWord(word);
+        newWord.setMeaning(current_meaning);
         daoCollection.insert(newWord);
     }
 

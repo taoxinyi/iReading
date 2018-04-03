@@ -26,6 +26,11 @@ dependencies {
     compile 'com.wenwenwen888:searchbox:1.0.0'
     compile 'org.greenrobot:eventbus:3.1.1'
     compile 'org.greenrobot:greendao:3.2.2'
+    compile 'com.r0adkll:slidableactivity:2.0.6'
+    compile 'com.ganxin.library:loaddatalayout:1.0.1'
+    compile 'com.github.CymChad:BaseRecyclerViewAdapterHelper:2.9.36'
+    compile 'com.github.zcweng:switch-button:0.0.3@aar'
+
     implementation 'cn.bingoogolapple:bga-badgeview-api:1.1.7'
     annotationProcessor "cn.bingoogolapple:bga-badgeview-compiler:1.1.7"
     // -------------------- 以下三个库是必须依赖的 ----------------------------
@@ -50,4 +55,8 @@ dependencies {
     implementation 'com.github.bumptech.glide:glide:4.6.1'
     annotationProcessor 'com.github.bumptech.glide:compiler:4.6.1'
 
+    implementation 'com.github.chrisbanes:PhotoView:2.1.3'
+    implementation("com.mikepenz:materialdrawer:6.0.7@aar") {
+        transitive = true
+    }
 }

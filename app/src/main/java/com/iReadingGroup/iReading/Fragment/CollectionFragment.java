@@ -1,84 +1,211 @@
 package com.iReadingGroup.iReading.Fragment;
 
 import android.os.Bundle;
+import android.support.design.widget.TabLayout;
 import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentPagerAdapter;
+import android.support.v4.view.ViewPager;
 import android.util.Log;
-import android.view.Gravity;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
+import android.widget.Toast;
 
-import com.iReadingGroup.iReading.MessageEvent;
+import com.iReadingGroup.iReading.Activity.MainActivity;
+import com.iReadingGroup.iReading.Bean.WordCollectionBean;
+import com.iReadingGroup.iReading.CollectArticleEvent;
+import com.iReadingGroup.iReading.CollectWordEvent;
+import com.iReadingGroup.iReading.R;
+import com.iReadingGroup.iReading.WordInfo;
+import com.suke.widget.SwitchButton;
+import com.wyt.searchbox.SearchFragment;
 
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
 
+import java.util.List;
+
+import cn.bingoogolapple.badgeview.BGABadgeTextView;
+
+
 /**
- * The type Collection fragment.
+ * The type Article list fragment.
  */
 public class CollectionFragment extends Fragment {
-    /**
-     * The constant BUNDLE_TITLE.
-     */
-    public static final String BUNDLE_TITLE = "title";
-    private String mTitle = "DefaultValue";
 
-    @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        Bundle arguments = getArguments();
-        if (arguments != null) {
-            mTitle = arguments.getString(BUNDLE_TITLE);
+    private View view;
+    String[] mTitle = new String[20];
+    String[] mData = new String[20];
+    TabLayout mTabLayout;
+    ViewPager mViewPager;
+
+
+    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+                             Bundle savedInstanceState) {
+        //Must add in every fragments' onCreateView to avoid duplicate creating.
+        if (null != view) {
+            ViewGroup parent = (ViewGroup) view.getParent();
+            if (null != parent) {
+                parent.removeView(view);
+            }
+        } else {
+            //start initializing
+            view = inflater.inflate(R.layout.fragment_collection, container, false);//set layout
+            initData();
+            initView();
+            setHasOptionsMenu(true);
         }
-
-        TextView tv = new TextView(getActivity());
-        tv.setText(mTitle);
-        tv.setTextSize(30);
-        tv.setPadding(50, 50, 50, 50);
-        tv.setGravity(Gravity.CENTER);
-
-
-        return tv;
+        return view;
     }
 
-    /**
-     * On message event.
-     *
-     * @param event the event
-     */
-// This method will be called when a MessageEvent is posted (in the UI thread for Toast)
-    @Subscribe(threadMode = ThreadMode.MAIN, sticky = true)
-    public void onMessageEvent(MessageEvent event) {
-        Log.d("eventbus", event.message);
+    private void initData() {
+        for (int i = 0; i < 2; i++) {
+            mTitle[i] = "TAB" + (i + 1);
+            mData[i] = "当前选中的是第" + (i + 1) + "Fragment";
+        }
     }
 
+    private void initView() {
+        mTabLayout = (TabLayout) view.findViewById(R.id.tl_tab);
+        mViewPager = (ViewPager) view.findViewById(R.id.vp_pager);
+        mViewPager.setAdapter(new FragmentPagerAdapter(getChildFragmentManager()) {
+            //此方法用来显示tab上的名字
+            @Override
+            public CharSequence getPageTitle(int position) {
+                switch (position) {
+                    case 0:
+                        return "单词";
+                    case 1:
+                        return "文章";
+                    default:
+                        return "单词";
+                }
+            }
+
+            @Override
+            public Fragment getItem(int position) {
+                //创建Fragment并返回
+                switch (position) {
+                    case 0: {
+                        WordCollectionNestedFragment wfragment = new WordCollectionNestedFragment();
+                        return wfragment;
+                    }
+                    case 1: {
+                        ArticleCollectionNestedFragment afragment = new ArticleCollectionNestedFragment();
+                        return afragment;
+
+                    }
+                    default: {
+                        WordCollectionNestedFragment wfragment = new WordCollectionNestedFragment();
+                        return wfragment;
+                    }
+                }
+            }
+
+            @Override
+            public int getCount() {
+                return 2;
+            }
+        });
+        mTabLayout.setupWithViewPager(mViewPager);
+        mViewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
+            // This method will be invoked when a new page becomes selected.
+            @Override
+            public void onPageSelected(int position) {
+                //if the page is selected change the title to corresponding category.
+                switch (position) {
+                    case 0:
+                        mViewPager.setCurrentItem(0);
+                        hideTabBadge(0);
+                        ((MainActivity)getActivity()).button.setVisible(true);
+                        ((MainActivity)getActivity()).last_nested_page=0;
+                        break;
+                    case 1:
+                        mViewPager.setCurrentItem(1);
+                        hideTabBadge(1);
+                        ((MainActivity)getActivity()).button.setVisible(false);
+                        ((MainActivity)getActivity()).last_nested_page=1;
+                        break;
+
+                }
+            }
+
+            // This method will be invoked when the current page is scrolled
+            @Override
+            public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
+                // Code goes here
+            }
+
+            // Called when the scroll state changes:
+            // SCROLL_STATE_IDLE, SCROLL_STATE_DRAGGING, SCROLL_STATE_SETTLING
+            @Override
+            public void onPageScrollStateChanged(int state) {
+                // Code goes here
+            }
+        });
+        TabLayout.Tab tab = mTabLayout.getTabAt(0);
+        View view = LayoutInflater.from(getContext()).inflate(R.layout.badged_tab, null);
+        ((TextView) view.findViewById(R.id.tv_title)).setText("单词");
+        tab.setCustomView(view);
+        tab = mTabLayout.getTabAt(1);
+        view = LayoutInflater.from(getContext()).inflate(R.layout.badged_tab, null);
+        ((TextView) view.findViewById(R.id.tv_title)).setText("阅读");
+        tab.setCustomView(view);
+    }
+
+    private void showTabBadge(int position) {
+        TabLayout.Tab tab = mTabLayout.getTabAt(position);
+        if (tab != null) {
+            View view = tab.getCustomView();
+            ((BGABadgeTextView) view.findViewById(R.id.tv_title)).showCirclePointBadge();
+
+        }
+    }
+
+    private void hideTabBadge(int position) {
+        TabLayout.Tab tab = mTabLayout.getTabAt(position);
+        if (tab != null) {
+            View view = tab.getCustomView();
+            ((BGABadgeTextView) view.findViewById(R.id.tv_title)).hiddenBadge();
+
+        }
+    }
+    @Subscribe(threadMode = ThreadMode.MAIN,sticky = true)
+    public void onCollectWordEvent(CollectWordEvent event){
+        showTabBadge(0);
+    }
+    @Subscribe(threadMode = ThreadMode.MAIN,sticky = true)
+    public void onCollectArticleEvent(CollectArticleEvent event){
+        showTabBadge(1);
+    }
     @Override
     public void onStart() {
         super.onStart();
-        Log.d("eventbusBBBBBBBBBB", "START");
         EventBus.getDefault().register(this);
     }
 
     @Override
     public void onStop() {
-        EventBus.getDefault().unregister(this);
-        Log.d("eventbusBBBBBBBBBB", "STOP");
         super.onStop();
+        EventBus.getDefault().unregister(this);
     }
 
-    /**
-     * New instance collection fragment.
-     *
-     * @param title the title
-     * @return the collection fragment
-     */
-    public static CollectionFragment newInstance(String title) {
-        Bundle bundle = new Bundle();
-        bundle.putString(BUNDLE_TITLE, title);
-        CollectionFragment fragment = new CollectionFragment();
-        fragment.setArguments(bundle);
-        return fragment;
+    @Override
+    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+        super.onCreateOptionsMenu(menu, inflater);
+
     }
+
+
+
+
 
 }
+
+
+

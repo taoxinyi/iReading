@@ -9,13 +9,13 @@
         android:id="@+id/rl_modulename_refresh"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
-    <ListView
+    <android.support.v7.widget.RecyclerView
         android:id="@+id/list"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
         >
-    </ListView>
+    </android.support.v7.widget.RecyclerView>
 </cn.bingoogolapple.refreshlayout.BGARefreshLayout>
     <TextView
         android:id="@android:id/empty"

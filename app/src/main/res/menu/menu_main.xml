@@ -8,4 +8,11 @@
         android:orderInCategory="80"
         android:title="search"
         app:showAsAction="ifRoom" />
+    <item
+        android:id="@+id/switch_button_layout"
+        android:orderInCategory="1"
+        android:title="search2"
+        app:showAsAction="always"
+        app:actionLayout="@layout/switch_button"
+        />
 </menu>
