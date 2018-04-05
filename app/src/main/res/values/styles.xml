@@ -9,6 +9,8 @@
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
         <item name="android:textColorPrimary">@color/colorWhite</item>
+        <item name="android:editTextColor">@color/colorGray</item>
+
 
 
     </style>
@@ -33,5 +35,11 @@
         <item name="android:windowIsTranslucent">true</item>
         <item name="android:windowBackground">@android:color/transparent</item>
 
+    </style>
+    <style name="MySearchViewStyle" parent="Widget.AppCompat.SearchView">
+        <!-- Gets rid of the search icon -->
+        <item name="searchIcon">@drawable/ic_search_white_24dp</item>
+        <item name="queryBackground">@color/colorWhite</item>
+        <!-- Gets rid of the "underline" in the text -->
     </style>
 </resources>

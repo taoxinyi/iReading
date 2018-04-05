@@ -6,7 +6,11 @@ import org.greenrobot.greendao.annotation.Property;
 import org.greenrobot.greendao.annotation.Generated;
 
 /**
- * Created by taota on 2018/3/27.
+ * OfflineDictBean
+ *
+ * Entity Class of offline dictionary
+ * item instance of database
+ * including:id,word,meaning,sentence
  */
 @Entity(nameInDb = "WordInfo",createInDb = false)
 public class OfflineDictBean {

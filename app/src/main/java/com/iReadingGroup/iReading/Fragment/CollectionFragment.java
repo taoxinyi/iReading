@@ -34,7 +34,8 @@ import cn.bingoogolapple.badgeview.BGABadgeTextView;
 
 
 /**
- * The type Article list fragment.
+ * CollectionFragment
+ * father fragment of Article/Word Collection Nested Fragment
  */
 public class CollectionFragment extends Fragment {
 

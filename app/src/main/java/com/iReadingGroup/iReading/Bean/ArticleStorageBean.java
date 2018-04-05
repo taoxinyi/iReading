@@ -8,7 +8,11 @@ import org.greenrobot.greendao.annotation.Property;
 import java.util.Date;
 
 /**
- * Created by taota on 2018/3/30.
+ * ArticleStorageBean
+ *
+ * Entity Class of article's basic info
+ * item instance of database
+ * including:uri,name,time,source,imageUrl,collectStatus and collectTime
  */
 @Entity
 public class ArticleStorageBean {

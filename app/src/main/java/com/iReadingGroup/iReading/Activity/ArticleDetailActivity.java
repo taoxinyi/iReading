@@ -57,7 +57,18 @@ import java.util.Locale;
 
 
 /**
- * The type Article detail activity.
+ * ArticleDetailActivity
+ * Created once an article is clicked
+ *
+ * Get the parameters in Bundle from ArticleListFragment or ArticleCollectionNestFragment
+ * These parameters includes article uri,title,source,time
+ * First, using AsyncTask to fetch article's plain text and image using uri from API
+ * Then, make Text clickable along with other ui settings
+ * If a word is clicked, a popup window will show
+ * It contains word brief meaning either from offline dictionary or Internet(using AsyncTask)
+ *
+ * The collection of this article and word(in popup window) is handled here
+ * This should query in the database and then make change,add or delete
  */
 public class ArticleDetailActivity extends AppCompatActivity {
     private Context mContext;
@@ -92,28 +103,23 @@ public class ArticleDetailActivity extends AppCompatActivity {
         uri = getUriFromBundle();
         source=getSourceFromBundle();
         time=getTimeFromBundle();
+
         //get the whole article plain text from uri
         article = getArticle(uri);
         //initialize database
         initializeDatabase();
-        Slidr.attach(this);
-        loadDataLayout = (LoadDataLayout) findViewById(R.id.loadDataLayout);
-        loadDataLayout.setOnReloadListener(new LoadDataLayout.OnReloadListener() {
-            @Override
-            public void onReload(View v, int status) {
-                Toast.makeText(getApplication(),"aaa",Toast.LENGTH_SHORT).show();
-            }
-        });
-        loadDataLayout.setStatus(LoadDataLayout.LOADING);
+        initializeLoadingLayout();
 
     }
-
     /**
      * initialize UI
      * This function is processed once after the FetchingArticleAsyncTask is finished
      */
     private void initUI() {
-        loadDataLayout.setStatus(LoadDataLayout.SUCCESS);
+        loadDataLayout.setStatus(LoadDataLayout.SUCCESS);//load succeed
+
+        Slidr.attach(this);//Silde Back function
+
         initializeToolBar();
         initializeStatusBar();
         initializeTextView();
@@ -180,6 +186,19 @@ public class ArticleDetailActivity extends AppCompatActivity {
         Database db_article = helper_article.getWritableDb();
         DaoSession daoSession_article = new DaoMaster(db_article).newSession();
         daoArticle = daoSession_article.getArticleStorageBeanDao();// this is the database(cache) recording user's articles
+    }
+
+    private void initializeLoadingLayout() {
+        //set Custom layout when fetching data
+        loadDataLayout = (LoadDataLayout) findViewById(R.id.loadDataLayout);
+        loadDataLayout.setOnReloadListener(new LoadDataLayout.OnReloadListener() {
+            @Override
+            public void onReload(View v, int status) {
+                Toast.makeText(getApplication(),"aaa",Toast.LENGTH_SHORT).show();
+            }
+        });
+        loadDataLayout.setStatus(LoadDataLayout.LOADING);
+
     }
 
     /**
@@ -274,10 +293,12 @@ public class ArticleDetailActivity extends AppCompatActivity {
         Bundle bundle = getIntent().getExtras();
         return bundle.getString("uri");
     }
+
     private String getTimeFromBundle() {
         Bundle bundle = getIntent().getExtras();
         return bundle.getString("time");
     }
+
     private String getSourceFromBundle() {
         Bundle bundle = getIntent().getExtras();
         return bundle.getString("source");
@@ -400,9 +421,12 @@ public class ArticleDetailActivity extends AppCompatActivity {
 
     }
 
+    /**
+     * Before Stop
+     * Save to the database and post the event when new word(s) collected.
+     */
     @Override
     public void onStop() {
-        //save to the database and post the event when new word(s) collected.
 
         if (list_selected_words.size() > 0) {
             EventBus.getDefault().postSticky(new CollectWordEvent(0));

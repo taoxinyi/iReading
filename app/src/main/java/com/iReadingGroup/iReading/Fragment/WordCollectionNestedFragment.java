@@ -1,10 +1,7 @@
 package com.iReadingGroup.iReading.Fragment;
 
-import android.graphics.Color;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
-import android.support.v7.widget.SearchView;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -12,16 +9,13 @@ import android.widget.ListView;
 
 import com.iReadingGroup.iReading.Activity.MainActivity;
 import com.iReadingGroup.iReading.Adapter.WordInfoAdapter;
-import com.iReadingGroup.iReading.Bean.OfflineDictBean;
 import com.iReadingGroup.iReading.Bean.OfflineDictBeanDao;
 import com.iReadingGroup.iReading.Bean.WordCollectionBean;
 import com.iReadingGroup.iReading.Bean.WordCollectionBeanDao;
 import com.iReadingGroup.iReading.ButtonCheckEvent;
 import com.iReadingGroup.iReading.CollectWordEvent;
-import com.iReadingGroup.iReading.MessageEvent;
 import com.iReadingGroup.iReading.R;
 import com.iReadingGroup.iReading.WordInfo;
-import com.suke.widget.SwitchButton;
 
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;

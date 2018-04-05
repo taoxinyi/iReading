@@ -1,9 +1,6 @@
 package com.iReadingGroup.iReading.Fragment;
 
-import android.content.Context;
 import android.content.Intent;
-import android.net.ConnectivityManager;
-import android.net.NetworkInfo;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
@@ -22,17 +19,12 @@ import com.iReadingGroup.iReading.Adapter.ArticleInfoAdapter;
 import com.iReadingGroup.iReading.ArticleInfo;
 import com.iReadingGroup.iReading.Bean.ArticleStorageBean;
 import com.iReadingGroup.iReading.Bean.ArticleStorageBeanDao;
-import com.iReadingGroup.iReading.Bean.OfflineDictBean;
 import com.iReadingGroup.iReading.CollectArticleEvent;
-import com.iReadingGroup.iReading.Bean.OfflineDictBeanDao;
 import com.iReadingGroup.iReading.R;
-import com.wyt.searchbox.SearchFragment;
-import com.wyt.searchbox.custom.IOnSearchClickListener;
 
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
-import org.greenrobot.greendao.Property;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -47,18 +39,21 @@ import static java.util.Collections.max;
 
 
 /**
- * The type Article list fragment.
+ * ArticleCollectionNestedFragment
+ * The nested fragment from CollectionFragment
+ *
+ * Load the articles from database and add them into ArrayList
+ * Almost identical to ArticleListFragment, unless here we cannot refresh
+ *
+ * @// TODO: 2018/4/5 Add load more
+ *
  */
 public  class ArticleCollectionNestedFragment extends Fragment implements BGARefreshLayout.BGARefreshLayoutDelegate{
     private BGARefreshLayout mRefreshLayout; //Layout for refreshing and loading
-    //private ListView infoListView;////infoListView for list of brief info of each article
     private RecyclerView infoListView;
     private ArticleInfoAdapter articleInfoAdapter;//Custom adapter for article info
     private ArrayList<ArticleInfo> alArticleInfo=new ArrayList<>();//ArrayList linked to adapter for listview
-    private ArrayList<String> current_uri_list=new ArrayList<>();
     private View view;
-    private SearchFragment searchFragment;
-    private OfflineDictBeanDao daoDictionary;
     private ArticleStorageBeanDao daoArticle;
 
 
@@ -73,8 +68,7 @@ public  class ArticleCollectionNestedFragment extends Fragment implements BGARef
         }else {
             //start initializing
             view = inflater.inflate(com.iReadingGroup.iReading.R.layout.fragment_article_info, container, false);//set layout
-            daoDictionary = ((MainActivity)getActivity()).getDaoDictionary();//get database
-            daoArticle = ((MainActivity)getActivity()).getDaoArticle();
+            daoArticle = ((MainActivity)getActivity()).getDaoArticle();//get dataset
             initializeUI();
 
         }
@@ -86,8 +80,7 @@ public  class ArticleCollectionNestedFragment extends Fragment implements BGARef
      */
     public void initializeUI(){
         initializeRefreshingLayout();//Initialize refreshing and loading layout
-        initializeSearchView();
-        initializeListView();
+        initializeRecycleView();
     }
 
     /**
@@ -96,46 +89,20 @@ public  class ArticleCollectionNestedFragment extends Fragment implements BGARef
     public void initializeRefreshingLayout(){
         mRefreshLayout = (BGARefreshLayout) view.findViewById(com.iReadingGroup.iReading.R.id.rl_modulename_refresh);
         mRefreshLayout.setDelegate(this);
-        BGAMoocStyleRefreshViewHolder refreshViewHolder = new BGAMoocStyleRefreshViewHolder(getContext(), true);
-        refreshViewHolder.setOriginalImage(R.mipmap.icon1);
-        refreshViewHolder.setUltimateColor(com.iReadingGroup.iReading.R.color.custom_imoocstyle);
         mRefreshLayout.setIsShowLoadingMoreView(true);
-        refreshViewHolder.setLoadingMoreText("加载历史文章……");
-        mRefreshLayout.setRefreshViewHolder(refreshViewHolder);
+        mRefreshLayout.setPullDownRefreshEnable(false);//disable refresh
     }
 
-    /**
-     * Initialize search view.
-     */
-    public void initializeSearchView(){            //search view
-        searchFragment = SearchFragment.newInstance();
-        searchFragment.setOnSearchClickListener(new IOnSearchClickListener() {
-            @Override
-            public void OnSearchClick(String keyword) {
-                //这里处理逻辑
-                List<OfflineDictBean> joes = daoDictionary.queryBuilder()
-                        .where(OfflineDictBeanDao.Properties.Word.eq(keyword))
-                        .list();
-                if (joes.size()==0)
-                {
-                    Toast.makeText(getContext(), "离线词库中无此词，请联网查询", Toast.LENGTH_SHORT).show();
-
-                }
-                else{
-                    Toast.makeText(getContext(), joes.get(0).getMeaning(), Toast.LENGTH_SHORT).show();
-
-                }
-            }
-        });}
 
     /**
      * Initialize list view.
      */
-    public void initializeListView(){//Establish the connection among listView,adapter and arrayList.
+    public void initializeRecycleView(){//Establish the connection among listView,adapter and arrayList.
 
         infoListView = (RecyclerView) view.findViewById(com.iReadingGroup.iReading.R.id.list);//
 
-        List<ArticleStorageBean> cache=daoArticle.queryBuilder().orderAsc(ArticleStorageBeanDao.Properties.CollectTime).where(ArticleStorageBeanDao.Properties.CollectStatus.eq(true)).list();
+        List<ArticleStorageBean> cache=daoArticle.queryBuilder().orderAsc(ArticleStorageBeanDao.Properties.CollectTime)
+                .where(ArticleStorageBeanDao.Properties.CollectStatus.eq(true)).list();
         int size=cache.size();
         for (int i=size-1;i>max(i-21,-1);i--)
         {
@@ -144,9 +111,6 @@ public  class ArticleCollectionNestedFragment extends Fragment implements BGARef
             alArticleInfo.add(lin);
         }
 
-
-        //articleInfoAdapter = new ArticleInfoAdapter(getActivity(),
-        //com.iReadingGroup.iReading.R.layout.listitem_article_info,alArticleInfo);//link the arrayList to adapter,using custom layout for each item
         articleInfoAdapter = new ArticleInfoAdapter(getActivity(),
                 com.iReadingGroup.iReading.R.layout.listitem_article_info,alArticleInfo);
         infoListView.setAdapter(articleInfoAdapter);//link the adapter to ListView
@@ -176,16 +140,10 @@ public  class ArticleCollectionNestedFragment extends Fragment implements BGARef
             }
         });
     }
-    private boolean isNetworkAvailable() {
-        ConnectivityManager connectivityManager
-                = (ConnectivityManager) getActivity().getSystemService(Context.CONNECTIVITY_SERVICE);
-        NetworkInfo activeNetworkInfo = connectivityManager.getActiveNetworkInfo();
-        return activeNetworkInfo != null && activeNetworkInfo.isConnected();
-    }
+
     @Override
     public void onBGARefreshLayoutBeginRefreshing(BGARefreshLayout refreshLayout) {
-        // Refreshing the latest data from server.
-
+        // Cannot refresh here
             mRefreshLayout.endRefreshing();
         }
 
@@ -208,6 +166,12 @@ public  class ArticleCollectionNestedFragment extends Fragment implements BGARef
         }
         return OurDate;
     }
+
+    /**
+     * @// TODO: 2018/4/5 Add load more from database
+     * @param refreshLayout
+     * @return
+     */
     @Override
     public boolean onBGARefreshLayoutBeginLoadingMore(BGARefreshLayout refreshLayout) {
         //  Loading more (history) data from server or cache, Return false to disable the refreshing action.
@@ -242,8 +206,10 @@ public  class ArticleCollectionNestedFragment extends Fragment implements BGARef
     }
 
     /**
-     * On message event.
+     * On CollectArticleEvent
      *
+     * Receive the event when new article(s) collected
+     * than read data from database again and update view
      * @param event the event
      */
     @Subscribe(threadMode = ThreadMode.MAIN,sticky = true)

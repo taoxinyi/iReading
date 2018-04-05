@@ -6,17 +6,17 @@ import android.support.v4.content.ContextCompat;
 import android.support.v4.view.ViewPager;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.SearchView;
 import android.support.v7.widget.Toolbar;
-import android.util.EventLog;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.TextView;
-import android.widget.Toast;
 
-import com.iReadingGroup.iReading.Adapter.MainAdapter;
+import com.iReadingGroup.iReading.Adapter.MainActivityPagesAdapter;
+import com.iReadingGroup.iReading.ArticleSearchDoneEvent;
+import com.iReadingGroup.iReading.ArticleSearchEvent;
 import com.iReadingGroup.iReading.Bean.ArticleStorageBeanDao;
 import com.iReadingGroup.iReading.Bean.DaoMaster;
 import com.iReadingGroup.iReading.Bean.DaoSession;
@@ -32,11 +32,9 @@ import com.mikepenz.materialdrawer.AccountHeader;
 import com.mikepenz.materialdrawer.AccountHeaderBuilder;
 import com.mikepenz.materialdrawer.Drawer;
 import com.mikepenz.materialdrawer.DrawerBuilder;
-import com.mikepenz.materialdrawer.model.DividerDrawerItem;
+import com.mikepenz.materialdrawer.holder.DimenHolder;
 import com.mikepenz.materialdrawer.model.PrimaryDrawerItem;
 import com.mikepenz.materialdrawer.model.ProfileDrawerItem;
-import com.mikepenz.materialdrawer.model.SecondaryDrawerItem;
-import com.mikepenz.materialdrawer.model.SectionDrawerItem;
 import com.mikepenz.materialdrawer.model.interfaces.IDrawerItem;
 import com.mikepenz.materialdrawer.model.interfaces.IProfile;
 import com.suke.widget.SwitchButton;
@@ -51,6 +49,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.HashMap;
 
 import cn.bingoogolapple.badgeview.BGABadgeAlphaView;
 
@@ -59,8 +58,14 @@ import cn.bingoogolapple.badgeview.BGABadgeAlphaView;
  * MainActivity
  * Initialize UI and database when app launched
  *
+ * Keep in mind that every UI object in menu,toolbar,slide drawer is initialized here
+ * The visibility of such object is controlled here
+ * They are handled here and post Event to according fragment(or nested fragment if necessary)
+ *
+ * Databases are loaded here in service of other fragment in this activity
+ *
+ * @author iReadingGroup
  * @version 1.0
- * @author  iReadingGroup
  */
 public class MainActivity extends AppCompatActivity {
     public Toolbar toolBar;
@@ -70,11 +75,11 @@ public class MainActivity extends AppCompatActivity {
     private OfflineDictBeanDao daoDictionary;
     private ArticleStorageBeanDao daoArticle;
     public SwitchButton switchButton;
-    public  MenuItem button;
-    public boolean buttonStatus=false;
-    public int last_nested_page =0;
+    public MenuItem button;
+    public MenuItem searchItem;
+    public boolean buttonStatus = false;//whether the button is clicked
+    public int last_nested_page = 0;//which nested page is selected when the page changes
     private Drawer drawer;
-
     @SuppressLint("SdCardPath")
     private static final String DB_PATH = "/data/data/com.iReadingGroup.iReading/databases/";//database external path
     private static final String DB_NAME = "wordDetail.db";//database name
@@ -104,7 +109,7 @@ public class MainActivity extends AppCompatActivity {
         initializeViewPager();//initialize ViewPage for each tab's fragment
         initializeTabLayout();//initialize weChat stle tabLayout and link it to viewpager
         initializeCollectionBadge();//initialize the Badge of Collection
-
+        initializeDrawer();
 
     }
 
@@ -160,61 +165,16 @@ public class MainActivity extends AppCompatActivity {
         daoArticle = daoSession_article.getArticleStorageBeanDao();// this is the database(cache) recording user's articles
     }
 
+    /**
+     * Initialize the toolbar and title
+     */
+
     private void initializeToolBar() {
         //initialize ToolBar
         toolBar = (Toolbar) findViewById(com.iReadingGroup.iReading.R.id.toolbar);
-        ((TextView)findViewById(R.id.toolbar_title)).setText("阅读");
+        ((TextView) findViewById(R.id.toolbar_title)).setText("阅读");
         toolBar.setTitle("");
         setSupportActionBar(toolBar);
-
-        //if you want to update the items at a later time it is recommended to keep it in a variable
-        SectionDrawerItem item0=new SectionDrawerItem().withName("选择你的源");
-
-        PrimaryDrawerItem item1 = new PrimaryDrawerItem().withIdentifier(1).withName("所有").withIcon(R.mipmap.icon);
-        PrimaryDrawerItem item2 = new PrimaryDrawerItem().withIdentifier(2).withName("National Geographic").withIcon(R.mipmap.icon_ng);
-        PrimaryDrawerItem item3 = new PrimaryDrawerItem().withIdentifier(3).withName("Nature").withIcon(R.mipmap.icon_nature);
-        PrimaryDrawerItem item4 = new PrimaryDrawerItem().withIdentifier(4).withName("The Economist").withIcon(R.mipmap.icon_economist);
-        PrimaryDrawerItem item5 = new PrimaryDrawerItem().withIdentifier(5).withName("TIME").withIcon(R.mipmap.icon_time);
-        PrimaryDrawerItem item6 = new PrimaryDrawerItem().withIdentifier(6).withName("The New York Times").withIcon(R.mipmap.icon_nytimes);
-        PrimaryDrawerItem item7 = new PrimaryDrawerItem().withIdentifier(7).withName("The Wall Street Journal").withIcon(R.mipmap.icon_wsj);
-
-        // Create the AccountHeader
-        AccountHeader headerResult = new AccountHeaderBuilder()
-                .withActivity(this)
-                .addProfiles(
-                        new ProfileDrawerItem().withName("iReading").withEmail("xy_tao@sjtu.edu.cn").withIcon(getResources().getDrawable(R.mipmap.icon))
-                )
-                .withOnAccountHeaderListener(new AccountHeader.OnAccountHeaderListener() {
-                    @Override
-                    public boolean onProfileChanged(View view, IProfile profile, boolean currentProfile) {
-                        return true;
-                    }
-                })
-                .build();
-
-//create the drawer and remember the `Drawer` result object
-        drawer = new DrawerBuilder()
-                .withActivity(this)
-                .withTranslucentStatusBar(true)
-                .withAccountHeader(headerResult)
-                .addDrawerItems(
-                        item0,
-                        item1,
-                        item2,
-                        item3,
-                        item4,
-                        item5,
-                        item6,
-                        item7
-                )
-                .withOnDrawerItemClickListener(new Drawer.OnDrawerItemClickListener() {
-                    @Override
-                    public boolean onItemClick(View view, int position, IDrawerItem drawerItem) {
-                        EventBus.getDefault().post(new SourceSelectEvent(position-2));
-                        return  true;
-                    }
-                })
-                .build();
     }
 
     /**
@@ -231,9 +191,9 @@ public class MainActivity extends AppCompatActivity {
      */
     private void initializeViewPager() {
         //initialize ViewPage for each tab's fragment
-        MainAdapter mainAdapter = new MainAdapter(getSupportFragmentManager());//set Fragment main adapter
+        MainActivityPagesAdapter mainActivityPagesAdapter = new MainActivityPagesAdapter(getSupportFragmentManager());//set Fragment main adapter
         viewPager = (ViewPager) findViewById(com.iReadingGroup.iReading.R.id.viewPager);
-        viewPager.setAdapter(mainAdapter);//set adapter,link to each fragment
+        viewPager.setAdapter(mainActivityPagesAdapter);//set adapter,link to each fragment
         viewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
             // This method will be invoked when a new page becomes selected.
             @Override
@@ -243,20 +203,20 @@ public class MainActivity extends AppCompatActivity {
                 switch (position) {
                     case 0:
                         viewPager.setCurrentItem(0);
-                        ((TextView)findViewById(R.id.toolbar_title)).setText("阅读");
+                        ((TextView) findViewById(R.id.toolbar_title)).setText("阅读");
                         break;
                     case 1:
                         viewPager.setCurrentItem(1);
-                        ((TextView)findViewById(R.id.toolbar_title)).setText("查词");
+                        ((TextView) findViewById(R.id.toolbar_title)).setText("查词");
                         break;
                     case 2:
                         viewPager.setCurrentItem(2);
-                        ((TextView)findViewById(R.id.toolbar_title)).setText("收藏");
+                        ((TextView) findViewById(R.id.toolbar_title)).setText("收藏");
                         collectionBadge.hiddenBadge();
                         break;
                     case 3:
                         viewPager.setCurrentItem(3);
-                        ((TextView)findViewById(R.id.toolbar_title)).setText("我");
+                        ((TextView) findViewById(R.id.toolbar_title)).setText("我");
                         break;
                 }
             }
@@ -287,8 +247,97 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
+     * Initialize the side drawer with source and icon
+     */
+    private void initializeDrawer() {
+        //if you want to update the items at a later time it is recommended to keep it in a variable
+        PrimaryDrawerItem item0 = new PrimaryDrawerItem().withName("选择你的源");
+        PrimaryDrawerItem all = new PrimaryDrawerItem().withName("所有").withIcon(R.mipmap.icon);
+        PrimaryDrawerItem nG = new PrimaryDrawerItem().withName("National Geographic").withIcon(R.mipmap.icon_ng);
+        PrimaryDrawerItem nature = new PrimaryDrawerItem().withName("Nature").withIcon(R.mipmap.icon_nature);
+        PrimaryDrawerItem tE = new PrimaryDrawerItem().withName("The Economist").withIcon(R.mipmap.icon_economist);
+        PrimaryDrawerItem time = new PrimaryDrawerItem().withName("TIME").withIcon(R.mipmap.icon_time);
+        PrimaryDrawerItem tNYT = new PrimaryDrawerItem().withName("The New York Times").withIcon(R.mipmap.icon_nytimes);
+        PrimaryDrawerItem bB = new PrimaryDrawerItem().withName("Bloomberg Business").withIcon(R.mipmap.icon_bloomberg);
+        PrimaryDrawerItem cnn = new PrimaryDrawerItem().withName("CNN").withIcon(R.mipmap.icon_cnn);
+        PrimaryDrawerItem fN = new PrimaryDrawerItem().withName("Fox News").withIcon(R.mipmap.icon_fox);
+        PrimaryDrawerItem forbes = new PrimaryDrawerItem().withName("Forbes").withIcon(R.mipmap.icon_forbes);
+        PrimaryDrawerItem wP = new PrimaryDrawerItem().withName("Washington Post").withIcon(R.mipmap.icon_washingtonpost);
+        PrimaryDrawerItem tG = new PrimaryDrawerItem().withName("The Guardian").withIcon(R.mipmap.icon_theguardian);
+        PrimaryDrawerItem tT = new PrimaryDrawerItem().withName("The Times").withIcon(R.mipmap.icon_thetimes);
+
+        final HashMap<String, String> map = new HashMap<String, String>();//map for title:chinese name
+        map.put("National Geographic", "国家地理");
+        map.put("Nature", "自然");
+        map.put("The Economist", "经济学人");
+        map.put("TIME", "时代");
+        map.put("The New York Times", "纽约时报");
+        map.put("Bloomberg Business", "彭博商业");
+        map.put("CNN", "有线电视新闻网");
+        map.put("Fox News", "福克斯新闻");
+        map.put("Forbes", "福布斯");
+        map.put("Washington Post", "华盛顿邮报");
+        map.put("The Guardian", "卫报");
+        map.put("The Times", "泰晤士报");
+
+        // Create the AccountHeader
+        final ProfileDrawerItem item = new ProfileDrawerItem().withIdentifier(0).withName("iReading").withIcon(getResources().getDrawable(R.mipmap.icon));
+        final AccountHeader headerResult = new AccountHeaderBuilder()
+                .withActivity(this)
+                .addProfiles(
+                        item
+                )
+                .withOnAccountHeaderListener(new AccountHeader.OnAccountHeaderListener() {
+                    @Override
+                    public boolean onProfileChanged(View view, IProfile profile, boolean currentProfile) {
+                        return true;
+                    }
+                })
+                .build();
+
+        //create the drawer
+        drawer = new DrawerBuilder()
+                .withActivity(this)
+                .withTranslucentStatusBar(true)
+                .withAccountHeader(headerResult, true)
+                .withHeader(R.layout.header)
+                .withHeaderHeight(DimenHolder.fromDp(30))
+                .withStickyHeaderShadow(false)
+                .addDrawerItems(
+                        all,
+                        bB,
+                        cnn,
+                        forbes,
+                        fN,
+                        nG,
+                        nature,
+                        tE,
+                        tG,
+                        time,
+                        tNYT,
+                        tT,
+                        wP
+
+                )
+                .withOnDrawerItemClickListener(new Drawer.OnDrawerItemClickListener() {
+                    @Override
+                    public boolean onItemClick(View view, int position, IDrawerItem drawerItem) {
+                        //post the event to article list fragment about what section is selected
+                        String title = ((PrimaryDrawerItem) drawerItem).getName().toString();
+                        EventBus.getDefault().post(new SourceSelectEvent(title));
+                        headerResult.updateProfile(new ProfileDrawerItem().withIdentifier(0).withEmail(title)
+                                .withIcon(((PrimaryDrawerItem) drawerItem).getIcon().getIconRes()).withName(map.get(title)));
+                        return true;
+                    }
+                })
+                .build();
+
+    }
+
+    /**
      * On collect word event.
      * Show red circle when new word(s) collected
+     *
      * @param event the event that is fired in any other place
      */
     @Subscribe(threadMode = ThreadMode.MAIN, sticky = true)
@@ -296,11 +345,13 @@ public class MainActivity extends AppCompatActivity {
         //show the badge when the event is fired;
         collectionBadge.showCirclePointBadge();//show red when collected
     }
+
     @Subscribe(threadMode = ThreadMode.MAIN, sticky = true)
     public void onCollectArticleEvent(CollectArticleEvent event) {
         //show the badge when the event is fired;
         collectionBadge.showCirclePointBadge();//show red when collected
     }
+
     /**
      * On start.
      * Register for EventBus on CollectWordEvent
@@ -331,6 +382,7 @@ public class MainActivity extends AppCompatActivity {
     /**
      * Get the database instance of WordCollection
      * It can be used for other fragment.
+     *
      * @return WordCollectionBeanDao the word collection instance
      */
     public WordCollectionBeanDao getDaoCollection() {
@@ -340,6 +392,7 @@ public class MainActivity extends AppCompatActivity {
     /**
      * Get the database instance of OfflineDictionary
      * It can be used for other fragment.
+     *
      * @return OfflineDictBeanDao the offline dictionary instance
      */
     public OfflineDictBeanDao getDaoDictionary() {
@@ -349,49 +402,83 @@ public class MainActivity extends AppCompatActivity {
     /**
      * Get the database instance of OfflineDictionary
      * It can be used for other fragment.
+     *
      * @return ArticleStorageBeanDao the article cache instance
      */
     public ArticleStorageBeanDao getDaoArticle() {
         return daoArticle;
     }
+
+    /**
+     * Create custom option menu
+     * @param menu
+     * @return super of it's original function
+     */
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.menu_main, menu);
-        button=menu.findItem(R.id.switch_button_layout);
-        DrawerLayout drawerLayout=drawer.getDrawerLayout();
-        if (viewPager.getCurrentItem()==0){
-            menu.findItem(R.id.action_search).setVisible(true);
+        button = menu.findItem(R.id.switch_button_layout);
+        searchItem = menu.findItem(R.id.action_search);
+        //set menu item's visibility when page changes
+        DrawerLayout drawerLayout = drawer.getDrawerLayout();
+        if (viewPager.getCurrentItem() == 0) {
+            searchItem.setVisible(true);
             button.setVisible(false);
             drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED);
 
-        } else if(viewPager.getCurrentItem()==1){
-            menu.findItem(R.id.action_search).setVisible(false);
+        } else if (viewPager.getCurrentItem() == 1) {
+            searchItem.setVisible(false);
             button.setVisible(false);
             drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED);
-        } else if(viewPager.getCurrentItem()==2) {
-            menu.findItem(R.id.action_search).setVisible(false);
-            if (last_nested_page ==0) button.setVisible(true);
+        } else if (viewPager.getCurrentItem() == 2) {
+            searchItem.setVisible(false);
+            if (last_nested_page == 0) button.setVisible(true);
             else button.setVisible(false);
             drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED);
-        }
-        else if(viewPager.getCurrentItem()==3) {
-            menu.findItem(R.id.action_search).setVisible(false);
+        } else if (viewPager.getCurrentItem() == 3) {
+            searchItem.setVisible(false);
             button.setVisible(false);
             drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED);
 
         }
-        LinearLayout view=(LinearLayout) menu.findItem(R.id.switch_button_layout).getActionView();
-        switchButton=view.findViewById(R.id.switch_button);
+        LinearLayout view = (LinearLayout) menu.findItem(R.id.switch_button_layout).getActionView();
+        switchButton = view.findViewById(R.id.switch_button);
         switchButton.setChecked(buttonStatus);
         switchButton.setOnCheckedChangeListener(new SwitchButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(SwitchButton view, boolean isChecked) {
+                //post event to ArticleCollectionNestedFragment once button clicked
                 EventBus.getDefault().post(new ButtonCheckEvent(isChecked));
 
             }
         });
+        LinearLayout view2 = (LinearLayout) menu.findItem(R.id.action_search).getActionView();
+        SearchView sv = view2.findViewById(R.id.searchView);
+        sv.setMaxWidth(Integer.MAX_VALUE);
+        sv.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+            @Override
+            public boolean onQueryTextChange(String newText) {
+                return true;
+            }
+
+            @Override
+            public boolean onQueryTextSubmit(String query) {
+                //post event to ArticleListFragment once search submitted
+                EventBus.getDefault().post(new ArticleSearchEvent(query));
+                return true;
+            }
+        });
+        sv.setOnCloseListener(new SearchView.OnCloseListener() {
+            @Override
+            public boolean onClose() {
+                //post event to ArticleListFragment once search closed
+                EventBus.getDefault().post(new ArticleSearchDoneEvent());
+                return false;
+            }
+        });
         return super.onCreateOptionsMenu(menu);
     }
+
 }
 
 

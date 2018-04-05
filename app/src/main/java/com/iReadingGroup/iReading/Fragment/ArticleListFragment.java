@@ -13,9 +13,9 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.chad.library.adapter.base.BaseQuickAdapter;
@@ -24,9 +24,10 @@ import com.iReadingGroup.iReading.Activity.ArticleDetailActivity;
 import com.iReadingGroup.iReading.Activity.MainActivity;
 import com.iReadingGroup.iReading.Adapter.ArticleInfoAdapter;
 import com.iReadingGroup.iReading.ArticleInfo;
+import com.iReadingGroup.iReading.ArticleSearchDoneEvent;
+import com.iReadingGroup.iReading.ArticleSearchEvent;
 import com.iReadingGroup.iReading.Bean.ArticleStorageBean;
 import com.iReadingGroup.iReading.Bean.ArticleStorageBeanDao;
-import com.iReadingGroup.iReading.Bean.OfflineDictBean;
 import com.iReadingGroup.iReading.Bean.OfflineDictBeanDao;
 import com.iReadingGroup.iReading.R;
 import com.iReadingGroup.iReading.SourceSelectEvent;
@@ -50,6 +51,7 @@ import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.TimeZone;
 
@@ -60,7 +62,15 @@ import static java.lang.Math.max;
 
 
 /**
- * The type Article list fragment.
+ * ArticleListFragment
+ * Load article when refresh, change source when source section changes
+ *
+ * Load the articles from database and add them into ArrayList
+ * Update through refreshing or loading using AsyncTask
+ * If source changes, the view changes accordingly
+ * search in corresponding source
+ *
+ *
  */
 public class ArticleListFragment extends Fragment implements BGARefreshLayout.BGARefreshLayoutDelegate {
 
@@ -69,14 +79,18 @@ public class ArticleListFragment extends Fragment implements BGARefreshLayout.BG
     private RecyclerView infoListView;
     private ArticleInfoAdapter articleInfoAdapter;//Custom adapter for article info
     private ArrayList<ArticleInfo> alArticleInfo = new ArrayList<>();//ArrayList linked to adapter for listview
+    private ArrayList<ArticleInfo> alArticleInfoCache = new ArrayList<>();//cache of ArrayList linked to adapter for listview when searching
+    private boolean flag_search = false;
     private ArrayList<String> current_uri_list = new ArrayList<>();
     private View view;
-    private SearchFragment searchFragment;
-    private OfflineDictBeanDao daoDictionary;
     private ArticleStorageBeanDao daoArticle;
-    private String requestUrl = "http://eventregistry.org/json/article?query=%7B%22%24query%22%3A%7B%22lang%22%3A%22eng%22%7D%7D&action=getArticles&resultType=articles&articlesSortBy=rel&articlesCount=20&articlesIncludeArticleEventUri=false&articlesIncludeArticleImage=true&articlesArticleBodyLen=0&articlesIncludeConceptLabel=false&apiKey=19411967-5bfe-4f2a-804e-580654db39c9";
-    ;
+    private String requestUrl = "http://eventregistry.org/json/article?lang=eng&action=getArticles&resultType=articles&articlesSortBy=date&articlesCount=5&articlesIncludeArticleEventUri=false&articlesIncludeArticleImage=true&articlesArticleBodyLen=0&articlesIncludeConceptLabel=false&apiKey=19411967-5bfe-4f2a-804e-580654db39c9";
+    private HashMap<String,Integer> pageMap=new HashMap<>();
+    private String current_source;
+    private String requestUrlCache;
+    private String searchUrlPrefix=requestUrl+"&keywordLoc=title&keyword=";
 
+    private Integer pageCache;
 
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
@@ -89,7 +103,6 @@ public class ArticleListFragment extends Fragment implements BGARefreshLayout.BG
         } else {
             //start initializing
             view = inflater.inflate(com.iReadingGroup.iReading.R.layout.fragment_article_info, container, false);//set layout
-            daoDictionary = ((MainActivity) getActivity()).getDaoDictionary();//get database
             daoArticle = ((MainActivity) getActivity()).getDaoArticle();
             initializeUI();
 
@@ -124,23 +137,7 @@ public class ArticleListFragment extends Fragment implements BGARefreshLayout.BG
      * Initialize search view.
      */
     public void initializeSearchView() {            //search view
-        searchFragment = SearchFragment.newInstance();
-        searchFragment.setOnSearchClickListener(new IOnSearchClickListener() {
-            @Override
-            public void OnSearchClick(String keyword) {
-                //这里处理逻辑
-                List<OfflineDictBean> joes = daoDictionary.queryBuilder()
-                        .where(OfflineDictBeanDao.Properties.Word.eq(keyword))
-                        .list();
-                if (joes.size() == 0) {
-                    Toast.makeText(getContext(), "离线词库中无此词，请联网查询", Toast.LENGTH_SHORT).show();
 
-                } else {
-                    Toast.makeText(getContext(), joes.get(0).getMeaning(), Toast.LENGTH_SHORT).show();
-
-                }
-            }
-        });
     }
 
     /**
@@ -152,7 +149,9 @@ public class ArticleListFragment extends Fragment implements BGARefreshLayout.BG
 
         List<ArticleStorageBean> cache = daoArticle.loadAll();
         int size = cache.size();
-        for (int i = size - 1; i > max(i - 21, -1); i--) {
+        TextView a;
+
+        for (int i = size - 1; i > max(size - 20, -1); i--) {
             ArticleStorageBean item = cache.get(i);
             ArticleInfo lin = new ArticleInfo(item.getName(), item.getUri(), item.getImageUrl(), getDate(item.getTime()), item.getSource(), com.iReadingGroup.iReading.R.drawable.collect_false);
             alArticleInfo.add(lin);
@@ -188,8 +187,30 @@ public class ArticleListFragment extends Fragment implements BGARefreshLayout.BG
                 //FruitList.this.finish();
             }
         });
+        initializeMap();
+
     }
 
+    /**
+     * Map for source:current page
+     */
+    private void initializeMap()
+    {
+        pageMap.put("National Geographic",0);
+        pageMap.put("Nature",0);
+        pageMap.put("The Economist",0);
+        pageMap.put("TIME",0);
+        pageMap.put("The New York Times",0);
+        pageMap.put("Bloomberg Business",0);
+        pageMap.put("CNN",0);
+        pageMap.put("Fox News",0);
+        pageMap.put("Forbes",0);
+        pageMap.put("Washington Post",0);
+        pageMap.put("The Guardian",0);
+        pageMap.put("The Times",0);
+        pageMap.put("所有",0);
+
+    }
     private boolean isNetworkAvailable() {
         ConnectivityManager connectivityManager
                 = (ConnectivityManager) getActivity().getSystemService(Context.CONNECTIVITY_SERVICE);
@@ -200,7 +221,6 @@ public class ArticleListFragment extends Fragment implements BGARefreshLayout.BG
     @Override
     public void onBGARefreshLayoutBeginRefreshing(BGARefreshLayout refreshLayout) {
         // Refreshing the latest data from server.
-
         if (isNetworkAvailable()) {
             // if the network is good, continue.
             new RefreshingTask().execute(requestUrl);
@@ -258,7 +278,7 @@ public class ArticleListFragment extends Fragment implements BGARefreshLayout.BG
 
         @Override
         protected void onPostExecute(String result) {
-
+            pageMap.put(current_source,1);
             mRefreshLayout.endRefreshing();// finish fetching from sever
             if (result != null) {
                 try {   //parse word from json
@@ -270,8 +290,8 @@ public class ArticleListFragment extends Fragment implements BGARefreshLayout.BG
                     for (int i = results.length() - 1; i > -1; i--) {
                         JSONObject article = results.getJSONObject(i);
                         uri = article.getString("uri");
-                        if (getArticleCachedStatus(uri)) break;
-                        if (article.getBoolean("isDuplicate")) continue;
+                        if (getArticleCachedStatus(uri)&&(!flag_search)) continue;
+                        //if (article.getBoolean("isDuplicate")) continue;
                         title = article.getString("title");
                         time = article.getString("dateTime");
                         JSONObject source = article.getJSONObject("source");
@@ -279,7 +299,87 @@ public class ArticleListFragment extends Fragment implements BGARefreshLayout.BG
                         String imageurl = article.getString("image");
                         ArticleInfo lin = new ArticleInfo(title, uri, imageurl, getDate(time), source_title, com.iReadingGroup.iReading.R.drawable.collect_false);
                         alArticleInfo.add(0, lin);
+                        if (!getArticleCachedStatus(uri))
                         daoArticle.insert(new ArticleStorageBean(uri, title, time, source_title, imageurl, false, null));
+                    }
+
+                } catch (JSONException e) {
+
+                }
+
+                //sync to the listView
+                articleInfoAdapter.notifyDataSetChanged();
+            }
+        }
+    }
+    class LoadingTask extends AsyncTask<String, String, String> {
+        @Override
+        protected String doInBackground(String... params) {
+            HttpURLConnection connection = null;
+            BufferedReader reader = null;
+
+            try {
+                URL url = new URL(params[0]);
+                connection = (HttpURLConnection) url.openConnection();
+                connection.connect();
+
+
+                InputStream stream = connection.getInputStream();
+
+                reader = new BufferedReader(new InputStreamReader(stream));
+
+                StringBuffer buffer = new StringBuffer();
+                String line = "";
+
+                while ((line = reader.readLine()) != null) {
+                    buffer.append(line + "\n");
+
+                }
+
+                return buffer.toString();
+
+
+            } catch (MalformedURLException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
+            } finally {
+                if (connection != null) {
+                    connection.disconnect();
+                }
+                try {
+                    if (reader != null) {
+                        reader.close();
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(String result) {
+            mRefreshLayout.endLoadingMore();// finish fetching from sever
+            if (result != null) {
+                try {   //parse word from json
+                    //sample link.:http://dict-co.iciba.com/api/dictionary.php?w=go&key=341DEFE6E5CA504E62A567082590D0BD&type=json
+                    String uri, title, source_title, time;
+                    JSONObject reader = new JSONObject(result);
+                    JSONObject articles = reader.getJSONObject("articles");
+                    JSONArray results = articles.getJSONArray("results");
+                    for (int i = 0; i <result.length(); i++) {
+                        JSONObject article = results.getJSONObject(i);
+                        uri = article.getString("uri");
+                        title = article.getString("title");
+                        time = article.getString("dateTime");
+                        JSONObject source = article.getJSONObject("source");
+                        source_title = source.getString("title");
+                        String imageurl = article.getString("image");
+                        ArticleInfo lin = new ArticleInfo(title, uri, imageurl, getDate(time), source_title, com.iReadingGroup.iReading.R.drawable.collect_false);
+                        alArticleInfo.add(lin);
+                        if (!getArticleCachedStatus(uri))
+                            daoArticle.insert(new ArticleStorageBean(uri, title, time, source_title, imageurl, false, null));
                     }
 
                 } catch (JSONException e) {
@@ -312,31 +412,9 @@ public class ArticleListFragment extends Fragment implements BGARefreshLayout.BG
     public boolean onBGARefreshLayoutBeginLoadingMore(BGARefreshLayout refreshLayout) {
         //  Loading more (history) data from server or cache, Return false to disable the refreshing action.
 
-        if (true) {
-            // if the network is good, continue and return true.
-            new AsyncTask<Void, Void, Void>() {
-
-                @Override
-                protected Void doInBackground(Void... params) {
-                    try {
-                        Thread.sleep(1000);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                    return null;
-                }
-
-                @Override
-                protected void onPostExecute(Void aVoid) {
-                    mRefreshLayout.endLoadingMore();//finish loading
-                    //start add items to arrayList
-                    //ArticleInfo lin=new ArticleInfo("aa","a","old article", com.iReadingGroup.iReading.R.drawable.collect_false);
-                    //alArticleInfo.add(lin);
-                    //sync to the listView
-                    //articleInfoAdapter.notifyDataSetChanged();
-                    //infoListView.setSelection(n-1);
-                }
-            }.execute();
+        if (isNetworkAvailable()) {
+            pageMap.put(current_source,pageMap.get(current_source)+1);
+            new LoadingTask().execute(requestUrl+"&articlesPage="+(String)(pageMap.get(current_source)+""));
 
             return true;
         } else {
@@ -352,16 +430,6 @@ public class ArticleListFragment extends Fragment implements BGARefreshLayout.BG
         inflater.inflate(R.menu.menu_main, menu);
     }
 
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        switch (item.getItemId()) {
-            case R.id.action_search:
-                searchFragment.show(getActivity().getSupportFragmentManager(), SearchFragment.TAG);
-                break;
-        }
-        return true;
-
-    }
 
     /**
      * On message event.
@@ -372,9 +440,10 @@ public class ArticleListFragment extends Fragment implements BGARefreshLayout.BG
     public void onSourceSelectEvent(SourceSelectEvent event) {
         int size;
         List<ArticleStorageBean> cache;
-        switch (event.index) {
-            case 0: {//all
-                requestUrl = "http://eventregistry.org/json/article?query=%7B%22%24query%22%3A%7B%22lang%22%3A%22eng%22%7D%7D&action=getArticles&resultType=articles&articlesSortBy=rel&articlesCount=20&articlesIncludeArticleEventUri=false&articlesIncludeArticleImage=true&articlesArticleBodyLen=0&articlesIncludeConceptLabel=false&apiKey=19411967-5bfe-4f2a-804e-580654db39c9";
+        current_source=event.title;
+        switch (event.title) {
+            case "所有": {//all
+                requestUrl = "http://eventregistry.org/json/article?query=%7B%22%24query%22%3A%7B%22lang%22%3A%22eng%22%7D%7D&action=getArticles&resultType=articles&articlesSortBy=rel&articlesCount=5&articlesIncludeArticleEventUri=false&articlesIncludeArticleImage=true&articlesArticleBodyLen=0&articlesIncludeConceptLabel=false&apiKey=19411967-5bfe-4f2a-804e-580654db39c9";
                 alArticleInfo.clear();
                 cache = daoArticle.loadAll();
                 size = cache.size();
@@ -386,58 +455,126 @@ public class ArticleListFragment extends Fragment implements BGARefreshLayout.BG
                 articleInfoAdapter.notifyDataSetChanged();
                 break;
             }
-            case 1:
-            {   //national geographic
-                requestUrl = "http://eventregistry.org/json/article?query=%7B%22%24query%22%3A%7B%22%24and%22%3A%5B%7B%22%24or%22%3A%5B%7B%22sourceUri%22%3A%22news.nationalgeographic.com%22%7D%5D%7D%2C%7B%22lang%22%3A%22eng%22%7D%5D%7D%7D&action=getArticles&resultType=articles&articlesSortBy=rel&articlesCount=20&articlesIncludeArticleEventUri=false&articlesIncludeArticleImage=true&articlesArticleBodyLen=0&articlesIncludeConceptLabel=false&apiKey=19411967-5bfe-4f2a-804e-580654db39c9";
+            case "National Geographic": {   //national geographic
+                requestUrl=getRequestUrl("news.nationalgeographic.com");
                 setSourceForView("National Geographic");
                 break;
             }
-            case 2:
-            {   //nature
-                requestUrl="http://eventregistry.org/json/article?query=%7B%22%24query%22%3A%7B%22%24and%22%3A%5B%7B%22%24or%22%3A%5B%7B%22sourceUri%22%3A%22nature.com%22%7D%5D%7D%2C%7B%22lang%22%3A%22eng%22%7D%5D%7D%7D&action=getArticles&resultType=articles&articlesSortBy=rel&articlesCount=20&articlesIncludeArticleEventUri=false&articlesIncludeArticleImage=true&articlesArticleBodyLen=0&articlesIncludeConceptLabel=false&apiKey=19411967-5bfe-4f2a-804e-580654db39c9";
-                setSourceForView("Nature News");
+            case "Nature": {   //nature
+                requestUrl=getRequestUrl("nature.com");
+                setSourceForView("Nature");
                 break;
             }
-            case 3:
-            {   //the economist
-                requestUrl="http://eventregistry.org/json/article?query=%7B%22%24query%22%3A%7B%22%24and%22%3A%5B%7B%22%24or%22%3A%5B%7B%22sourceUri%22%3A%22economist.com%22%7D%5D%7D%2C%7B%22lang%22%3A%22eng%22%7D%5D%7D%7D&action=getArticles&resultType=articles&articlesSortBy=rel&articlesCount=20&articlesIncludeArticleEventUri=false&articlesIncludeArticleImage=true&articlesArticleBodyLen=0&articlesIncludeConceptLabel=false&apiKey=19411967-5bfe-4f2a-804e-580654db39c9";
+            case "The Economist": {   //the economist
+                requestUrl=getRequestUrl("economist.com");
                 setSourceForView("The Economist");
                 break;
             }
-            case 4:
-            {   //TIME
-                requestUrl="http://eventregistry.org/json/article?query=%7B%22%24query%22%3A%7B%22%24and%22%3A%5B%7B%22%24or%22%3A%5B%7B%22sourceUri%22%3A%22time.com%22%7D%5D%7D%2C%7B%22lang%22%3A%22eng%22%7D%5D%7D%7D&action=getArticles&resultType=articles&articlesSortBy=rel&articlesCount=20&articlesIncludeArticleEventUri=false&articlesIncludeArticleImage=true&articlesArticleBodyLen=0&articlesIncludeConceptLabel=false&apiKey=19411967-5bfe-4f2a-804e-580654db39c9";
+            case "TIME": {   //TIME
+                requestUrl=getRequestUrl("time.com");
                 setSourceForView("TIME");
                 break;
             }
-            case 5:
-            {   //The New York Times
-                requestUrl="http://eventregistry.org/json/article?query=%7B%22%24query%22%3A%7B%22%24and%22%3A%5B%7B%22%24or%22%3A%5B%7B%22sourceUri%22%3A%22nytimes.com%22%7D%5D%7D%2C%7B%22lang%22%3A%22eng%22%7D%5D%7D%7D&action=getArticles&resultType=articles&articlesSortBy=rel&articlesCount=20&articlesIncludeArticleEventUri=false&articlesIncludeArticleImage=true&articlesArticleBodyLen=0&articlesIncludeConceptLabel=false&apiKey=19411967-5bfe-4f2a-804e-580654db39c9";
+            case "The New York Times": {   //The New York Times
+                requestUrl=getRequestUrl("nytimes.com");
                 setSourceForView("The New York Times");
                 break;
             }
-            case 6:
-            {   //The Wall Street Journal
-                requestUrl="http://eventregistry.org/json/article?query=%7B%22%24query%22%3A%7B%22%24and%22%3A%5B%7B%22%24or%22%3A%5B%7B%22sourceUri%22%3A%22wsj.com%22%7D%5D%7D%2C%7B%22lang%22%3A%22eng%22%7D%5D%7D%7D&action=getArticles&resultType=articles&articlesSortBy=rel&articlesCount=20&articlesIncludeArticleEventUri=false&articlesIncludeArticleImage=true&articlesArticleBodyLen=0&articlesIncludeConceptLabel=false&apiKey=19411967-5bfe-4f2a-804e-580654db39c9";
-                setSourceForView("The Wall Street Journal");
+            case "Bloomberg Business": {   //Bloomberg Business
+                requestUrl=getRequestUrl("bloomberg.com");
+                setSourceForView("Bloomberg Business");
+                break;
+            }
+            case "CNN": {   //CNN
+                requestUrl=getRequestUrl("edition.cnn.com");
+                setSourceForView("CNN");
+                break;
+            }
+            case "Fox News": {   //Fox
+                requestUrl=getRequestUrl("foxnews.com");
+                setSourceForView("Fox News");
+                break;
+            }
+            case "Forbes": {   //Forbes
+                requestUrl=getRequestUrl("forbes.com");
+                setSourceForView("Forbes");
+                break;
+            }
+            case "Washington Post": {   //Washington Post
+                requestUrl=getRequestUrl("washingtonpost.com");
+                setSourceForView("Washington Post");
+                break;
+            }
+            case "The Guardian": {   //The Guardian
+                requestUrl=getRequestUrl("theguardian.com");
+                setSourceForView("The Guardian");
+                break;
+            }
+            case "The Times": {   //The Guardian
+                requestUrl=getRequestUrl("thetimes.co.uk");
+                setSourceForView("The Times");
                 break;
             }
         }
+        searchUrlPrefix=requestUrl+"&keywordLoc=title&keyword=";
+        alArticleInfoCache.addAll(alArticleInfo);
+
     }
-    private void setSourceForView(String source)
-    {   int size;
+
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void onArticleSearchEvent(ArticleSearchEvent event) {
+        if (!flag_search) {
+            flag_search=true;
+            requestUrlCache=requestUrl;
+
+        }
+            requestUrl=searchUrlPrefix+event.keyword;
+            alArticleInfo.clear();
+            articleInfoAdapter.notifyDataSetChanged();
+            mRefreshLayout.beginRefreshing();
+
+
+    }
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void onArticleSearchDoneEvent(ArticleSearchDoneEvent event){
+        flag_search=false;
+        alArticleInfo.clear();
+        alArticleInfo.addAll(alArticleInfoCache);
+        alArticleInfoCache.clear();
+        articleInfoAdapter.notifyDataSetChanged();
+        requestUrl=requestUrlCache;
+    }
+    private String getRequestUrl(String source_url) {
+        return "http://eventregistry.org/json/article?sourceUri=" +
+                source_url +
+                "&action=getArticles&" +
+                "resultType=articles&" +
+                "articlesSortBy=date&" +
+                "articlesCount=5&" +
+                "articlesIncludeArticleEventUri=false&" +
+                "articlesIncludeArticleImage=true&" +
+                "articlesArticleBodyLen=0&" +
+                "articlesIncludeConceptLabel=false&" +
+                "apiKey=19411967-5bfe-4f2a-804e-580654db39c9";
+
+    }
+
+    private void setSourceForView(String source) {
+        int size;
         List<ArticleStorageBean> cache;
         alArticleInfo.clear();
-        cache=daoArticle.queryBuilder().where(ArticleStorageBeanDao.Properties.Source.like(source+"%")).list();
+        cache = daoArticle.queryBuilder().orderAsc(ArticleStorageBeanDao.Properties.Time).where(ArticleStorageBeanDao.Properties.Source.like(source + "%")).list();
         size = cache.size();
-        for (int i = size - 1; i > max(i - 21, -1); i--) {
+        for (int i = size - 1; i > max(size - 21, -1); i--) {
             ArticleStorageBean item = cache.get(i);
             ArticleInfo lin = new ArticleInfo(item.getName(), item.getUri(), item.getImageUrl(), getDate(item.getTime()), item.getSource(), com.iReadingGroup.iReading.R.drawable.collect_false);
             alArticleInfo.add(lin);
         }
+        pageMap.put(source,pageMap.get(source)/5);
         articleInfoAdapter.notifyDataSetChanged();
 
     }
+
     @Override
     public void onStart() {
         super.onStart();

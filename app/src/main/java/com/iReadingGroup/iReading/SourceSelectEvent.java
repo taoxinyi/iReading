@@ -8,14 +8,14 @@ public class SourceSelectEvent {
     /**
      * The Count.
      */
-    public final int index;
+    public final String title;
 
     /**
      * Instantiates a new Collect word event.
      *
-     * @param index the count
+     * @param title the count
      */
-    public SourceSelectEvent(int index) {
-        this.index = index;
+    public SourceSelectEvent(String title) {
+        this.title = title;
     }
 }

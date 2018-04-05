@@ -4,13 +4,13 @@
     <!--搜索菜单-->
     <item
         android:id="@+id/action_search"
-        android:icon="@drawable/ic_search_white_24dp"
-        android:orderInCategory="80"
+        android:orderInCategory="1"
         android:title="search"
-        app:showAsAction="ifRoom" />
+        app:showAsAction="always"
+        app:actionLayout="@layout/searchview_layout"/>
     <item
         android:id="@+id/switch_button_layout"
-        android:orderInCategory="1"
+        android:orderInCategory="2"
         android:title="search2"
         app:showAsAction="always"
         app:actionLayout="@layout/switch_button"

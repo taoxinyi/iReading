@@ -17,14 +17,15 @@ import com.iReadingGroup.iReading.R;
 import java.util.List;
 
 /**
- * Created by taota on 2018/4/2.
+ * ArticleInfoAdapter
+ * This Adapter is a bridge between actual ArrayList and RecycleView(ListView)
+ * Set Text and Image to Class:ArticleInfo
  */
 public class ArticleInfoAdapter extends BaseQuickAdapter<ArticleInfo, BaseViewHolder> {
     public ArticleInfoAdapter(Context context, int layoutResId, List<ArticleInfo> data) {
         super(layoutResId, data);
         mContext=context;
     }
-
 
 
     @Override

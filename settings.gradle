@@ -1,1 +1,1 @@
-include ':app', 'SearchViewModule'
+include ':app'

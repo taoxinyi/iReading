@@ -6,7 +6,11 @@ import org.greenrobot.greendao.annotation.Id;
 import org.greenrobot.greendao.annotation.Property;
 
 /**
- * The type Word collection bean.
+ * WordCollectionBean
+ *
+ * Entity Class of word collection
+ * item instance of database
+ * including:word meaning
  */
 @Entity
 public class WordCollectionBean {

@@ -16,7 +16,9 @@ import com.iReadingGroup.iReading.WordInfo;
 
 
 /**
- * The type Word info adapter.
+ * WordInfoAdapter
+ * This Adapter is a bridge between actual ArrayList and RecycleView(ListView)
+ * Set Text and Image to Class:WordInfo
  */
 public class WordInfoAdapter extends ArrayAdapter<WordInfo> {
 
