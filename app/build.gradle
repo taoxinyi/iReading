@@ -30,6 +30,7 @@ dependencies {
     compile 'com.ganxin.library:loaddatalayout:1.0.1'
     compile 'com.github.CymChad:BaseRecyclerViewAdapterHelper:2.9.36'
     compile 'com.github.zcweng:switch-button:0.0.3@aar'
+    compile 'com.github.mcxtzhang:SwipeDelMenuLayout:V1.2.1'
 
     implementation 'cn.bingoogolapple:bga-badgeview-api:1.1.7'
     annotationProcessor "cn.bingoogolapple:bga-badgeview-compiler:1.1.7"

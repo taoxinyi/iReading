@@ -4,6 +4,8 @@ import org.greenrobot.greendao.annotation.Entity;
 import org.greenrobot.greendao.annotation.Id;
 import org.greenrobot.greendao.annotation.Property;
 import org.greenrobot.greendao.annotation.Generated;
+import org.greenrobot.greendao.annotation.ToOne;
+import org.greenrobot.greendao.DaoException;
 
 /**
  * OfflineDictBean
@@ -25,8 +27,7 @@ public class OfflineDictBean {
     private String meaning;
     @Property (nameInDb = "sentence")
     private String sentence;
-
-
+    
     @Generated(hash = 1101762644)
     public OfflineDictBean(long id, String word, String meaning, String sentence) {
         this.id = id;

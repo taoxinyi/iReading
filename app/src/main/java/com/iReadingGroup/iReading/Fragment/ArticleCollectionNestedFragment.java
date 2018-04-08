@@ -16,11 +16,9 @@ import com.chad.library.adapter.base.listener.OnItemClickListener;
 import com.iReadingGroup.iReading.Activity.ArticleDetailActivity;
 import com.iReadingGroup.iReading.Activity.MainActivity;
 import com.iReadingGroup.iReading.Adapter.ArticleInfoAdapter;
-import com.iReadingGroup.iReading.ArticleInfo;
-import com.iReadingGroup.iReading.Bean.ArticleStorageBean;
-import com.iReadingGroup.iReading.Bean.ArticleStorageBeanDao;
-import com.iReadingGroup.iReading.CollectArticleEvent;
-import com.iReadingGroup.iReading.R;
+import com.iReadingGroup.iReading.Bean.ArticleEntity;
+import com.iReadingGroup.iReading.Bean.ArticleEntityDao;
+import com.iReadingGroup.iReading.Event.CollectArticleEvent;
 
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
@@ -32,7 +30,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.TimeZone;
 
-import cn.bingoogolapple.refreshlayout.BGAMoocStyleRefreshViewHolder;
 import cn.bingoogolapple.refreshlayout.BGARefreshLayout;
 import static java.lang.Math.max;
 import static java.util.Collections.max;
@@ -52,9 +49,9 @@ public  class ArticleCollectionNestedFragment extends Fragment implements BGARef
     private BGARefreshLayout mRefreshLayout; //Layout for refreshing and loading
     private RecyclerView infoListView;
     private ArticleInfoAdapter articleInfoAdapter;//Custom adapter for article info
-    private ArrayList<ArticleInfo> alArticleInfo=new ArrayList<>();//ArrayList linked to adapter for listview
+    private List<ArticleEntity> alArticleInfo=new ArrayList<>();//ArrayList linked to adapter for listview
     private View view;
-    private ArticleStorageBeanDao daoArticle;
+    private ArticleEntityDao daoArticle;
 
 
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -101,15 +98,8 @@ public  class ArticleCollectionNestedFragment extends Fragment implements BGARef
 
         infoListView = (RecyclerView) view.findViewById(com.iReadingGroup.iReading.R.id.list);//
 
-        List<ArticleStorageBean> cache=daoArticle.queryBuilder().orderAsc(ArticleStorageBeanDao.Properties.CollectTime)
-                .where(ArticleStorageBeanDao.Properties.CollectStatus.eq(true)).list();
-        int size=cache.size();
-        for (int i=size-1;i>max(i-21,-1);i--)
-        {
-            ArticleStorageBean item=cache.get(i);
-            ArticleInfo lin=new ArticleInfo(item.getName(), item.getUri(),item.getImageUrl(),getDate(item.getTime()),item.getSource(),com.iReadingGroup.iReading.R.drawable.collect_false);
-            alArticleInfo.add(lin);
-        }
+       alArticleInfo=daoArticle.queryBuilder().orderAsc(ArticleEntityDao.Properties.CollectTime)
+                .where(ArticleEntityDao.Properties.CollectStatus.eq(true)).list();
 
         articleInfoAdapter = new ArticleInfoAdapter(getActivity(),
                 com.iReadingGroup.iReading.R.layout.listitem_article_info,alArticleInfo);
@@ -125,7 +115,7 @@ public  class ArticleCollectionNestedFragment extends Fragment implements BGARef
             @Override
             public void onSimpleItemClick(BaseQuickAdapter parent, View view, int position)
             {
-                ArticleInfo h = (ArticleInfo) alArticleInfo.get(position);
+                ArticleEntity h = (ArticleEntity) alArticleInfo.get(position);
                 String number=h.getName();
                 String uri=h.getUri();
                 Intent intent = new Intent(getActivity(),ArticleDetailActivity.class);
@@ -213,19 +203,16 @@ public  class ArticleCollectionNestedFragment extends Fragment implements BGARef
      * @param event the event
      */
     @Subscribe(threadMode = ThreadMode.MAIN,sticky = true)
-    public void onCollectArticleEvent(CollectArticleEvent event) {
+    public void onProcessCollectArticleEvent(CollectArticleEvent event) {
         alArticleInfo.clear();
-        List<ArticleStorageBean> cache=daoArticle.queryBuilder().orderAsc(ArticleStorageBeanDao.Properties.CollectTime).where(ArticleStorageBeanDao.Properties.CollectStatus.eq(true)).list();
-        int size=cache.size();
-        for (int i=size-1;i>-1;i--)
-        {
-            ArticleStorageBean item=cache.get(i);
-            ArticleInfo lin=new ArticleInfo(item.getName(), item.getUri(),item.getImageUrl(),getDate(item.getTime()),item.getSource(),com.iReadingGroup.iReading.R.drawable.collect_false);
-            alArticleInfo.add(lin);
-        }
+        alArticleInfo.addAll
+                (daoArticle.queryBuilder().orderAsc(ArticleEntityDao.Properties.CollectTime).where(ArticleEntityDao.Properties.CollectStatus.eq(true)).list());
+
         articleInfoAdapter.notifyDataSetChanged();
         EventBus.getDefault().removeStickyEvent(event);
     }
+
+
     @Override
     public void onStart() {
         super.onStart();

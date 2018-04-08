@@ -13,15 +13,12 @@ import android.text.TextPaint;
 import android.text.method.LinkMovementMethod;
 import android.text.style.BackgroundColorSpan;
 import android.text.style.ClickableSpan;
-import android.util.Log;
-import android.view.GestureDetector;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageButton;
-import android.widget.ImageView;
 import android.widget.PopupWindow;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -29,17 +26,17 @@ import android.widget.Toast;
 import com.bumptech.glide.Glide;
 import com.ganxin.library.LoadDataLayout;
 import com.github.chrisbanes.photoview.PhotoView;
+import com.iReadingGroup.iReading.Event.ArticleCollectionStatusChangedEvent;
 import com.iReadingGroup.iReading.AsyncResponse;
-import com.iReadingGroup.iReading.Bean.ArticleStorageBean;
-import com.iReadingGroup.iReading.Bean.ArticleStorageBeanDao;
+import com.iReadingGroup.iReading.Bean.ArticleEntity;
+import com.iReadingGroup.iReading.Bean.ArticleEntityDao;
 import com.iReadingGroup.iReading.Bean.DaoMaster;
 import com.iReadingGroup.iReading.Bean.DaoSession;
 import com.iReadingGroup.iReading.Bean.OfflineDictBean;
 import com.iReadingGroup.iReading.Bean.OfflineDictBeanDao;
 import com.iReadingGroup.iReading.Bean.WordCollectionBean;
 import com.iReadingGroup.iReading.Bean.WordCollectionBeanDao;
-import com.iReadingGroup.iReading.CollectArticleEvent;
-import com.iReadingGroup.iReading.CollectWordEvent;
+import com.iReadingGroup.iReading.Event.CollectWordEvent;
 import com.iReadingGroup.iReading.FetchArticleAsyncTask;
 import com.iReadingGroup.iReading.FetchingBriefMeaningAsyncTask;
 import com.iReadingGroup.iReading.R;
@@ -87,9 +84,10 @@ public class ArticleDetailActivity extends AppCompatActivity {
     private View ppwContentView;
     private OfflineDictBeanDao daoDictionary;//database instance
     private WordCollectionBeanDao daoCollection;//database instance
-    private ArticleStorageBeanDao daoArticle;//database instance
+    private ArticleEntityDao daoArticle;//database instance
     private ArrayList<String> list_selected_words = new ArrayList<String>();
     private LoadDataLayout loadDataLayout;
+    private ArticleEntity articleEntity;
 
 
     @Override
@@ -132,8 +130,8 @@ public class ArticleDetailActivity extends AppCompatActivity {
         toolBar.setTitle(articleTitleFromBundle);//set corresponding title in toolbar
         setSupportActionBar(toolBar);
         ImageButton button=findViewById(R.id.collect_article_button);
-        final ArticleStorageBean article=daoArticle.queryBuilder().where(ArticleStorageBeanDao.Properties.Uri.eq(uri)).list().get(0);
-        if (article.getCollectStatus())  button.setImageDrawable(
+        articleEntity=daoArticle.queryBuilder().where(ArticleEntityDao.Properties.Uri.eq(uri)).list().get(0);
+        if (articleEntity.getCollectStatus())  button.setImageDrawable(
                 ContextCompat.getDrawable(getApplicationContext(), R.drawable.collect_true));
         else  button.setImageDrawable(
                 ContextCompat.getDrawable(getApplicationContext(), R.drawable.collect_false));
@@ -145,22 +143,21 @@ public class ArticleDetailActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 ImageButton button = (ImageButton) v;
-                if (article.getCollectStatus()) {
+                if (articleEntity.getCollectStatus()) {
                     button.setImageDrawable(
                             ContextCompat.getDrawable(getApplicationContext(), R.drawable.collect_false));
-                    article.setCollectStatus(false);
-                    daoArticle.update(article);
+                    articleEntity.setCollectStatus(false);
                 }
+
                 else {
+                    //add collection
                     button.setImageDrawable(
                             ContextCompat.getDrawable(getApplicationContext(), R.drawable.collect_true));
-                    article.setCollectStatus(true);
+                    articleEntity.setCollectStatus(true);
                     Date currentTime = Calendar.getInstance().getTime();
-                    article.setCollectTime(currentTime);
-                    daoArticle.update(article);
 
                 }
-                EventBus.getDefault().postSticky(new CollectArticleEvent(0));
+                EventBus.getDefault().postSticky(new ArticleCollectionStatusChangedEvent(uri));
             }
 
         });
@@ -183,9 +180,9 @@ public class ArticleDetailActivity extends AppCompatActivity {
         daoCollection = daoSession_collection.getWordCollectionBeanDao();
 
         DaoMaster.DevOpenHelper helper_article = new DaoMaster.DevOpenHelper(this, "userArticle.db");
-        Database db_article = helper_article.getWritableDb();
+        Database db_article = helper_article.getReadableDb();
         DaoSession daoSession_article = new DaoMaster(db_article).newSession();
-        daoArticle = daoSession_article.getArticleStorageBeanDao();// this is the database(cache) recording user's articles
+        daoArticle = daoSession_article.getArticleEntityDao();// this is the database(cache) recording user's articles
     }
 
     private void initializeLoadingLayout() {
@@ -209,7 +206,6 @@ public class ArticleDetailActivity extends AppCompatActivity {
     private void initializeTextView() {
         articleTextView = (TextView) findViewById(com.iReadingGroup.iReading.R.id.text);
         makeTextViewSpannable(articleTextView, article);//make every word clickable
-
         TextView titleTextView = (TextView) findViewById(R.id.title);
         makeTextViewSpannable(titleTextView, articleTitleFromBundle);
 

@@ -1,13 +1,12 @@
 package com.iReadingGroup.iReading;
 
-/**
- * Created by taota on 2018/3/29.
- */
+
 public class WordInfo {
     private String word;
     private String meaning;
     private int imageId;
     private boolean isShowingMeaning;
+    private boolean collectStatus;
 
     /**
      * Instantiates a new Word info.
@@ -16,11 +15,12 @@ public class WordInfo {
      * @param meaning the meaning
      * @param imageId the image id
      */
-    public WordInfo(String word, String meaning, int imageId,boolean isShowingMeaning) {
+    public WordInfo(String word, String meaning, int imageId,boolean isShowingMeaning,boolean collectStatus) {
         this.word = word;//word
         this.meaning = meaning;//meaning
         this.imageId = imageId;//image
         this.isShowingMeaning=isShowingMeaning;//whether showing meaning
+        this.collectStatus=collectStatus;
     }
 
     /**
@@ -82,4 +82,6 @@ public class WordInfo {
         if (status) isShowingMeaning=true;
         else isShowingMeaning=false;
     }
+    public boolean getCollectStatus(){return  collectStatus;}
+    public void setCollectStatus(boolean collectStatus){this.collectStatus=collectStatus;}
 }

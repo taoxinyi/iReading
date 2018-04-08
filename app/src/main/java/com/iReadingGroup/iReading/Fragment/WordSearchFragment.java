@@ -3,20 +3,26 @@ package com.iReadingGroup.iReading.Fragment;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.SearchView;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ListView;
 
 import com.iReadingGroup.iReading.Activity.MainActivity;
 import com.iReadingGroup.iReading.Adapter.WordInfoAdapter;
 import com.iReadingGroup.iReading.Bean.OfflineDictBean;
 import com.iReadingGroup.iReading.Bean.OfflineDictBeanDao;
+import com.iReadingGroup.iReading.Bean.WordCollectionBean;
 import com.iReadingGroup.iReading.Bean.WordCollectionBeanDao;
 import com.iReadingGroup.iReading.R;
+import com.iReadingGroup.iReading.Event.WordDatasetChangedEvent;
 import com.iReadingGroup.iReading.WordInfo;
+
+import org.greenrobot.eventbus.EventBus;
+import org.greenrobot.eventbus.Subscribe;
+import org.greenrobot.eventbus.ThreadMode;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -34,10 +40,12 @@ public class WordSearchFragment extends Fragment {
     public static final String BUNDLE_TITLE = "title";
     private String mTitle = "DefaultValue";
     private View v;
-    private ListView infoListView;////infoListView for list of brief info of each article
+    private RecyclerView infoListView;////infoListView for list of brief info of each article
     private WordInfoAdapter wordInfoAdapter;//Custom adapter for article info
     private ArrayList<WordInfo> alWordInfo = new ArrayList<>();//ArrayList linked to adapter for listview
     private WordCollectionBeanDao daoCollection;
+    private OfflineDictBeanDao daoDictionary;
+    private String current_query = "";
 
     /**
      * New instance word search fragment.
@@ -80,13 +88,13 @@ public class WordSearchFragment extends Fragment {
 
             //database load
 
-            final OfflineDictBeanDao daoDictionary = ((MainActivity) getActivity()).getDaoDictionary();
+            daoDictionary = ((MainActivity) getActivity()).getDaoDictionary();
             daoCollection = ((MainActivity) getActivity()).getDaoCollection();
-            infoListView = (ListView) v.findViewById(R.id.list_word_search);//
+            infoListView = (RecyclerView) v.findViewById(R.id.list_word_search);//
             List<OfflineDictBean> l = daoDictionary.queryBuilder().limit(20).list();
             //sample of add initial articles' info.
             for (OfflineDictBean word : l) {
-                WordInfo a = new WordInfo(word.getWord(), word.getMeaning(), getCollectionIcon(word.getWord()), true);
+                WordInfo a = new WordInfo(word.getWord(), word.getMeaning(), getCollectionIcon(word.getWord()), true, getWordCollectionStatus(word.getWord()));
                 alWordInfo.add(a);
             }
 
@@ -94,6 +102,9 @@ public class WordSearchFragment extends Fragment {
             wordInfoAdapter = new WordInfoAdapter(getActivity(),
                     R.layout.listitem_word_info, alWordInfo);//link the arrayList to adapter,using custom layout for each item
             infoListView.setAdapter(wordInfoAdapter);//link the adapter to ListView
+            LinearLayoutManager llm = new LinearLayoutManager(getActivity());
+            llm.setOrientation(LinearLayoutManager.VERTICAL);
+            infoListView.setLayoutManager(llm);
             //searchview's listener
             sv.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
                                           @Override
@@ -109,13 +120,14 @@ public class WordSearchFragment extends Fragment {
                                           }
 
                                           public void search(String query) {
+                                              current_query = query;
                                               if (query.length() == 0)//if search blank
                                               {
                                                   alWordInfo.clear();
                                                   List<OfflineDictBean> l = daoDictionary.queryBuilder().limit(20).list();
                                                   //sample of add initial articles' info.
                                                   for (OfflineDictBean word : l) {
-                                                      WordInfo a = new WordInfo(word.getWord(), word.getMeaning(), getCollectionIcon(word.getWord()), true);
+                                                      WordInfo a = new WordInfo(word.getWord(), word.getMeaning(), getCollectionIcon(word.getWord()), true, getWordCollectionStatus(word.getWord()));
                                                       alWordInfo.add(a);
                                                   }
                                                   wordInfoAdapter.notifyDataSetChanged();
@@ -129,7 +141,7 @@ public class WordSearchFragment extends Fragment {
                                                   } else {
                                                       alWordInfo.clear();
                                                       for (int i = 0; i < min(joes.size(), 20); i++) {
-                                                          WordInfo lin = new WordInfo(joes.get(i).getWord(), joes.get(i).getMeaning(), getCollectionIcon(joes.get(i).getWord()), true);
+                                                          WordInfo lin = new WordInfo(joes.get(i).getWord(), joes.get(i).getMeaning(), getCollectionIcon(joes.get(i).getWord()), true, getWordCollectionStatus(joes.get(i).getWord()));
                                                           alWordInfo.add(lin);
                                                       }
 
@@ -147,9 +159,62 @@ public class WordSearchFragment extends Fragment {
     }
 
     private int getCollectionIcon(String word) {
-        if (daoCollection.queryBuilder().where(WordCollectionBeanDao.Properties.Word.eq(word)).list().size() == 0)
+        if (!getWordCollectionStatus(word))
             return R.drawable.collect_false;
         else return R.drawable.collect_true;
     }
 
+    private boolean getWordCollectionStatus(String word) {
+        if (daoCollection.queryBuilder().where(WordCollectionBeanDao.Properties.Word.eq(word)).list().size() == 0)
+            return false;
+        else
+            return true;
+
+    }
+
+    @Subscribe(threadMode = ThreadMode.MAIN, sticky = true)
+    public void WordDatasetChangedEvent(WordDatasetChangedEvent event) {
+        String word = event.word;
+        String meaning = event.meaning;
+        List<WordCollectionBean> l = daoCollection.queryBuilder().where(WordCollectionBeanDao.Properties.Word.eq(word)).list();
+        int size = l.size();
+        for (int i=0;i<alWordInfo.size();i++)
+        {
+            if (alWordInfo.get(i).getWord().equals(word))
+            {
+                if (size==0)
+                {
+                    alWordInfo.get(i).setCollectStatus(false);
+                    alWordInfo.get(i).setImageId(R.drawable.collect_false);
+                }
+                else
+                {
+                    alWordInfo.get(i).setCollectStatus(true);
+                    alWordInfo.get(i).setImageId(R.drawable.collect_true);
+                }
+                wordInfoAdapter.notifyItemChanged(i);
+                break;
+            }
+        }
+
+    }
+
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        EventBus.getDefault().register(this);
+
+    }
+
+    /**
+     * On start.
+     * Unregister for EventBus on CollectWordEvent
+     */
+    @Override
+    public void onStop() {
+        //get rid of the CollectWordEvent before it dies.
+        EventBus.getDefault().unregister(this);
+        super.onStop();
+    }
 }

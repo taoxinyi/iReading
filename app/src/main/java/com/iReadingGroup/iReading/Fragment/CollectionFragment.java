@@ -5,30 +5,21 @@ import android.support.design.widget.TabLayout;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentPagerAdapter;
 import android.support.v4.view.ViewPager;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.iReadingGroup.iReading.Activity.MainActivity;
-import com.iReadingGroup.iReading.Bean.WordCollectionBean;
-import com.iReadingGroup.iReading.CollectArticleEvent;
-import com.iReadingGroup.iReading.CollectWordEvent;
+import com.iReadingGroup.iReading.Event.CollectArticleEvent;
+import com.iReadingGroup.iReading.Event.CollectWordEvent;
 import com.iReadingGroup.iReading.R;
-import com.iReadingGroup.iReading.WordInfo;
-import com.suke.widget.SwitchButton;
-import com.wyt.searchbox.SearchFragment;
 
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
-
-import java.util.List;
 
 import cn.bingoogolapple.badgeview.BGABadgeTextView;
 
@@ -57,19 +48,12 @@ public class CollectionFragment extends Fragment {
         } else {
             //start initializing
             view = inflater.inflate(R.layout.fragment_collection, container, false);//set layout
-            initData();
             initView();
             setHasOptionsMenu(true);
         }
         return view;
     }
 
-    private void initData() {
-        for (int i = 0; i < 2; i++) {
-            mTitle[i] = "TAB" + (i + 1);
-            mData[i] = "当前选中的是第" + (i + 1) + "Fragment";
-        }
-    }
 
     private void initView() {
         mTabLayout = (TabLayout) view.findViewById(R.id.tl_tab);

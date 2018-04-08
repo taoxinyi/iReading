@@ -9,13 +9,11 @@ import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import com.chad.library.adapter.base.BaseQuickAdapter;
@@ -23,16 +21,14 @@ import com.chad.library.adapter.base.listener.OnItemClickListener;
 import com.iReadingGroup.iReading.Activity.ArticleDetailActivity;
 import com.iReadingGroup.iReading.Activity.MainActivity;
 import com.iReadingGroup.iReading.Adapter.ArticleInfoAdapter;
-import com.iReadingGroup.iReading.ArticleInfo;
-import com.iReadingGroup.iReading.ArticleSearchDoneEvent;
-import com.iReadingGroup.iReading.ArticleSearchEvent;
-import com.iReadingGroup.iReading.Bean.ArticleStorageBean;
-import com.iReadingGroup.iReading.Bean.ArticleStorageBeanDao;
-import com.iReadingGroup.iReading.Bean.OfflineDictBeanDao;
+import com.iReadingGroup.iReading.Event.ArticleSearchDoneEvent;
+import com.iReadingGroup.iReading.Event.ArticleSearchEvent;
+import com.iReadingGroup.iReading.Event.ArticleCollectionStatusChangedEvent;
+import com.iReadingGroup.iReading.Bean.ArticleEntity;
+import com.iReadingGroup.iReading.Bean.ArticleEntityDao;
+import com.iReadingGroup.iReading.Event.CollectArticleEvent;
 import com.iReadingGroup.iReading.R;
-import com.iReadingGroup.iReading.SourceSelectEvent;
-import com.wyt.searchbox.SearchFragment;
-import com.wyt.searchbox.custom.IOnSearchClickListener;
+import com.iReadingGroup.iReading.Event.SourceSelectEvent;
 
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
@@ -50,6 +46,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -78,18 +75,17 @@ public class ArticleListFragment extends Fragment implements BGARefreshLayout.BG
     //private ListView infoListView;////infoListView for list of brief info of each article
     private RecyclerView infoListView;
     private ArticleInfoAdapter articleInfoAdapter;//Custom adapter for article info
-    private ArrayList<ArticleInfo> alArticleInfo = new ArrayList<>();//ArrayList linked to adapter for listview
-    private ArrayList<ArticleInfo> alArticleInfoCache = new ArrayList<>();//cache of ArrayList linked to adapter for listview when searching
+    private List<ArticleEntity> alArticleInfo = new ArrayList<>();//ArrayList linked to adapter for listview
+    private ArrayList<ArticleEntity> alArticleInfoCache = new ArrayList<>();//cache of ArrayList linked to adapter for listview when searching
     private boolean flag_search = false;
     private ArrayList<String> current_uri_list = new ArrayList<>();
     private View view;
-    private ArticleStorageBeanDao daoArticle;
+    private ArticleEntityDao daoArticle;
     private String requestUrl = "http://eventregistry.org/json/article?lang=eng&action=getArticles&resultType=articles&articlesSortBy=date&articlesCount=5&articlesIncludeArticleEventUri=false&articlesIncludeArticleImage=true&articlesArticleBodyLen=0&articlesIncludeConceptLabel=false&apiKey=19411967-5bfe-4f2a-804e-580654db39c9";
     private HashMap<String,Integer> pageMap=new HashMap<>();
-    private String current_source;
+    private String current_source="所有";
     private String requestUrlCache;
     private String searchUrlPrefix=requestUrl+"&keywordLoc=title&keyword=";
-
     private Integer pageCache;
 
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -147,15 +143,8 @@ public class ArticleListFragment extends Fragment implements BGARefreshLayout.BG
 
         infoListView = (RecyclerView) view.findViewById(com.iReadingGroup.iReading.R.id.list);//
 
-        List<ArticleStorageBean> cache = daoArticle.loadAll();
-        int size = cache.size();
-        TextView a;
+        alArticleInfo = daoArticle.queryBuilder().orderDesc(ArticleEntityDao.Properties.Time).list();
 
-        for (int i = size - 1; i > max(size - 20, -1); i--) {
-            ArticleStorageBean item = cache.get(i);
-            ArticleInfo lin = new ArticleInfo(item.getName(), item.getUri(), item.getImageUrl(), getDate(item.getTime()), item.getSource(), com.iReadingGroup.iReading.R.drawable.collect_false);
-            alArticleInfo.add(lin);
-        }
 
 
         //articleInfoAdapter = new ArticleInfoAdapter(getActivity(),
@@ -170,10 +159,11 @@ public class ArticleListFragment extends Fragment implements BGARefreshLayout.BG
 
         articleInfoAdapter.openLoadAnimation(0x00000001);
         articleInfoAdapter.isFirstOnly(false);
+
         infoListView.addOnItemTouchListener(new OnItemClickListener() {
             @Override
             public void onSimpleItemClick(BaseQuickAdapter parent, View view, int position) {
-                ArticleInfo h = (ArticleInfo) alArticleInfo.get(position);
+                ArticleEntity h = (ArticleEntity) alArticleInfo.get(position);
                 String number = h.getName();
                 String uri = h.getUri();
                 Intent intent = new Intent(getActivity(), ArticleDetailActivity.class);
@@ -279,7 +269,7 @@ public class ArticleListFragment extends Fragment implements BGARefreshLayout.BG
         @Override
         protected void onPostExecute(String result) {
             pageMap.put(current_source,1);
-            mRefreshLayout.endRefreshing();// finish fetching from sever
+            int count=0;
             if (result != null) {
                 try {   //parse word from json
                     //sample link.:http://dict-co.iciba.com/api/dictionary.php?w=go&key=341DEFE6E5CA504E62A567082590D0BD&type=json
@@ -297,10 +287,11 @@ public class ArticleListFragment extends Fragment implements BGARefreshLayout.BG
                         JSONObject source = article.getJSONObject("source");
                         source_title = source.getString("title");
                         String imageurl = article.getString("image");
-                        ArticleInfo lin = new ArticleInfo(title, uri, imageurl, getDate(time), source_title, com.iReadingGroup.iReading.R.drawable.collect_false);
+                        ArticleEntity lin = new ArticleEntity( uri,title,  getDate(time), source_title,imageurl, false,null);
                         alArticleInfo.add(0, lin);
+                        count++;
                         if (!getArticleCachedStatus(uri))
-                        daoArticle.insert(new ArticleStorageBean(uri, title, time, source_title, imageurl, false, null));
+                        daoArticle.insert(lin);
                     }
 
                 } catch (JSONException e) {
@@ -308,7 +299,10 @@ public class ArticleListFragment extends Fragment implements BGARefreshLayout.BG
                 }
 
                 //sync to the listView
-                articleInfoAdapter.notifyDataSetChanged();
+                articleInfoAdapter.notifyItemRangeInserted(0,count);
+                infoListView.smoothScrollToPosition(0);
+                mRefreshLayout.endRefreshing();// finish fetching from sever
+
             }
         }
     }
@@ -361,6 +355,8 @@ public class ArticleListFragment extends Fragment implements BGARefreshLayout.BG
         @Override
         protected void onPostExecute(String result) {
             mRefreshLayout.endLoadingMore();// finish fetching from sever
+            int size=alArticleInfo.size();
+            int count=0;
             if (result != null) {
                 try {   //parse word from json
                     //sample link.:http://dict-co.iciba.com/api/dictionary.php?w=go&key=341DEFE6E5CA504E62A567082590D0BD&type=json
@@ -376,10 +372,11 @@ public class ArticleListFragment extends Fragment implements BGARefreshLayout.BG
                         JSONObject source = article.getJSONObject("source");
                         source_title = source.getString("title");
                         String imageurl = article.getString("image");
-                        ArticleInfo lin = new ArticleInfo(title, uri, imageurl, getDate(time), source_title, com.iReadingGroup.iReading.R.drawable.collect_false);
+                        ArticleEntity lin = new ArticleEntity(uri, title, getDate(time), source_title, imageurl, false, null);
                         alArticleInfo.add(lin);
+                        count++;
                         if (!getArticleCachedStatus(uri))
-                            daoArticle.insert(new ArticleStorageBean(uri, title, time, source_title, imageurl, false, null));
+                            daoArticle.insert(lin);
                     }
 
                 } catch (JSONException e) {
@@ -387,7 +384,7 @@ public class ArticleListFragment extends Fragment implements BGARefreshLayout.BG
                 }
 
                 //sync to the listView
-                articleInfoAdapter.notifyDataSetChanged();
+                articleInfoAdapter.notifyItemRangeInserted(size,count);
             }
         }
     }
@@ -439,19 +436,13 @@ public class ArticleListFragment extends Fragment implements BGARefreshLayout.BG
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void onSourceSelectEvent(SourceSelectEvent event) {
         int size;
-        List<ArticleStorageBean> cache;
+        List<ArticleEntity> cache;
         current_source=event.title;
         switch (event.title) {
             case "所有": {//all
                 requestUrl = "http://eventregistry.org/json/article?query=%7B%22%24query%22%3A%7B%22lang%22%3A%22eng%22%7D%7D&action=getArticles&resultType=articles&articlesSortBy=rel&articlesCount=5&articlesIncludeArticleEventUri=false&articlesIncludeArticleImage=true&articlesArticleBodyLen=0&articlesIncludeConceptLabel=false&apiKey=19411967-5bfe-4f2a-804e-580654db39c9";
                 alArticleInfo.clear();
-                cache = daoArticle.loadAll();
-                size = cache.size();
-                for (int i = size - 1; i > max(i - 21, -1); i--) {
-                    ArticleStorageBean item = cache.get(i);
-                    ArticleInfo lin = new ArticleInfo(item.getName(), item.getUri(), item.getImageUrl(), getDate(item.getTime()), item.getSource(), com.iReadingGroup.iReading.R.drawable.collect_false);
-                    alArticleInfo.add(lin);
-                }
+                alArticleInfo .addAll(daoArticle.queryBuilder().orderDesc(ArticleEntityDao.Properties.Time).list());
                 articleInfoAdapter.notifyDataSetChanged();
                 break;
             }
@@ -561,18 +552,32 @@ public class ArticleListFragment extends Fragment implements BGARefreshLayout.BG
 
     private void setSourceForView(String source) {
         int size;
-        List<ArticleStorageBean> cache;
+        List<ArticleEntity> cache;
         alArticleInfo.clear();
-        cache = daoArticle.queryBuilder().orderAsc(ArticleStorageBeanDao.Properties.Time).where(ArticleStorageBeanDao.Properties.Source.like(source + "%")).list();
-        size = cache.size();
-        for (int i = size - 1; i > max(size - 21, -1); i--) {
-            ArticleStorageBean item = cache.get(i);
-            ArticleInfo lin = new ArticleInfo(item.getName(), item.getUri(), item.getImageUrl(), getDate(item.getTime()), item.getSource(), com.iReadingGroup.iReading.R.drawable.collect_false);
-            alArticleInfo.add(lin);
-        }
+        alArticleInfo.addAll( daoArticle.queryBuilder().orderDesc(ArticleEntityDao.Properties.Time).where(ArticleEntityDao.Properties.Source.like(source + "%")).list());
+
         pageMap.put(source,pageMap.get(source)/5);
         articleInfoAdapter.notifyDataSetChanged();
 
+    }
+
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void onArticleSwipeCollectEvent(ArticleCollectionStatusChangedEvent event) {
+        String uri = event.uri;
+        final ArticleEntity article = daoArticle.queryBuilder().where(ArticleEntityDao.Properties.Uri.eq(uri)).list().get(0);
+        if (article.getCollectStatus()) {
+            article.setCollectStatus(false);
+            daoArticle.update(article);
+        } else {
+            //add collection
+            article.setCollectStatus(true);
+            Date currentTime = Calendar.getInstance().getTime();
+            article.setCollectTime(currentTime);
+            daoArticle.update(article);
+
+
+        }
+        EventBus.getDefault().postSticky(new CollectArticleEvent(0));
     }
 
     @Override
@@ -608,7 +613,7 @@ public class ArticleListFragment extends Fragment implements BGARefreshLayout.BG
 
     private boolean getArticleCachedStatus(String uri) {
         current_uri_list = new ArrayList<>();
-        for (ArticleStorageBean exist : daoArticle.loadAll()) {
+        for (ArticleEntity exist : daoArticle.loadAll()) {
             current_uri_list.add(exist.getUri());
         }
         if (current_uri_list.contains(uri)) return true;

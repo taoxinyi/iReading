@@ -3,7 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:background="#FFBBFFBB"
+    android:background="#92c5de"
     android:orientation="horizontal" >
 
     <TextView
@@ -13,7 +13,9 @@
         android:layout_gravity="left"
         android:padding="10dp"
         android:text="Loading"
-        android:textSize="20sp" />
+        android:textColor="@color/white"
+        android:textSize="20sp"
+        />
 
     <ImageButton
         android:id="@+id/collect"

@@ -8,6 +8,7 @@ import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.SearchView;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -15,18 +16,23 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.iReadingGroup.iReading.Adapter.MainActivityPagesAdapter;
-import com.iReadingGroup.iReading.ArticleSearchDoneEvent;
-import com.iReadingGroup.iReading.ArticleSearchEvent;
-import com.iReadingGroup.iReading.Bean.ArticleStorageBeanDao;
+import com.iReadingGroup.iReading.Event.ArticleSearchDoneEvent;
+import com.iReadingGroup.iReading.Event.ArticleSearchEvent;
+import com.iReadingGroup.iReading.Event.ArticleCollectionStatusChangedEvent;
+import com.iReadingGroup.iReading.Bean.ArticleEntity;
+import com.iReadingGroup.iReading.Bean.ArticleEntityDao;
 import com.iReadingGroup.iReading.Bean.DaoMaster;
 import com.iReadingGroup.iReading.Bean.DaoSession;
 import com.iReadingGroup.iReading.Bean.OfflineDictBeanDao;
+import com.iReadingGroup.iReading.Bean.WordCollectionBean;
 import com.iReadingGroup.iReading.Bean.WordCollectionBeanDao;
-import com.iReadingGroup.iReading.ButtonCheckEvent;
-import com.iReadingGroup.iReading.CollectArticleEvent;
-import com.iReadingGroup.iReading.CollectWordEvent;
+import com.iReadingGroup.iReading.Event.ButtonCheckEvent;
+import com.iReadingGroup.iReading.Event.CollectArticleEvent;
+import com.iReadingGroup.iReading.Event.CollectWordEvent;
 import com.iReadingGroup.iReading.R;
-import com.iReadingGroup.iReading.SourceSelectEvent;
+import com.iReadingGroup.iReading.Event.SourceSelectEvent;
+import com.iReadingGroup.iReading.Event.WordDatasetChangedEvent;
+import com.iReadingGroup.iReading.Event.WordCollectionStatusChangedEvent;
 import com.lzy.widget.AlphaIndicator;
 import com.mikepenz.materialdrawer.AccountHeader;
 import com.mikepenz.materialdrawer.AccountHeaderBuilder;
@@ -49,7 +55,10 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 
 import cn.bingoogolapple.badgeview.BGABadgeAlphaView;
 
@@ -73,7 +82,7 @@ public class MainActivity extends AppCompatActivity {
     private BGABadgeAlphaView collectionBadge;
     private WordCollectionBeanDao daoCollection;
     private OfflineDictBeanDao daoDictionary;
-    private ArticleStorageBeanDao daoArticle;
+    private ArticleEntityDao daoArticle;
     public SwitchButton switchButton;
     public MenuItem button;
     public MenuItem searchItem;
@@ -162,7 +171,7 @@ public class MainActivity extends AppCompatActivity {
         DaoMaster.DevOpenHelper helper_article = new DaoMaster.DevOpenHelper(this, "userArticle.db");
         Database db_article = helper_article.getWritableDb();
         DaoSession daoSession_article = new DaoMaster(db_article).newSession();
-        daoArticle = daoSession_article.getArticleStorageBeanDao();// this is the database(cache) recording user's articles
+        daoArticle = daoSession_article.getArticleEntityDao();// this is the database(cache) recording user's articles
     }
 
     /**
@@ -347,11 +356,49 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN, sticky = true)
-    public void onCollectArticleEvent(CollectArticleEvent event) {
+    public void onProcessCollectArticleEvent(CollectArticleEvent event) {
         //show the badge when the event is fired;
         collectionBadge.showCirclePointBadge();//show red when collected
     }
 
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void onWordCollectionStatusChangedEvent(WordCollectionStatusChangedEvent event) {
+        String word = event.word;
+        String meaning = event.meaning;
+        List<WordCollectionBean> l = daoCollection.queryBuilder().where(WordCollectionBeanDao.Properties.Word.eq(word)).list();
+        int size = l.size();//get if in the database
+        if (size==0)
+        {//not in the database, we should add
+            daoCollection.insert(new WordCollectionBean(word,meaning));
+        }
+        else
+        {
+            daoCollection.delete(l.get(0));
+        }
+        EventBus.getDefault().postSticky(new WordDatasetChangedEvent(word,meaning));
+        int s=daoCollection.queryBuilder().where(WordCollectionBeanDao.Properties.Word.eq(word)).list().size();
+        Log.d("datasetchange",s+"");
+    }
+
+
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void onArticleCollectionStatusChangedEvent(ArticleCollectionStatusChangedEvent event) {
+        String uri = event.uri;
+        final ArticleEntity article = daoArticle.queryBuilder().where(ArticleEntityDao.Properties.Uri.eq(uri)).list().get(0);
+        if (article.getCollectStatus()) {
+            article.setCollectStatus(false);
+            daoArticle.update(article);
+        } else {
+            //add collection
+            article.setCollectStatus(true);
+            Date currentTime = Calendar.getInstance().getTime();
+            article.setCollectTime(currentTime);
+            daoArticle.update(article);
+
+
+        }
+        EventBus.getDefault().postSticky(new CollectArticleEvent(0));
+    }
     /**
      * On start.
      * Register for EventBus on CollectWordEvent
@@ -403,9 +450,9 @@ public class MainActivity extends AppCompatActivity {
      * Get the database instance of OfflineDictionary
      * It can be used for other fragment.
      *
-     * @return ArticleStorageBeanDao the article cache instance
+     * @return ArticleEntityDao  the article cache instance
      */
-    public ArticleStorageBeanDao getDaoArticle() {
+    public ArticleEntityDao getDaoArticle() {
         return daoArticle;
     }
 
@@ -478,6 +525,7 @@ public class MainActivity extends AppCompatActivity {
         });
         return super.onCreateOptionsMenu(menu);
     }
+
 
 }
 
