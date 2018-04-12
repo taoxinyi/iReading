@@ -1,6 +1,9 @@
 package com.iReadingGroup.iReading.Activity;
 
 import android.annotation.SuppressLint;
+import android.content.ActivityNotFoundException;
+import android.content.ComponentName;
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.view.ViewPager;
@@ -14,6 +17,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.iReadingGroup.iReading.Adapter.MainActivityPagesAdapter;
 import com.iReadingGroup.iReading.Event.ArticleSearchDoneEvent;
@@ -29,6 +33,7 @@ import com.iReadingGroup.iReading.Bean.WordCollectionBeanDao;
 import com.iReadingGroup.iReading.Event.ButtonCheckEvent;
 import com.iReadingGroup.iReading.Event.CollectArticleEvent;
 import com.iReadingGroup.iReading.Event.CollectWordEvent;
+import com.iReadingGroup.iReading.MyApplication;
 import com.iReadingGroup.iReading.R;
 import com.iReadingGroup.iReading.Event.SourceSelectEvent;
 import com.iReadingGroup.iReading.Event.WordDatasetChangedEvent;
@@ -102,15 +107,33 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(com.iReadingGroup.iReading.R.layout.activity_main);//set layout
-        initializeUI();//initialize UI
+        initializeUI();
+        MyApplication app = (MyApplication) getApplicationContext();//initialize UI
         copyDBToDatabases();//copy offline database to external
         initializeDatabase();//initializeDatabase
+        app.setDaoArticle(daoArticle);
+        app.setDaoCollection(daoCollection);
+        app.setDaoDicitionary(daoDictionary);
+        //getWechatApi();
     }
 
     /**
      * Initialize UI
      * Including toolbar,status bar, view pager, tab layout and badge
      */
+    private void getWechatApi(){
+        try {
+            Intent intent = new Intent(Intent.ACTION_MAIN);
+            ComponentName cmp = new ComponentName("com.tencent.mm","com.tencent.mm.ui.LauncherUI");
+            intent.addCategory(Intent.CATEGORY_LAUNCHER);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            intent.setComponent(cmp);
+            startActivity(intent);
+        } catch (ActivityNotFoundException e) {
+            // TODO: handle exception
+            Toast.makeText(this,"未安装微信",Toast.LENGTH_SHORT).show();
+        }
+    }
     private void initializeUI() {
         //initializeUI in main activity
         initializeToolBar(); //initialize ToolBar
@@ -225,7 +248,7 @@ public class MainActivity extends AppCompatActivity {
                         break;
                     case 3:
                         viewPager.setCurrentItem(3);
-                        ((TextView) findViewById(R.id.toolbar_title)).setText("我");
+                        ((TextView) findViewById(R.id.toolbar_title)).setText("关于");
                         break;
                 }
             }

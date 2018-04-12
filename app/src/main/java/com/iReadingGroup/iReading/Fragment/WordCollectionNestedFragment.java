@@ -1,5 +1,6 @@
 package com.iReadingGroup.iReading.Fragment;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.LinearLayoutManager;
@@ -8,8 +9,14 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
+import com.chad.library.adapter.base.BaseQuickAdapter;
+import com.chad.library.adapter.base.listener.OnItemClickListener;
+import com.iReadingGroup.iReading.Activity.ArticleDetailActivity;
 import com.iReadingGroup.iReading.Activity.MainActivity;
+import com.iReadingGroup.iReading.Activity.WordDetailActivity;
 import com.iReadingGroup.iReading.Adapter.WordInfoAdapter;
+import com.iReadingGroup.iReading.Bean.ArticleEntity;
+import com.iReadingGroup.iReading.Bean.OfflineDictBean;
 import com.iReadingGroup.iReading.Bean.OfflineDictBeanDao;
 import com.iReadingGroup.iReading.Bean.WordCollectionBean;
 import com.iReadingGroup.iReading.Bean.WordCollectionBeanDao;
@@ -41,6 +48,7 @@ public class WordCollectionNestedFragment extends Fragment {
     private WordInfoAdapter wordInfoAdapter;//Custom adapter for article info
     private ArrayList<WordInfo> alWordInfo = new ArrayList<>();//ArrayList linked to adapter for listview
     private WordCollectionBeanDao daoCollection;
+    private OfflineDictBeanDao daoDictionary;
 
     /**
      * New instance word search fragment.
@@ -74,7 +82,7 @@ public class WordCollectionNestedFragment extends Fragment {
 
             //database load
 
-            final OfflineDictBeanDao daoDictionary = ((MainActivity) getActivity()).getDaoDictionary();
+            daoDictionary = ((MainActivity) getActivity()).getDaoDictionary();
 
             infoListView = (RecyclerView) v.findViewById(R.id.list_word_collected);//
 
@@ -88,6 +96,7 @@ public class WordCollectionNestedFragment extends Fragment {
             LinearLayoutManager llm = new LinearLayoutManager(getActivity());
             llm.setOrientation(LinearLayoutManager.VERTICAL);
             infoListView.setLayoutManager(llm);
+
             daoCollection = ((MainActivity) getActivity()).getDaoCollection();
             List<WordCollectionBean> wordlist = daoCollection.loadAll();
             for (WordCollectionBean word : wordlist) {
@@ -95,6 +104,23 @@ public class WordCollectionNestedFragment extends Fragment {
             }
 
             wordInfoAdapter.notifyDataSetChanged();
+            infoListView.addOnItemTouchListener(new OnItemClickListener() {
+                @Override
+                public void onSimpleItemClick(BaseQuickAdapter parent, View view, int position) {
+                    WordInfo h = (WordInfo) alWordInfo.get(position);
+
+                    String current_word=h.getWord();
+                    String meaning=h.getMeaning();
+
+                    Intent intent = new Intent(getActivity(), WordDetailActivity.class);
+                    Bundle bundle = new Bundle();
+                    bundle.putString("word", current_word);
+                    bundle.putString("meaning", meaning);
+                    intent.putExtras(bundle);
+                    startActivity(intent);
+                    //FruitList.this.finish();
+                }
+            });
 
 
         }

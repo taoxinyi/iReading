@@ -31,6 +31,8 @@
             android:padding="1dp"
             android:src="@drawable/collect_false"
             android:text="Button"
+            android:layout_gravity="right"
+            android:layout_marginEnd="5dp"
             android:scaleType="fitXY"
             android:textSize="20sp" />
 

@@ -39,6 +39,7 @@ import com.iReadingGroup.iReading.Bean.WordCollectionBeanDao;
 import com.iReadingGroup.iReading.Event.CollectWordEvent;
 import com.iReadingGroup.iReading.FetchArticleAsyncTask;
 import com.iReadingGroup.iReading.FetchingBriefMeaningAsyncTask;
+import com.iReadingGroup.iReading.MyApplication;
 import com.iReadingGroup.iReading.R;
 import com.r0adkll.slidr.Slidr;
 
@@ -136,8 +137,6 @@ public class ArticleDetailActivity extends AppCompatActivity {
         else  button.setImageDrawable(
                 ContextCompat.getDrawable(getApplicationContext(), R.drawable.collect_false));
 
-
-        final boolean flag_collected=false;
         button.setOnClickListener(new View.OnClickListener() {
             //collect word function.
             @Override
@@ -169,20 +168,12 @@ public class ArticleDetailActivity extends AppCompatActivity {
     }
 
     private void initializeDatabase() {
-        DaoMaster.DevOpenHelper helper = new DaoMaster.DevOpenHelper(this, "wordDetail.db");
-        Database db = helper.getWritableDb();
-        DaoSession daoSession = new DaoMaster(db).newSession();
-        daoDictionary = daoSession.getOfflineDictBeanDao();
 
-        DaoMaster.DevOpenHelper helper_collection = new DaoMaster.DevOpenHelper(this, "userCollection.db");
-        Database db_collection = helper_collection.getWritableDb();
-        DaoSession daoSession_collection = new DaoMaster(db_collection).newSession();
-        daoCollection = daoSession_collection.getWordCollectionBeanDao();
+        MyApplication app = (MyApplication) getApplicationContext();//initialize UI
+        daoDictionary=app.getDaoDicitionary();
+        daoCollection=app.getDaoCollection();
+        daoArticle= app.getDaoArticle();
 
-        DaoMaster.DevOpenHelper helper_article = new DaoMaster.DevOpenHelper(this, "userArticle.db");
-        Database db_article = helper_article.getReadableDb();
-        DaoSession daoSession_article = new DaoMaster(db_article).newSession();
-        daoArticle = daoSession_article.getArticleEntityDao();// this is the database(cache) recording user's articles
     }
 
     private void initializeLoadingLayout() {
@@ -191,7 +182,6 @@ public class ArticleDetailActivity extends AppCompatActivity {
         loadDataLayout.setOnReloadListener(new LoadDataLayout.OnReloadListener() {
             @Override
             public void onReload(View v, int status) {
-                Toast.makeText(getApplication(),"aaa",Toast.LENGTH_SHORT).show();
             }
         });
         loadDataLayout.setStatus(LoadDataLayout.LOADING);
@@ -261,7 +251,7 @@ public class ArticleDetailActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 ImageButton button = (ImageButton) v;
-                if (flag_collected) {
+                if (getWordCollectedStatus(current_word)) {
                     removeWordFromCollection(current_word);
                     removeWordFromCurrentSelectedList(current_word);
                     //already in the db, the user means to removed this word from collection
@@ -273,7 +263,6 @@ public class ArticleDetailActivity extends AppCompatActivity {
                     addWordIntoCurrentSelectedList(current_word);
                     button.setImageDrawable(
                             ContextCompat.getDrawable(getApplicationContext(), R.drawable.collect_true));
-
 
                 }
             }
@@ -316,12 +305,11 @@ public class ArticleDetailActivity extends AppCompatActivity {
                 imageUrl = buff[0];
                 category = buff[1];
                 article = buff[2];
-                Toast.makeText(mContext, imageUrl, Toast.LENGTH_SHORT).show();
                 initUI();
             }
         });
         //using iciba api to search the word, type json is small to transfer
-        asyncTask.execute("http://eventregistry.org/json/article?action=getArticle&resultType=info&infoIncludeArticleBasicInfo=false&infoIncludeArticleEventUri=false&infoIncludeArticleCategories=true&infoArticleBodyLen=-1&infoIncludeArticleImage=true&infoIncludeConceptLabel=false&apiKey=19411967-5bfe-4f2a-804e-580654db39c9&articleUri=" + uri);
+        asyncTask.execute("http://eventregistry.org/json/article?action=getArticle&resultType=info&infoIncludeArticleBasicInfo=false&infoIncludeArticleEventUri=false&infoIncludeArticleCategories=true&infoArticleBodyLen=-1&infoIncludeArticleImage=true&infoIncludeConceptLabel=false&apiKey=475f7fdb-7929-4222-800e-0151bdcd4af2&articleUri=" + uri);
         return article;
     }
 
@@ -444,7 +432,7 @@ public class ArticleDetailActivity extends AppCompatActivity {
         WordCollectionBean newWord = new WordCollectionBean();
         newWord.setWord(word);
         newWord.setMeaning(current_meaning);
-        daoCollection.insert(newWord);
+        daoCollection.insertOrReplace(newWord);
     }
 
     private void removeWordFromCollection(String word) {

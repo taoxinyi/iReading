@@ -81,7 +81,7 @@ public class ArticleListFragment extends Fragment implements BGARefreshLayout.BG
     private ArrayList<String> current_uri_list = new ArrayList<>();
     private View view;
     private ArticleEntityDao daoArticle;
-    private String requestUrl = "http://eventregistry.org/json/article?lang=eng&action=getArticles&resultType=articles&articlesSortBy=date&articlesCount=5&articlesIncludeArticleEventUri=false&articlesIncludeArticleImage=true&articlesArticleBodyLen=0&articlesIncludeConceptLabel=false&apiKey=19411967-5bfe-4f2a-804e-580654db39c9";
+    private String requestUrl = "http://eventregistry.org/json/article?lang=eng&action=getArticles&resultType=articles&articlesSortBy=date&articlesCount=5&articlesIncludeArticleEventUri=false&articlesIncludeArticleImage=true&articlesArticleBodyLen=0&articlesIncludeConceptLabel=false&apiKey=475f7fdb-7929-4222-800e-0151bdcd4af2";
     private HashMap<String,Integer> pageMap=new HashMap<>();
     private String current_source="所有";
     private String requestUrlCache;
@@ -440,7 +440,7 @@ public class ArticleListFragment extends Fragment implements BGARefreshLayout.BG
         current_source=event.title;
         switch (event.title) {
             case "所有": {//all
-                requestUrl = "http://eventregistry.org/json/article?query=%7B%22%24query%22%3A%7B%22lang%22%3A%22eng%22%7D%7D&action=getArticles&resultType=articles&articlesSortBy=rel&articlesCount=5&articlesIncludeArticleEventUri=false&articlesIncludeArticleImage=true&articlesArticleBodyLen=0&articlesIncludeConceptLabel=false&apiKey=19411967-5bfe-4f2a-804e-580654db39c9";
+                requestUrl = "http://eventregistry.org/json/article?query=%7B%22%24query%22%3A%7B%22lang%22%3A%22eng%22%7D%7D&action=getArticles&resultType=articles&articlesSortBy=rel&articlesCount=5&articlesIncludeArticleEventUri=false&articlesIncludeArticleImage=true&articlesArticleBodyLen=0&articlesIncludeConceptLabel=false&apiKey=475f7fdb-7929-4222-800e-0151bdcd4af2";
                 alArticleInfo.clear();
                 alArticleInfo .addAll(daoArticle.queryBuilder().orderDesc(ArticleEntityDao.Properties.Time).list());
                 articleInfoAdapter.notifyDataSetChanged();
@@ -546,7 +546,7 @@ public class ArticleListFragment extends Fragment implements BGARefreshLayout.BG
                 "articlesIncludeArticleImage=true&" +
                 "articlesArticleBodyLen=0&" +
                 "articlesIncludeConceptLabel=false&" +
-                "apiKey=19411967-5bfe-4f2a-804e-580654db39c9";
+                "apiKey=475f7fdb-7929-4222-800e-0151bdcd4af2";
 
     }
 

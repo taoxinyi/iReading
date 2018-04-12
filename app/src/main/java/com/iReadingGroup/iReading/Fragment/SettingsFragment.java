@@ -1,51 +1,114 @@
 package com.iReadingGroup.iReading.Fragment;
 
+import android.content.Context;
+import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
+import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.support.v4.content.ContextCompat;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
+import android.widget.Toast;
 
-/**
- * The type Settings fragment.
- */
-public class SettingsFragment extends Fragment {
-    /**
-     * The constant BUNDLE_TITLE.
-     */
-    public static final String BUNDLE_TITLE = "title";
-    private String mTitle = "DefaultValue";
+import com.danielstone.materialaboutlibrary.ConvenienceBuilder;
+import com.danielstone.materialaboutlibrary.MaterialAboutFragment;
+import com.danielstone.materialaboutlibrary.items.MaterialAboutActionItem;
+import com.danielstone.materialaboutlibrary.items.MaterialAboutItemOnClickAction;
+import com.danielstone.materialaboutlibrary.items.MaterialAboutTitleItem;
+import com.danielstone.materialaboutlibrary.model.MaterialAboutCard;
+import com.danielstone.materialaboutlibrary.model.MaterialAboutList;
+import com.iReadingGroup.iReading.R;
+import com.mikepenz.iconics.IconicsDrawable;
+
+import java.net.URLEncoder;
+
+public class SettingsFragment extends MaterialAboutFragment {
+    public static final String ALIPAY_PERSON = "HTTPS://QR.ALIPAY.COM/FKX06332TUSRAIPEXK1818";
+    @Override
+    protected MaterialAboutList getMaterialAboutList(final Context activityContext) {
+        MaterialAboutCard.Builder appCardBuilder = new MaterialAboutCard.Builder();
+
+        // Add items to card
+
+        appCardBuilder.addItem(new MaterialAboutTitleItem.Builder()
+                .text("iReading")
+                .desc("© iReading Group")
+                .icon(R.mipmap.icon)
+                .build());
+        appCardBuilder.addItem(new MaterialAboutActionItem.Builder()
+                .text("Version")
+                .subText("1.0.0")
+                .build());
+        MaterialAboutCard.Builder authorCardBuilder = new MaterialAboutCard.Builder();
+        authorCardBuilder.title("Author");
+//        authorCardBuilder.titleColor(ContextCompat.getColor(c, R.color.colorAccent));
+
+        authorCardBuilder.addItem(new MaterialAboutActionItem.Builder()
+                .text("Rhombicosidodecahedron")
+                .subText("SJTU")
+                .icon( R.mipmap.myface)
+                .build());
+        authorCardBuilder.addItem(new MaterialAboutActionItem.Builder()
+                .text("捐赠")
+                .icon( R.mipmap.pay)
+                .setOnClickAction(new MaterialAboutItemOnClickAction() {
+            @Override
+            public void onClick() {
+                openAliPay2Pay(ALIPAY_PERSON);
+            }
+        })
+                .build());
+
+        return new MaterialAboutList(appCardBuilder.build(),authorCardBuilder.build()); // This creates an empty screen, add cards with .addCard()
+    }
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        Bundle arguments = getArguments();
-        if (arguments != null) {
-            mTitle = arguments.getString(BUNDLE_TITLE);
+    protected int getTheme() {
+        return R.style.AppTheme_MaterialAboutActivity_Fragment;
+    }
+    /**
+     * 支付
+     *
+     * @param qrCode
+     */
+    private void openAliPay2Pay(String qrCode) {
+        if (openAlipayPayPage(getContext(), qrCode)) {
+            Toast.makeText(getContext(), "跳转成功", Toast.LENGTH_SHORT).show();
+        } else {
+            Toast.makeText(getContext(), "跳转失败", Toast.LENGTH_SHORT).show();
         }
+    }
 
-        TextView tv = new TextView(getActivity());
-        tv.setText(mTitle);
-        tv.setTextSize(30);
-        tv.setPadding(50, 50, 50, 50);
-        tv.setGravity(Gravity.CENTER);
-
-        return tv;
+    public static boolean openAlipayPayPage(Context context, String qrcode) {
+        try {
+            qrcode = URLEncoder.encode(qrcode, "utf-8");
+        } catch (Exception e) {
+        }
+        try {
+            final String alipayqr = "alipayqr://platformapi/startapp?saId=10000007&clientVersion=3.7.0.0718&qrcode=" + qrcode;
+            openUri(context, alipayqr + "%3F_s%3Dweb-other&_t=" + System.currentTimeMillis());
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
     }
 
     /**
-     * New instance settings fragment.
+     * 发送一个intent
      *
-     * @param title the title
-     * @return the settings fragment
+     * @param context
+     * @param s
      */
-    public static SettingsFragment newInstance(String title) {
-        Bundle bundle = new Bundle();
-        bundle.putString(BUNDLE_TITLE, title);
-        SettingsFragment fragment = new SettingsFragment();
-        fragment.setArguments(bundle);
-        return fragment;
+    private static void openUri(Context context, String s) {
+        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(s));
+        context.startActivity(intent);
     }
 
 }

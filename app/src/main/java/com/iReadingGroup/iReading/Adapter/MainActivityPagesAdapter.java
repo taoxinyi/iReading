@@ -34,7 +34,7 @@ public class MainActivityPagesAdapter extends FragmentPagerAdapter {
         fragments.add(new ArticleListFragment());
         fragments.add(new WordSearchFragment());
         fragments.add(new CollectionFragment());
-        fragments.add(SettingsFragment.newInstance("个人信息"));
+        fragments.add(new SettingsFragment());
     }
 
     @Override

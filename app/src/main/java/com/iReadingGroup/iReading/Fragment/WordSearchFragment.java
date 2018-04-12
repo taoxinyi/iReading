@@ -1,16 +1,21 @@
 package com.iReadingGroup.iReading.Fragment;
 
+import android.content.Intent;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.SearchView;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
+import com.chad.library.adapter.base.BaseQuickAdapter;
+import com.chad.library.adapter.base.listener.OnItemClickListener;
 import com.iReadingGroup.iReading.Activity.MainActivity;
+import com.iReadingGroup.iReading.Activity.WordDetailActivity;
 import com.iReadingGroup.iReading.Adapter.WordInfoAdapter;
 import com.iReadingGroup.iReading.Bean.OfflineDictBean;
 import com.iReadingGroup.iReading.Bean.OfflineDictBeanDao;
@@ -47,19 +52,7 @@ public class WordSearchFragment extends Fragment {
     private OfflineDictBeanDao daoDictionary;
     private String current_query = "";
 
-    /**
-     * New instance word search fragment.
-     *
-     * @param title the title
-     * @return the word search fragment
-     */
-    public static WordSearchFragment newInstance(String title) {
-        Bundle bundle = new Bundle();
-        bundle.putString(BUNDLE_TITLE, title);
-        WordSearchFragment fragment = new WordSearchFragment();
-        fragment.setArguments(bundle);
-        return fragment;
-    }
+
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -105,6 +98,22 @@ public class WordSearchFragment extends Fragment {
             LinearLayoutManager llm = new LinearLayoutManager(getActivity());
             llm.setOrientation(LinearLayoutManager.VERTICAL);
             infoListView.setLayoutManager(llm);
+            infoListView.addOnItemTouchListener(new OnItemClickListener() {
+                @Override
+                public void onSimpleItemClick(BaseQuickAdapter parent, View view, int position) {
+                    WordInfo h = (WordInfo) alWordInfo.get(position);
+
+                    String current_word=h.getWord();
+                    String meaning=h.getMeaning();
+                    Intent intent = new Intent(getActivity(), WordDetailActivity.class);
+                    Bundle bundle = new Bundle();
+                    bundle.putString("word", current_word);
+                    bundle.putString("meaning", meaning);
+                    intent.putExtras(bundle);
+                    startActivity(intent);
+                    //FruitList.this.finish();
+                }
+            });
             //searchview's listener
             sv.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
                                           @Override
@@ -174,6 +183,7 @@ public class WordSearchFragment extends Fragment {
 
     @Subscribe(threadMode = ThreadMode.MAIN, sticky = true)
     public void WordDatasetChangedEvent(WordDatasetChangedEvent event) {
+        Log.d("datasetchanged",event.word);
         String word = event.word;
         String meaning = event.meaning;
         List<WordCollectionBean> l = daoCollection.queryBuilder().where(WordCollectionBeanDao.Properties.Word.eq(word)).list();
