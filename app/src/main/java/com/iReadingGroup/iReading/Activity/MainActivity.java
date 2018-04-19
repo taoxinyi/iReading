@@ -20,6 +20,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.iReadingGroup.iReading.Adapter.MainActivityPagesAdapter;
+import com.iReadingGroup.iReading.DoubleClickBackToContentTopListener;
 import com.iReadingGroup.iReading.Event.ArticleSearchDoneEvent;
 import com.iReadingGroup.iReading.Event.ArticleSearchEvent;
 import com.iReadingGroup.iReading.Event.ArticleCollectionStatusChangedEvent;
@@ -30,6 +31,7 @@ import com.iReadingGroup.iReading.Bean.DaoSession;
 import com.iReadingGroup.iReading.Bean.OfflineDictBeanDao;
 import com.iReadingGroup.iReading.Bean.WordCollectionBean;
 import com.iReadingGroup.iReading.Bean.WordCollectionBeanDao;
+import com.iReadingGroup.iReading.Event.BackToTopEvent;
 import com.iReadingGroup.iReading.Event.ButtonCheckEvent;
 import com.iReadingGroup.iReading.Event.CollectArticleEvent;
 import com.iReadingGroup.iReading.Event.CollectWordEvent;
@@ -81,7 +83,8 @@ import cn.bingoogolapple.badgeview.BGABadgeAlphaView;
  * @author iReadingGroup
  * @version 1.0
  */
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements
+        DoubleClickBackToContentTopListener.IBackToContentTopView {
     public Toolbar toolBar;
     private ViewPager viewPager;
     private BGABadgeAlphaView collectionBadge;
@@ -114,26 +117,16 @@ public class MainActivity extends AppCompatActivity {
         app.setDaoArticle(daoArticle);
         app.setDaoCollection(daoCollection);
         app.setDaoDicitionary(daoDictionary);
-        //getWechatApi();
     }
-
+    @Override
+    public void backToContentTop() {
+        EventBus.getDefault().post(new BackToTopEvent());
+    }
     /**
      * Initialize UI
      * Including toolbar,status bar, view pager, tab layout and badge
      */
-    private void getWechatApi(){
-        try {
-            Intent intent = new Intent(Intent.ACTION_MAIN);
-            ComponentName cmp = new ComponentName("com.tencent.mm","com.tencent.mm.ui.LauncherUI");
-            intent.addCategory(Intent.CATEGORY_LAUNCHER);
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            intent.setComponent(cmp);
-            startActivity(intent);
-        } catch (ActivityNotFoundException e) {
-            // TODO: handle exception
-            Toast.makeText(this,"未安装微信",Toast.LENGTH_SHORT).show();
-        }
-    }
+
     private void initializeUI() {
         //initializeUI in main activity
         initializeToolBar(); //initialize ToolBar
@@ -206,6 +199,8 @@ public class MainActivity extends AppCompatActivity {
         toolBar = (Toolbar) findViewById(com.iReadingGroup.iReading.R.id.toolbar);
         ((TextView) findViewById(R.id.toolbar_title)).setText("阅读");
         toolBar.setTitle("");
+        toolBar.setOnClickListener(new DoubleClickBackToContentTopListener(this));
+
         setSupportActionBar(toolBar);
     }
 
@@ -297,6 +292,9 @@ public class MainActivity extends AppCompatActivity {
         PrimaryDrawerItem wP = new PrimaryDrawerItem().withName("Washington Post").withIcon(R.mipmap.icon_washingtonpost);
         PrimaryDrawerItem tG = new PrimaryDrawerItem().withName("The Guardian").withIcon(R.mipmap.icon_theguardian);
         PrimaryDrawerItem tT = new PrimaryDrawerItem().withName("The Times").withIcon(R.mipmap.icon_thetimes);
+        PrimaryDrawerItem dm = new PrimaryDrawerItem().withName("Mail Online").withIcon(R.mipmap.icon_dailymail);
+        PrimaryDrawerItem bbc = new PrimaryDrawerItem().withName("BBC").withIcon(R.mipmap.icon_bbc);
+        PrimaryDrawerItem people = new PrimaryDrawerItem().withName("PEOPLE").withIcon(R.mipmap.icon_people);
 
         final HashMap<String, String> map = new HashMap<String, String>();//map for title:chinese name
         map.put("National Geographic", "国家地理");
@@ -311,7 +309,9 @@ public class MainActivity extends AppCompatActivity {
         map.put("Washington Post", "华盛顿邮报");
         map.put("The Guardian", "卫报");
         map.put("The Times", "泰晤士报");
-
+        map.put("Mail Online", "每日邮报");
+        map.put("BBC", "英国广播公司");
+        map.put("PEOPLE", "人物");
         // Create the AccountHeader
         final ProfileDrawerItem item = new ProfileDrawerItem().withIdentifier(0).withName("iReading").withIcon(getResources().getDrawable(R.mipmap.icon));
         final AccountHeader headerResult = new AccountHeaderBuilder()
@@ -338,11 +338,14 @@ public class MainActivity extends AppCompatActivity {
                 .addDrawerItems(
                         all,
                         bB,
+                        bbc,
                         cnn,
                         forbes,
                         fN,
+                        dm,
                         nG,
                         nature,
+                        people,
                         tE,
                         tG,
                         time,

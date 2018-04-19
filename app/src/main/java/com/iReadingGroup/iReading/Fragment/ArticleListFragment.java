@@ -26,9 +26,11 @@ import com.iReadingGroup.iReading.Event.ArticleSearchEvent;
 import com.iReadingGroup.iReading.Event.ArticleCollectionStatusChangedEvent;
 import com.iReadingGroup.iReading.Bean.ArticleEntity;
 import com.iReadingGroup.iReading.Bean.ArticleEntityDao;
+import com.iReadingGroup.iReading.Event.BackToTopEvent;
 import com.iReadingGroup.iReading.Event.CollectArticleEvent;
 import com.iReadingGroup.iReading.R;
 import com.iReadingGroup.iReading.Event.SourceSelectEvent;
+import com.iReadingGroup.iReading.SpeedyLinearLayoutManager;
 
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
@@ -152,13 +154,11 @@ public class ArticleListFragment extends Fragment implements BGARefreshLayout.BG
         articleInfoAdapter = new ArticleInfoAdapter(getActivity(),
                 com.iReadingGroup.iReading.R.layout.listitem_article_info, alArticleInfo);
         infoListView.setAdapter(articleInfoAdapter);//link the adapter to ListView
-        LinearLayoutManager llm = new LinearLayoutManager(getActivity());
-        llm.setOrientation(LinearLayoutManager.VERTICAL);
-        infoListView.setLayoutManager(llm);
+        infoListView.setLayoutManager(new SpeedyLinearLayoutManager(getContext(), SpeedyLinearLayoutManager.VERTICAL, false));
         //Set click event for listView and pass the arguments through Bundle to the following activity.
 
         articleInfoAdapter.openLoadAnimation(0x00000001);
-        articleInfoAdapter.isFirstOnly(false);
+        articleInfoAdapter.isFirstOnly(true);
 
         infoListView.addOnItemTouchListener(new OnItemClickListener() {
             @Override
@@ -198,6 +198,9 @@ public class ArticleListFragment extends Fragment implements BGARefreshLayout.BG
         pageMap.put("Washington Post",0);
         pageMap.put("The Guardian",0);
         pageMap.put("The Times",0);
+        pageMap.put("Mail Online",0);
+        pageMap.put("BBC",0);
+        pageMap.put("PEOPLE",0);
         pageMap.put("所有",0);
 
     }
@@ -501,9 +504,24 @@ public class ArticleListFragment extends Fragment implements BGARefreshLayout.BG
                 setSourceForView("The Guardian");
                 break;
             }
-            case "The Times": {   //The Guardian
+            case "The Times": {   //The Times
                 requestUrl=getRequestUrl("thetimes.co.uk");
                 setSourceForView("The Times");
+                break;
+            }
+            case "Mail Online": {   //Mail Online
+                requestUrl=getRequestUrl("dailymail.co.uk");
+                setSourceForView("Mail Online");
+                break;
+            }
+            case "BBC": {   //BBC
+                requestUrl=getRequestUrl("bbc.com");
+                setSourceForView("BBC");
+                break;
+            }
+            case "PEOPLE": {   //PEOPLE
+                requestUrl=getRequestUrl("people.com");
+                setSourceForView("PEOPLE");
                 break;
             }
         }
@@ -538,6 +556,7 @@ public class ArticleListFragment extends Fragment implements BGARefreshLayout.BG
     private String getRequestUrl(String source_url) {
         return "http://eventregistry.org/json/article?sourceUri=" +
                 source_url +
+                "&lang=eng"+
                 "&action=getArticles&" +
                 "resultType=articles&" +
                 "articlesSortBy=date&" +
@@ -579,7 +598,11 @@ public class ArticleListFragment extends Fragment implements BGARefreshLayout.BG
         }
         EventBus.getDefault().postSticky(new CollectArticleEvent(0));
     }
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void onBackToTopEvent(BackToTopEvent event) {
+        infoListView.smoothScrollToPosition(0);
 
+    }
     @Override
     public void onStart() {
         super.onStart();
