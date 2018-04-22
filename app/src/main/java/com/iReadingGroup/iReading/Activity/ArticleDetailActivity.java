@@ -3,6 +3,8 @@ package com.iReadingGroup.iReading.Activity;
 import android.content.Context;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
@@ -13,6 +15,7 @@ import android.text.TextPaint;
 import android.text.method.LinkMovementMethod;
 import android.text.style.BackgroundColorSpan;
 import android.text.style.ClickableSpan;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
@@ -21,21 +24,18 @@ import android.view.ViewGroup;
 import android.widget.ImageButton;
 import android.widget.PopupWindow;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
 import com.ganxin.library.LoadDataLayout;
 import com.github.chrisbanes.photoview.PhotoView;
-import com.iReadingGroup.iReading.Event.ArticleCollectionStatusChangedEvent;
 import com.iReadingGroup.iReading.AsyncResponse;
 import com.iReadingGroup.iReading.Bean.ArticleEntity;
 import com.iReadingGroup.iReading.Bean.ArticleEntityDao;
-import com.iReadingGroup.iReading.Bean.DaoMaster;
-import com.iReadingGroup.iReading.Bean.DaoSession;
 import com.iReadingGroup.iReading.Bean.OfflineDictBean;
 import com.iReadingGroup.iReading.Bean.OfflineDictBeanDao;
 import com.iReadingGroup.iReading.Bean.WordCollectionBean;
 import com.iReadingGroup.iReading.Bean.WordCollectionBeanDao;
+import com.iReadingGroup.iReading.Event.ArticleCollectionStatusChangedEvent;
 import com.iReadingGroup.iReading.Event.CollectArticleEvent;
 import com.iReadingGroup.iReading.Event.CollectWordEvent;
 import com.iReadingGroup.iReading.FetchArticleAsyncTask;
@@ -47,7 +47,6 @@ import com.r0adkll.slidr.Slidr;
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
-import org.greenrobot.greendao.database.Database;
 
 import java.text.BreakIterator;
 import java.util.ArrayList;
@@ -60,14 +59,14 @@ import java.util.Locale;
 /**
  * ArticleDetailActivity
  * Created once an article is clicked
- *
+ * <p>
  * Get the parameters in Bundle from ArticleListFragment or ArticleCollectionNestFragment
  * These parameters includes article uri,title,source,time
  * First, using AsyncTask to fetch article's plain text and image using uri from API
  * Then, make Text clickable along with other ui settings
  * If a word is clicked, a popup window will show
  * It contains word brief meaning either from offline dictionary or Internet(using AsyncTask)
- *
+ * <p>
  * The collection of this article and word(in popup window) is handled here
  * This should query in the database and then make change,add or delete
  */
@@ -99,20 +98,25 @@ public class ArticleDetailActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(com.iReadingGroup.iReading.R.layout.activity_article_detail);
         mContext = this;
-
-        //get arguments from intent to bundle
-        articleTitleFromBundle = getArticleTitleFromBundle();
-        uri = getUriFromBundle();
-        source=getSourceFromBundle();
-        time=getTimeFromBundle();
-
-        //get the whole article plain text from uri
-        article = getArticle(uri);
-        //initialize database
-        initializeDatabase();
         initializeLoadingLayout();
 
+        if (isNetworkAvailable()) {
+            //get arguments from intent to bundle
+            articleTitleFromBundle = getArticleTitleFromBundle();
+            uri = getUriFromBundle();
+            source = getSourceFromBundle();
+            time = getTimeFromBundle();
+
+            //get the whole article plain text from uri
+            article = getArticle(uri);
+            //initialize database
+            initializeDatabase();
+        }
+
+
+
     }
+
     /**
      * initialize UI
      * This function is processed once after the FetchingArticleAsyncTask is finished
@@ -133,11 +137,11 @@ public class ArticleDetailActivity extends AppCompatActivity {
         Toolbar toolBar = (Toolbar) findViewById(com.iReadingGroup.iReading.R.id.toolbar);
         toolBar.setTitle(articleTitleFromBundle);//set corresponding title in toolbar
         setSupportActionBar(toolBar);
-        ImageButton button=findViewById(R.id.collect_article_button);
-        articleEntity=daoArticle.queryBuilder().where(ArticleEntityDao.Properties.Uri.eq(uri)).list().get(0);
-        if (articleEntity.getCollectStatus())  button.setImageDrawable(
+        ImageButton button = findViewById(R.id.collect_article_button);
+        articleEntity = daoArticle.queryBuilder().where(ArticleEntityDao.Properties.Uri.eq(uri)).list().get(0);
+        if (articleEntity.getCollectStatus()) button.setImageDrawable(
                 ContextCompat.getDrawable(getApplicationContext(), R.drawable.collect_true));
-        else  button.setImageDrawable(
+        else button.setImageDrawable(
                 ContextCompat.getDrawable(getApplicationContext(), R.drawable.collect_false));
 
         button.setOnClickListener(new View.OnClickListener() {
@@ -148,9 +152,7 @@ public class ArticleDetailActivity extends AppCompatActivity {
                 if (articleEntity.getCollectStatus()) {
                     button.setImageDrawable(
                             ContextCompat.getDrawable(getApplicationContext(), R.drawable.collect_false));
-                }
-
-                else {
+                } else {
                     //add collection
                     button.setImageDrawable(
                             ContextCompat.getDrawable(getApplicationContext(), R.drawable.collect_true));
@@ -171,9 +173,9 @@ public class ArticleDetailActivity extends AppCompatActivity {
     private void initializeDatabase() {
 
         MyApplication app = (MyApplication) getApplicationContext();//initialize UI
-        daoDictionary=app.getDaoDicitionary();
-        daoCollection=app.getDaoCollection();
-        daoArticle= app.getDaoArticle();
+        daoDictionary = app.getDaoDicitionary();
+        daoCollection = app.getDaoCollection();
+        daoArticle = app.getDaoArticle();
 
     }
 
@@ -183,9 +185,25 @@ public class ArticleDetailActivity extends AppCompatActivity {
         loadDataLayout.setOnReloadListener(new LoadDataLayout.OnReloadListener() {
             @Override
             public void onReload(View v, int status) {
+                loadDataLayout.setStatus(LoadDataLayout.LOADING);
+                if (isNetworkAvailable()) {
+                    //get arguments from intent to bundle
+                    articleTitleFromBundle = getArticleTitleFromBundle();
+                    uri = getUriFromBundle();
+                    source = getSourceFromBundle();
+                    time = getTimeFromBundle();
+
+                    //get the whole article plain text from uri
+                    article = getArticle(uri);
+                    //initialize database
+                    initializeDatabase();
+                }
+                else loadDataLayout.setStatus(LoadDataLayout.NO_NETWORK);
             }
         });
         loadDataLayout.setStatus(LoadDataLayout.LOADING);
+        if (!isNetworkAvailable()) loadDataLayout.setStatus(LoadDataLayout.NO_NETWORK);
+
 
     }
 
@@ -201,7 +219,7 @@ public class ArticleDetailActivity extends AppCompatActivity {
         makeTextViewSpannable(titleTextView, articleTitleFromBundle);
 
         TextView categoryTextView = findViewById(R.id.category);
-        makeTextViewSpannable(categoryTextView, "Category : " + category+"\nSource: "+source+"\nTime: "+time);
+        makeTextViewSpannable(categoryTextView, "Category : " + category + "\nSource: " + source + "\nTime: " + time);
 
     }
 
@@ -358,7 +376,7 @@ public class ArticleDetailActivity extends AppCompatActivity {
                     @Override
                     public void processFinish(Object output) {
                         meaning_result = (String) output;
-                        current_meaning=meaning_result.split("\n")[1];
+                        current_meaning = meaning_result.split("\n")[1];
                         //show popup window
                         showPopupWindow(widget);
                     }
@@ -372,7 +390,7 @@ public class ArticleDetailActivity extends AppCompatActivity {
 
                 } else {
                     //find meaning in offline dictionary
-                    current_meaning=joes.get(0).getMeaning();
+                    current_meaning = joes.get(0).getMeaning();
                     meaning_result = mWord + "[离线]\n" + current_meaning;
                     //show popup window
                     showPopupWindow(widget);
@@ -405,6 +423,7 @@ public class ArticleDetailActivity extends AppCompatActivity {
 
 
     }
+
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void onArticleCollectionStatusChangedEvent(ArticleCollectionStatusChangedEvent event) {
         String uri = event.uri;
@@ -422,6 +441,7 @@ public class ArticleDetailActivity extends AppCompatActivity {
         }
         EventBus.getDefault().postSticky(new CollectArticleEvent(uri));
     }
+
     /**
      * Before Stop
      * Save to the database and post the event when new word(s) collected.
@@ -470,4 +490,12 @@ public class ArticleDetailActivity extends AppCompatActivity {
     private void addWordIntoCurrentSelectedList(String word) {
         list_selected_words.add(word);
     }
+
+    private boolean isNetworkAvailable() {
+        ConnectivityManager connectivityManager
+                = (ConnectivityManager) getApplication().getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo activeNetworkInfo = connectivityManager.getActiveNetworkInfo();
+        return activeNetworkInfo != null && activeNetworkInfo.isConnected();
+    }
+
 }

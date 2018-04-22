@@ -378,13 +378,13 @@ public class MainActivity extends AppCompatActivity implements
     @Subscribe(threadMode = ThreadMode.MAIN, sticky = true)
     public void onCollectWordEvent(CollectWordEvent event) {
         //show the badge when the event is fired;
-        collectionBadge.showCirclePointBadge();//show red when collected
+        //collectionBadge.showCirclePointBadge();//show red when collected
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN, sticky = true)
     public void onProcessCollectArticleEvent(CollectArticleEvent event) {
         //show the badge when the event is fired;
-        collectionBadge.showCirclePointBadge();//show red when collected
+        //collectionBadge.showCirclePointBadge();//show red when collected
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)
@@ -523,7 +523,7 @@ public class MainActivity extends AppCompatActivity implements
             }
         });
         LinearLayout view2 = (LinearLayout) menu.findItem(R.id.action_search).getActionView();
-        SearchView sv = view2.findViewById(R.id.searchView);
+        final SearchView sv = view2.findViewById(R.id.searchView);
         sv.setMaxWidth(Integer.MAX_VALUE);
         sv.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override
@@ -535,6 +535,8 @@ public class MainActivity extends AppCompatActivity implements
             public boolean onQueryTextSubmit(String query) {
                 //post event to ArticleListFragment once search submitted
                 EventBus.getDefault().post(new ArticleSearchEvent(query));
+                sv.clearFocus();
+
                 return true;
             }
         });

@@ -101,6 +101,7 @@ public class WordSearchFragment extends Fragment {
             infoListView.addOnItemTouchListener(new OnItemClickListener() {
                 @Override
                 public void onSimpleItemClick(BaseQuickAdapter parent, View view, int position) {
+                    sv.clearFocus();
                     WordInfo h = (WordInfo) alWordInfo.get(position);
 
                     String current_word=h.getWord();

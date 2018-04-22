@@ -147,7 +147,7 @@ public class CollectionFragment extends Fragment {
         TabLayout.Tab tab = mTabLayout.getTabAt(position);
         if (tab != null) {
             View view = tab.getCustomView();
-            ((BGABadgeTextView) view.findViewById(R.id.tv_title)).showCirclePointBadge();
+            //((BGABadgeTextView) view.findViewById(R.id.tv_title)).showCirclePointBadge();
 
         }
     }

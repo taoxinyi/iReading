@@ -115,57 +115,53 @@ public class FetchingWordDetailAsyncTask extends AsyncTask<String, String, Strin
     @Override
     protected void onPostExecute(String result) {
         super.onPostExecute(result);
-        WordDetail wordDetail=new WordDetail();
-        String ps="";
-        String pos="";
-        String orig="";
-        XmlPullParser parser = Xml.newPullParser();
-        try {
-            parser.setInput(new StringReader(result));
-            int event = parser.getEventType();
-            while (event != XmlPullParser.END_DOCUMENT) {
-                switch (event) {
-                    case XmlPullParser.START_DOCUMENT:
-                        break;
-                    case XmlPullParser.START_TAG:
-                        if ("key".equals(parser.getName())){
-                            wordDetail.setWord(parser.nextText().replaceAll("\n",""));
-                        }
-                        else if ("ps".equals(parser.getName())){
-                           ps=parser.nextText().replaceAll("\n","");
-                        }
-                        else if ("pron".equals(parser.getName())){
-                            wordDetail.addPron(ps,parser.nextText().replaceAll("\n",""));
-                        }
-                        else if ("pos".equals(parser.getName())){
-                            pos=parser.nextText().replaceAll("\n","");
-                        }
-                        else if ("acceptation".equals(parser.getName())){
-                            wordDetail.addMeaning(pos,parser.nextText().replaceAll("\n",""));
-                        }
-                        else if ("orig".equals(parser.getName())) {
-                            orig=parser.nextText().replaceAll("\n","");
-                        }
-                        else if ("trans".equals(parser.getName())) {
-                            wordDetail.addSent(orig,parser.nextText().replaceAll("\n",""));
-                        }
-                        break;
-                    case XmlPullParser.END_TAG:
-                        break;
-                }
 
-                event = parser.next();
+        WordDetail wordDetail=new WordDetail();
+        if (result==null) delegate.processFinish(wordDetail);
+        else {
+            String ps = "";
+            String pos = "";
+            String orig = "";
+            XmlPullParser parser = Xml.newPullParser();
+            try {
+                parser.setInput(new StringReader(result));
+                int event = parser.getEventType();
+                while (event != XmlPullParser.END_DOCUMENT) {
+                    switch (event) {
+                        case XmlPullParser.START_DOCUMENT:
+                            break;
+                        case XmlPullParser.START_TAG:
+                            if ("key".equals(parser.getName())) {
+                                wordDetail.setWord(parser.nextText().replaceAll("\n", ""));
+                            } else if ("ps".equals(parser.getName())) {
+                                ps = parser.nextText().replaceAll("\n", "");
+                            } else if ("pron".equals(parser.getName())) {
+                                wordDetail.addPron(ps, parser.nextText().replaceAll("\n", ""));
+                            } else if ("pos".equals(parser.getName())) {
+                                pos = parser.nextText().replaceAll("\n", "");
+                            } else if ("acceptation".equals(parser.getName())) {
+                                wordDetail.addMeaning(pos, parser.nextText().replaceAll("\n", ""));
+                            } else if ("orig".equals(parser.getName())) {
+                                orig = parser.nextText().replaceAll("\n", "");
+                            } else if ("trans".equals(parser.getName())) {
+                                wordDetail.addSent(orig, parser.nextText().replaceAll("\n", ""));
+                            }
+                            break;
+                        case XmlPullParser.END_TAG:
+                            break;
+                    }
+
+                    event = parser.next();
+
+                }
+                delegate.processFinish(wordDetail);
+
+
+            } catch (XmlPullParserException a) {
+
+            } catch (IOException a) {
 
             }
-            delegate.processFinish(wordDetail);
-
-
-        }catch (XmlPullParserException a)
-        {
-
-        }catch (IOException a){
-
         }
-
     }
 }

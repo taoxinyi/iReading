@@ -1,7 +1,6 @@
 package com.iReadingGroup.iReading;
 
 import android.os.AsyncTask;
-import android.util.Log;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -88,23 +87,26 @@ public class FetchingBriefMeaningAsyncTask extends AsyncTask<String, String, Str
         super.onPostExecute(result);
         try {   //parse word from json
             //sample link.:http://dict-co.iciba.com/api/dictionary.php?w=go&key=341DEFE6E5CA504E62A567082590D0BD&type=json
-            JSONObject reader = new JSONObject(result);
-            JSONArray symbols = reader.getJSONArray("symbols");
-            JSONObject symbols_0 = symbols.getJSONObject(0);
-            JSONArray parts = symbols_0.getJSONArray("parts");
-            JSONObject parts_0 = parts.getJSONObject(0);
-            String part = parts_0.getString("part");
-            JSONArray means = parts_0.getJSONArray("means");
-            String meaning = "";
-            for (int i = 0; i < means.length(); i++) {
-                meaning += means.getString(i) + ";";
+            if (result == null) delegate.processFinish("无网络\n请先联网");
+            else {
+                JSONObject reader = new JSONObject(result);
+                JSONArray symbols = reader.getJSONArray("symbols");
+                JSONObject symbols_0 = symbols.getJSONObject(0);
+                JSONArray parts = symbols_0.getJSONArray("parts");
+                JSONObject parts_0 = parts.getJSONObject(0);
+                String part = parts_0.getString("part");
+                JSONArray means = parts_0.getJSONArray("means");
+                String meaning = "";
+                for (int i = 0; i < means.length(); i++) {
+                    meaning += means.getString(i) + ";";
+                }
+                meaning = meaning.substring(0, meaning.length() - 1);
+
+                String word_name = reader.getString("word_name");
+
+                //return word_name+part+meaning
+                delegate.processFinish(word_name + "\n" + part + " " + meaning);
             }
-            meaning = meaning.substring(0, meaning.length() - 1);
-
-            String word_name = reader.getString("word_name");
-
-            //return word_name+part+meaning
-            delegate.processFinish(word_name + "\n" + part + " " + meaning);
         } catch (JSONException e) {
 
         }
