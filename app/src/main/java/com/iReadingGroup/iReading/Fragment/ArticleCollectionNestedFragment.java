@@ -1,11 +1,13 @@
 package com.iReadingGroup.iReading.Fragment;
 
+import android.content.Context;
 import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -18,7 +20,11 @@ import com.iReadingGroup.iReading.Activity.MainActivity;
 import com.iReadingGroup.iReading.Adapter.ArticleInfoAdapter;
 import com.iReadingGroup.iReading.Bean.ArticleEntity;
 import com.iReadingGroup.iReading.Bean.ArticleEntityDao;
+import com.iReadingGroup.iReading.Bean.WordCollectionBean;
+import com.iReadingGroup.iReading.Bean.WordCollectionBeanDao;
 import com.iReadingGroup.iReading.Event.CollectArticleEvent;
+import com.iReadingGroup.iReading.R;
+import com.iReadingGroup.iReading.WordInfo;
 
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
@@ -42,7 +48,7 @@ import static java.util.Collections.max;
  * Load the articles from database and add them into ArrayList
  * Almost identical to ArticleListFragment, unless here we cannot refresh
  *
- * @// TODO: 2018/4/5 Add load more
+
  *
  */
 public  class ArticleCollectionNestedFragment extends Fragment implements BGARefreshLayout.BGARefreshLayoutDelegate{
@@ -110,7 +116,7 @@ public  class ArticleCollectionNestedFragment extends Fragment implements BGARef
         //Set click event for listView and pass the arguments through Bundle to the following activity.
 
         articleInfoAdapter.openLoadAnimation(0x00000001);
-        articleInfoAdapter.isFirstOnly(false);
+        articleInfoAdapter.isFirstOnly(true);
         infoListView.addOnItemTouchListener(new  OnItemClickListener( ) {
             @Override
             public void onSimpleItemClick(BaseQuickAdapter parent, View view, int position)
@@ -158,41 +164,13 @@ public  class ArticleCollectionNestedFragment extends Fragment implements BGARef
     }
 
     /**
-     * @// TODO: 2018/4/5 Add load more from database
+     *
      * @param refreshLayout
      * @return
      */
     @Override
     public boolean onBGARefreshLayoutBeginLoadingMore(BGARefreshLayout refreshLayout) {
-        //  Loading more (history) data from server or cache, Return false to disable the refreshing action.
-
-        if (true) {
-            // if the network is good, continue and return true.
-            new AsyncTask<Void, Void, Void>() {
-
-                @Override
-                protected Void doInBackground(Void... params) {
-                    try {
-                        Thread.sleep(1000);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                    return null;
-                }
-
-                @Override
-                protected void onPostExecute(Void aVoid) {
-                    mRefreshLayout.endLoadingMore();//finish loading
-
-                }
-            }.execute();
-
-            return true;
-        } else {
-            // The network is not connected
-            Toast.makeText(getContext(), "网络不可用", Toast.LENGTH_SHORT).show();
-            return false;
-        }
+        return  false;
     }
 
     /**
@@ -202,28 +180,43 @@ public  class ArticleCollectionNestedFragment extends Fragment implements BGARef
      * than read data from database again and update view
      * @param event the event
      */
-    @Subscribe(threadMode = ThreadMode.MAIN,sticky = true)
+    @Subscribe(threadMode = ThreadMode.MAIN)
     public void onProcessCollectArticleEvent(CollectArticleEvent event) {
-        alArticleInfo.clear();
-        alArticleInfo.addAll
-                (daoArticle.queryBuilder().orderAsc(ArticleEntityDao.Properties.CollectTime).where(ArticleEntityDao.Properties.CollectStatus.eq(true)).list());
+        String uri=event.uri;
+        ArticleEntity article = daoArticle.queryBuilder().where(ArticleEntityDao.Properties.Uri.eq(uri)).list().get(0);
+        boolean collectStatus=article.getCollectStatus();
 
-        articleInfoAdapter.notifyDataSetChanged();
-        EventBus.getDefault().removeStickyEvent(event);
+        int index=-1;
+        for (int i=0;i<alArticleInfo.size();i++) {
+            if (alArticleInfo.get(i).getUri().equals(uri)) {
+                index = i;
+                break;
+            }
+        }
+        if (!collectStatus && index!=-1)
+        {//not collected but in collection list
+            alArticleInfo.remove(index);
+            articleInfoAdapter.notifyItemRemoved(index);
+        }
+        else if (collectStatus && index==-1) {//collected but not in the list
+            alArticleInfo.add(0, article);
+            articleInfoAdapter.notifyItemInserted(0);
+        }
     }
 
 
     @Override
-    public void onStart() {
-        super.onStart();
-        EventBus.getDefault().register(this);
+    public void onAttach(Context context) {
+        super.onAttach(context);
+        if (!EventBus.getDefault().isRegistered(this))
+            EventBus.getDefault().register(this);
     }
 
+
     @Override
-    public void onStop() {
+    public void onDetach() {
+        super.onDetach();
         EventBus.getDefault().unregister(this);
-        super.onStop();
-
     }
 
     /**

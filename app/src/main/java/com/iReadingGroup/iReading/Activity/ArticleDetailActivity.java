@@ -36,6 +36,7 @@ import com.iReadingGroup.iReading.Bean.OfflineDictBean;
 import com.iReadingGroup.iReading.Bean.OfflineDictBeanDao;
 import com.iReadingGroup.iReading.Bean.WordCollectionBean;
 import com.iReadingGroup.iReading.Bean.WordCollectionBeanDao;
+import com.iReadingGroup.iReading.Event.CollectArticleEvent;
 import com.iReadingGroup.iReading.Event.CollectWordEvent;
 import com.iReadingGroup.iReading.FetchArticleAsyncTask;
 import com.iReadingGroup.iReading.FetchingBriefMeaningAsyncTask;
@@ -44,6 +45,8 @@ import com.iReadingGroup.iReading.R;
 import com.r0adkll.slidr.Slidr;
 
 import org.greenrobot.eventbus.EventBus;
+import org.greenrobot.eventbus.Subscribe;
+import org.greenrobot.eventbus.ThreadMode;
 import org.greenrobot.greendao.database.Database;
 
 import java.text.BreakIterator;
@@ -145,14 +148,12 @@ public class ArticleDetailActivity extends AppCompatActivity {
                 if (articleEntity.getCollectStatus()) {
                     button.setImageDrawable(
                             ContextCompat.getDrawable(getApplicationContext(), R.drawable.collect_false));
-                    articleEntity.setCollectStatus(false);
                 }
 
                 else {
                     //add collection
                     button.setImageDrawable(
                             ContextCompat.getDrawable(getApplicationContext(), R.drawable.collect_true));
-                    articleEntity.setCollectStatus(true);
                     Date currentTime = Calendar.getInstance().getTime();
 
                 }
@@ -404,7 +405,23 @@ public class ArticleDetailActivity extends AppCompatActivity {
 
 
     }
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void onArticleCollectionStatusChangedEvent(ArticleCollectionStatusChangedEvent event) {
+        String uri = event.uri;
+        final ArticleEntity article = daoArticle.queryBuilder().where(ArticleEntityDao.Properties.Uri.eq(uri)).list().get(0);
+        if (article.getCollectStatus()) {
+            article.setCollectStatus(false);
+            daoArticle.update(article);
+        } else {
+            //add collection
+            article.setCollectStatus(true);
+            Date currentTime = Calendar.getInstance().getTime();
+            article.setCollectTime(currentTime);
+            daoArticle.update(article);
 
+        }
+        EventBus.getDefault().postSticky(new CollectArticleEvent(uri));
+    }
     /**
      * Before Stop
      * Save to the database and post the event when new word(s) collected.

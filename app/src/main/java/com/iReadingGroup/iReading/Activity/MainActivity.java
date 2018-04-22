@@ -151,7 +151,7 @@ public class MainActivity extends AppCompatActivity implements
             }
             File dataFile = new File(outFileName);
             if (dataFile.exists()) {
-                dataFile.delete();
+                return;
             }
             InputStream myInput;
             myInput = getApplicationContext().getAssets().open(DB_NAME);
@@ -402,8 +402,6 @@ public class MainActivity extends AppCompatActivity implements
             daoCollection.delete(l.get(0));
         }
         EventBus.getDefault().postSticky(new WordDatasetChangedEvent(word,meaning));
-        int s=daoCollection.queryBuilder().where(WordCollectionBeanDao.Properties.Word.eq(word)).list().size();
-        Log.d("datasetchange",s+"");
     }
 
 
@@ -421,9 +419,8 @@ public class MainActivity extends AppCompatActivity implements
             article.setCollectTime(currentTime);
             daoArticle.update(article);
 
-
         }
-        EventBus.getDefault().postSticky(new CollectArticleEvent(0));
+        EventBus.getDefault().post(new CollectArticleEvent(uri));
     }
     /**
      * On start.

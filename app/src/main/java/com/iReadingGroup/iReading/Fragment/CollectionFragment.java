@@ -164,8 +164,9 @@ public class CollectionFragment extends Fragment {
     public void onCollectWordEvent(CollectWordEvent event){
         showTabBadge(0);
     }
+
     @Subscribe(threadMode = ThreadMode.MAIN,sticky = true)
-    public void onCollectArticleEvent(CollectArticleEvent event){
+    public void onCollectArticleEvent(CollectArticleEvent event) {
         showTabBadge(1);
     }
     @Override

@@ -68,12 +68,12 @@ public class WordSearchFragment extends Fragment {
             // }
 
             v = inflater.inflate(R.layout.fragment_word_search, container, false);
-            SearchView sv = v.findViewById(R.id.search_word);
+            final SearchView sv = v.findViewById(R.id.search_word);
             sv.setIconifiedByDefault(true);
-            sv.setFocusable(true);
+            //sv.setFocusable(true);
             sv.setIconified(false);
-            sv.clearFocus();
-            sv.requestFocusFromTouch();
+            //sv.clearFocus();
+            //sv.requestFocusFromTouch();
             SearchView.SearchAutoComplete theTextArea = (SearchView.SearchAutoComplete) sv.findViewById(R.id.search_src_text);
             theTextArea.setTextColor(Color.GRAY);
             theTextArea.setHintTextColor(Color.GRAY);
@@ -119,6 +119,7 @@ public class WordSearchFragment extends Fragment {
                                           @Override
                                           public boolean onQueryTextSubmit(String query) {
                                               search(query);
+                                              sv.clearFocus();
                                               return true;
                                           }
 
@@ -183,7 +184,6 @@ public class WordSearchFragment extends Fragment {
 
     @Subscribe(threadMode = ThreadMode.MAIN, sticky = true)
     public void WordDatasetChangedEvent(WordDatasetChangedEvent event) {
-        Log.d("datasetchanged",event.word);
         String word = event.word;
         String meaning = event.meaning;
         List<WordCollectionBean> l = daoCollection.queryBuilder().where(WordCollectionBeanDao.Properties.Word.eq(word)).list();

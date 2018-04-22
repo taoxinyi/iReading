@@ -8,14 +8,14 @@ public class CollectArticleEvent {
     /**
      * The Count.
      */
-    public final int count;
+    public final String uri;
 
     /**
      * Instantiates a new Collect word event.
      *
-     * @param count the count
+     * @param uri the count
      */
-    public CollectArticleEvent(int count) {
-        this.count = count;
+    public CollectArticleEvent(String uri) {
+        this.uri = uri;
     }
 }

@@ -580,24 +580,7 @@ public class ArticleListFragment extends Fragment implements BGARefreshLayout.BG
 
     }
 
-    @Subscribe(threadMode = ThreadMode.MAIN)
-    public void onArticleSwipeCollectEvent(ArticleCollectionStatusChangedEvent event) {
-        String uri = event.uri;
-        final ArticleEntity article = daoArticle.queryBuilder().where(ArticleEntityDao.Properties.Uri.eq(uri)).list().get(0);
-        if (article.getCollectStatus()) {
-            article.setCollectStatus(false);
-            daoArticle.update(article);
-        } else {
-            //add collection
-            article.setCollectStatus(true);
-            Date currentTime = Calendar.getInstance().getTime();
-            article.setCollectTime(currentTime);
-            daoArticle.update(article);
 
-
-        }
-        EventBus.getDefault().postSticky(new CollectArticleEvent(0));
-    }
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void onBackToTopEvent(BackToTopEvent event) {
         infoListView.smoothScrollToPosition(0);

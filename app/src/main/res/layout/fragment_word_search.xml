@@ -3,7 +3,9 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:orientation="vertical"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:focusableInTouchMode="true"
+    android:descendantFocusability="beforeDescendants">
     <android.support.v7.widget.Toolbar
         android:id="@+id/toolbar_word_search"
         app:theme="@style/AppTheme.Toolbar"

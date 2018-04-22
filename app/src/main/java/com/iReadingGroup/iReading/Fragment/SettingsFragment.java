@@ -2,39 +2,27 @@ package com.iReadingGroup.iReading.Fragment;
 
 import android.content.Context;
 import android.content.Intent;
-import android.graphics.Bitmap;
-import android.graphics.drawable.BitmapDrawable;
-import android.graphics.drawable.Drawable;
 import android.net.Uri;
-import android.os.Bundle;
-import android.support.v4.app.Fragment;
-import android.support.v4.content.ContextCompat;
-import android.view.Gravity;
-import android.view.LayoutInflater;
-import android.view.View;
-import android.view.ViewGroup;
-import android.widget.TextView;
 import android.widget.Toast;
 
-import com.danielstone.materialaboutlibrary.ConvenienceBuilder;
 import com.danielstone.materialaboutlibrary.MaterialAboutFragment;
 import com.danielstone.materialaboutlibrary.items.MaterialAboutActionItem;
 import com.danielstone.materialaboutlibrary.items.MaterialAboutItemOnClickAction;
 import com.danielstone.materialaboutlibrary.items.MaterialAboutTitleItem;
 import com.danielstone.materialaboutlibrary.model.MaterialAboutCard;
 import com.danielstone.materialaboutlibrary.model.MaterialAboutList;
+import com.iReadingGroup.iReading.ClearCache;
 import com.iReadingGroup.iReading.R;
-import com.mikepenz.iconics.IconicsDrawable;
 
 import java.net.URLEncoder;
 
 public class SettingsFragment extends MaterialAboutFragment {
     public static final String ALIPAY_PERSON = "HTTPS://QR.ALIPAY.COM/FKX06332TUSRAIPEXK1818";
+
     @Override
     protected MaterialAboutList getMaterialAboutList(final Context activityContext) {
         MaterialAboutCard.Builder appCardBuilder = new MaterialAboutCard.Builder();
 
-        // Add items to card
 
         appCardBuilder.addItem(new MaterialAboutTitleItem.Builder()
                 .text("iReading")
@@ -47,31 +35,48 @@ public class SettingsFragment extends MaterialAboutFragment {
                 .build());
         MaterialAboutCard.Builder authorCardBuilder = new MaterialAboutCard.Builder();
         authorCardBuilder.title("Author");
-//        authorCardBuilder.titleColor(ContextCompat.getColor(c, R.color.colorAccent));
 
         authorCardBuilder.addItem(new MaterialAboutActionItem.Builder()
                 .text("Rhombicosidodecahedron")
                 .subText("SJTU")
-                .icon( R.mipmap.myface)
+                .icon(R.mipmap.myface)
                 .build());
         authorCardBuilder.addItem(new MaterialAboutActionItem.Builder()
                 .text("捐赠")
-                .icon( R.mipmap.pay)
+                .icon(R.mipmap.pay)
                 .setOnClickAction(new MaterialAboutItemOnClickAction() {
-            @Override
-            public void onClick() {
-                openAliPay2Pay(ALIPAY_PERSON);
-            }
-        })
+                    @Override
+                    public void onClick() {
+                        openAliPay2Pay(ALIPAY_PERSON);
+                    }
+                })
                 .build());
+        MaterialAboutCard.Builder cleanCachebuilder = new MaterialAboutCard.Builder();
+        cleanCachebuilder.addItem(new MaterialAboutActionItem.Builder()
+                .text("清除缓存")
+                .subText("清除所有的图片缓存,不会删除你的收藏哟")
+                .icon(R.mipmap.clearcache)
+                .setOnClickAction(new MaterialAboutItemOnClickAction() {
+                    @Override
+                    public void onClick() {
+                        try {
+                            Toast.makeText(getContext(), "清除缓存" + ClearCache.getTotalCacheSize(getContext()), Toast.LENGTH_SHORT).show();
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                        ClearCache.clearAllCache(getContext());
 
-        return new MaterialAboutList(appCardBuilder.build(),authorCardBuilder.build()); // This creates an empty screen, add cards with .addCard()
+                    }
+                })
+                .build());
+        return new MaterialAboutList(appCardBuilder.build(), authorCardBuilder.build(), cleanCachebuilder.build()); // This creates an empty screen, add cards with .addCard()
     }
 
     @Override
     protected int getTheme() {
         return R.style.AppTheme_MaterialAboutActivity_Fragment;
     }
+
     /**
      * 支付
      *
