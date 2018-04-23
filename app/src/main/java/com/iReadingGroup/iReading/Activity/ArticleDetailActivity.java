@@ -21,6 +21,10 @@ import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowManager;
+import android.webkit.WebSettings;
+import android.webkit.WebView;
+import android.webkit.WebViewClient;
 import android.widget.ImageButton;
 import android.widget.PopupWindow;
 import android.widget.TextView;
@@ -54,6 +58,8 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 
 /**
@@ -122,14 +128,14 @@ public class ArticleDetailActivity extends AppCompatActivity {
      * This function is processed once after the FetchingArticleAsyncTask is finished
      */
     private void initUI() {
-        loadDataLayout.setStatus(LoadDataLayout.SUCCESS);//load succeed
-
-        Slidr.attach(this);//Silde Back function
 
         initializeToolBar();
         initializeStatusBar();
         initializeTextView();
         initializeImageView();
+        Slidr.attach(this);//Silde Back function
+        loadDataLayout.setStatus(LoadDataLayout.SUCCESS);//load succeed
+
 
     }
 
@@ -168,6 +174,7 @@ public class ArticleDetailActivity extends AppCompatActivity {
     private void initializeStatusBar() {
         //set StatusBar Color
         getWindow().setStatusBarColor(ContextCompat.getColor(this, R.color.colorPrimary));
+
     }
 
     private void initializeDatabase() {
@@ -213,8 +220,9 @@ public class ArticleDetailActivity extends AppCompatActivity {
      * Set every textview clickable
      */
     private void initializeTextView() {
-        articleTextView = (TextView) findViewById(com.iReadingGroup.iReading.R.id.text);
-        makeTextViewSpannable(articleTextView, article);//make every word clickable
+        //articleTextView = (TextView) findViewById(com.iReadingGroup.iReading.R.id.text);
+        //makeTextViewSpannable(articleTextView, article);//make every word clickable
+        initializeWebView();
         TextView titleTextView = (TextView) findViewById(R.id.title);
         makeTextViewSpannable(titleTextView, articleTitleFromBundle);
 
@@ -222,7 +230,31 @@ public class ArticleDetailActivity extends AppCompatActivity {
         makeTextViewSpannable(categoryTextView, "Category : " + category + "\nSource: " + source + "\nTime: " + time);
 
     }
-
+    private void initializeWebView()
+    {
+        WebView textWebview=findViewById(R.id.wv);
+        textWebview.setWebViewClient(new MyWebViewClient(this));
+        textWebview.requestFocus();
+        StringBuilder sum=new StringBuilder("<p style=\"text-align: justify\">");
+        Pattern ptrn = Pattern.compile("[^\\s\\W]+|\\S+|(\\s)+");
+        Matcher m = ptrn.matcher(article);
+        List<String> list = new ArrayList<>();
+        while (m.find()) {
+            list.add(m.group(0));
+        }
+        for (String a:list)
+        {   a=a.replace("\n","<br>");
+            if (isAlpha(a))
+            {
+                sum.append("<a href=\"a://"+a+"\">"+a+"</a>");
+            }
+            else sum.append(a);
+        }
+        sum.append("</p>");
+        String htmlBody = "<link rel=\"stylesheet\" type=\"text/css\" href=\"style.css\" />" + sum;
+        textWebview.loadDataWithBaseURL("file:///android_asset/", htmlBody, "text/html", "utf-8",
+                null);
+    }
     private void initializeImageView() {
         PhotoView imageView = findViewById(R.id.img_article);
         Glide.with(this).load(imageUrl).into(imageView);
@@ -422,6 +454,52 @@ public class ArticleDetailActivity extends AppCompatActivity {
                 0, 0);
 
 
+    }
+    public class MyWebViewClient extends WebViewClient {
+
+        private Context context;
+
+        public MyWebViewClient(Context context) {
+            this.context = context;
+        }
+
+        @Override
+        public boolean shouldOverrideUrlLoading(final WebView view, String url) {
+            String mWord=url.substring(4).toLowerCase();
+            //if clicked on a word
+            //if the asyncTask finishes fetching word meaning from Internet
+            current_word = mWord;
+            FetchingBriefMeaningAsyncTask asyncTask = new FetchingBriefMeaningAsyncTask(new AsyncResponse() {
+                @Override
+                public void processFinish(Object output) {
+                    meaning_result = (String) output;
+                    current_meaning = meaning_result.split("\n")[1];
+                    //show popup window
+                    showPopupWindow(view);
+                }
+            });
+            //using iciba api to search the word, type json is small to transfer
+            List<OfflineDictBean> joes = daoDictionary.queryBuilder()
+                    .where(OfflineDictBeanDao.Properties.Word.eq(mWord))
+                    .list();
+            if (joes.size() == 0) {   //find nothing in offline dictionary,using online query
+                asyncTask.execute("https://dict-co.iciba.com/api/dictionary.php?key=341DEFE6E5CA504E62A567082590D0BD&type=json&w=" + mWord);
+
+            } else {
+                //find meaning in offline dictionary
+                current_meaning = joes.get(0).getMeaning();
+                meaning_result = mWord + "[离线]\n" + current_meaning;
+                //show popup window
+                showPopupWindow(view);
+
+            }
+
+            return true;
+        }
+    }
+
+    private boolean isAlpha(String name) {
+        return name.matches("[a-zA-Z]+");
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)

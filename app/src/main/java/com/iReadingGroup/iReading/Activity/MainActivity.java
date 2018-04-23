@@ -1,9 +1,8 @@
 package com.iReadingGroup.iReading.Activity;
 
 import android.annotation.SuppressLint;
-import android.content.ActivityNotFoundException;
-import android.content.ComponentName;
-import android.content.Intent;
+import android.app.DialogFragment;
+import android.app.FragmentTransaction;
 import android.os.Bundle;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.view.ViewPager;
@@ -11,13 +10,15 @@ import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.SearchView;
 import android.support.v7.widget.Toolbar;
-import android.util.Log;
+import android.text.format.Time;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.widget.LinearLayout;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.iReadingGroup.iReading.Adapter.MainActivityPagesAdapter;
 import com.iReadingGroup.iReading.DoubleClickBackToContentTopListener;
@@ -97,9 +98,26 @@ public class MainActivity extends AppCompatActivity implements
     public boolean buttonStatus = false;//whether the button is clicked
     public int last_nested_page = 0;//which nested page is selected when the page changes
     private Drawer drawer;
+    private String last_section="所有";
     @SuppressLint("SdCardPath")
     private static final String DB_PATH = "/data/data/com.iReadingGroup.iReading/databases/";//database external path
     private static final String DB_NAME = "wordDetail.db";//database name
+
+    public static class MyDialogFragment extends DialogFragment {
+
+        static MyDialogFragment newInstance() {
+            MyDialogFragment f = new MyDialogFragment();
+            return f;
+        }
+
+        @Override
+        public View onCreateView(LayoutInflater inflater, ViewGroup container,
+                                 Bundle savedInstanceState) {
+            View v = inflater.inflate(R.layout.fragment_dialog, container, false);
+            return v;
+        }
+
+    }
 
     /**
      * Create the activity
@@ -109,6 +127,13 @@ public class MainActivity extends AppCompatActivity implements
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        //FragmentTransaction ft = getFragmentManager().beginTransaction();
+        //DialogFragment newFragment = MyDialogFragment.newInstance();
+        //newFragment.show(ft, "dialog");
+
+        Time time = new Time();
+        time.setToNow();
         setContentView(com.iReadingGroup.iReading.R.layout.activity_main);//set layout
         initializeUI();
         MyApplication app = (MyApplication) getApplicationContext();//initialize UI
@@ -117,6 +142,8 @@ public class MainActivity extends AppCompatActivity implements
         app.setDaoArticle(daoArticle);
         app.setDaoCollection(daoCollection);
         app.setDaoDicitionary(daoDictionary);
+
+        time.setToNow();
     }
     @Override
     public void backToContentTop() {
@@ -151,7 +178,7 @@ public class MainActivity extends AppCompatActivity implements
             }
             File dataFile = new File(outFileName);
             if (dataFile.exists()) {
-                return;
+               return;
             }
             InputStream myInput;
             myInput = getApplicationContext().getAssets().open(DB_NAME);
@@ -174,6 +201,7 @@ public class MainActivity extends AppCompatActivity implements
      * Initialize the database into instance
      */
     private void initializeDatabase() {
+
         DaoMaster.DevOpenHelper helper = new DaoMaster.DevOpenHelper(this, DB_NAME);
         Database db = helper.getWritableDb();
         DaoSession daoSession = new DaoMaster(db).newSession();
@@ -188,6 +216,7 @@ public class MainActivity extends AppCompatActivity implements
         Database db_article = helper_article.getWritableDb();
         DaoSession daoSession_article = new DaoMaster(db_article).newSession();
         daoArticle = daoSession_article.getArticleEntityDao();// this is the database(cache) recording user's articles
+
     }
 
     /**
@@ -197,7 +226,8 @@ public class MainActivity extends AppCompatActivity implements
     private void initializeToolBar() {
         //initialize ToolBar
         toolBar = (Toolbar) findViewById(com.iReadingGroup.iReading.R.id.toolbar);
-        ((TextView) findViewById(R.id.toolbar_title)).setText("阅读");
+        ((TextView) findViewById(R.id.toolbar_title)).setText("所有");
+
         toolBar.setTitle("");
         toolBar.setOnClickListener(new DoubleClickBackToContentTopListener(this));
 
@@ -230,7 +260,7 @@ public class MainActivity extends AppCompatActivity implements
                 switch (position) {
                     case 0:
                         viewPager.setCurrentItem(0);
-                        ((TextView) findViewById(R.id.toolbar_title)).setText("阅读");
+                        ((TextView) findViewById(R.id.toolbar_title)).setText(last_section);
                         break;
                     case 1:
                         viewPager.setCurrentItem(1);
@@ -330,7 +360,6 @@ public class MainActivity extends AppCompatActivity implements
         //create the drawer
         drawer = new DrawerBuilder()
                 .withActivity(this)
-                .withTranslucentStatusBar(true)
                 .withAccountHeader(headerResult, true)
                 .withHeader(R.layout.header)
                 .withHeaderHeight(DimenHolder.fromDp(30))
@@ -359,6 +388,8 @@ public class MainActivity extends AppCompatActivity implements
                     public boolean onItemClick(View view, int position, IDrawerItem drawerItem) {
                         //post the event to article list fragment about what section is selected
                         String title = ((PrimaryDrawerItem) drawerItem).getName().toString();
+                        ((TextView) findViewById(R.id.toolbar_title)).setText(title);
+                        last_section=title;
                         EventBus.getDefault().post(new SourceSelectEvent(title));
                         headerResult.updateProfile(new ProfileDrawerItem().withIdentifier(0).withEmail(title)
                                 .withIcon(((PrimaryDrawerItem) drawerItem).getIcon().getIconRes()).withName(map.get(title)));

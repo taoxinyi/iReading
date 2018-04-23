@@ -6,9 +6,12 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.RecyclerView;
+import android.text.format.Time;
 import android.util.Log;
+import android.util.TimeUtils;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -29,6 +32,7 @@ import com.iReadingGroup.iReading.Event.BackToTopEvent;
 import com.iReadingGroup.iReading.Event.SourceSelectEvent;
 import com.iReadingGroup.iReading.R;
 import com.iReadingGroup.iReading.SpeedyLinearLayoutManager;
+import com.iReadingGroup.iReading.TimeUtil;
 
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
@@ -76,15 +80,17 @@ public class ArticleListFragment extends Fragment implements BGARefreshLayout.BG
     private ArrayList<String> current_uri_list = new ArrayList<>();
     private View view;
     private ArticleEntityDao daoArticle;
-    private String requestUrl = "http://eventregistry.org/json/article?lang=eng&action=getArticles&resultType=articles&articlesSortBy=date&articlesCount=5&articlesIncludeArticleEventUri=false&articlesIncludeArticleImage=true&articlesArticleBodyLen=0&articlesIncludeConceptLabel=false&apiKey=475f7fdb-7929-4222-800e-0151bdcd4af2";
+    private String requestUrl = "http://eventregistry.org/json/article?lang=eng&action=getArticles&resultType=articles&articlesSortBy=date&articlesCount=10&articlesIncludeArticleEventUri=false&articlesIncludeArticleImage=true&articlesArticleBodyLen=0&articlesIncludeConceptLabel=false&apiKey=475f7fdb-7929-4222-800e-0151bdcd4af2";
     private HashMap<String, Integer> pageMap = new HashMap<>();
     private String current_source = "所有";
     private String requestUrlCache;
     private String searchUrlPrefix = requestUrl + "&keywordLoc=title&keyword=";
     private Integer pageCache;
+    private SpeedyLinearLayoutManager layoutManager;
 
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
+
         //Must add in every fragments' onCreateView to avoid duplicate creating.
         if (null != view) {
             ViewGroup parent = (ViewGroup) view.getParent();
@@ -96,6 +102,18 @@ public class ArticleListFragment extends Fragment implements BGARefreshLayout.BG
             view = inflater.inflate(com.iReadingGroup.iReading.R.layout.fragment_article_info, container, false);//set layout
             daoArticle = ((MainActivity) getActivity()).getDaoArticle();
             initializeUI();
+            final Handler handler=new Handler();
+            Runnable runnable=new Runnable() {
+                @Override
+                public void run() {
+                    int first=layoutManager.findFirstVisibleItemPosition();
+                    int last=layoutManager.findLastVisibleItemPosition();
+                    articleInfoAdapter.notifyItemRangeChanged(first,last,"payload");
+                    //要做的事情
+                    handler.postDelayed(this, 60000);
+                }
+            };
+            handler.postDelayed(runnable, 60000);//每60秒执行一次runnable.
 
         }
         return view;
@@ -147,10 +165,11 @@ public class ArticleListFragment extends Fragment implements BGARefreshLayout.BG
         articleInfoAdapter = new ArticleInfoAdapter(getActivity(),
                 com.iReadingGroup.iReading.R.layout.listitem_article_info, alArticleInfo);
         infoListView.setAdapter(articleInfoAdapter);//link the adapter to ListView
-        infoListView.setLayoutManager(new SpeedyLinearLayoutManager(getContext(), SpeedyLinearLayoutManager.VERTICAL, false));
+        layoutManager= new SpeedyLinearLayoutManager(getContext(), SpeedyLinearLayoutManager.VERTICAL, false);
+        infoListView.setLayoutManager(layoutManager);
         //Set click event for listView and pass the arguments through Bundle to the following activity.
 
-        articleInfoAdapter.openLoadAnimation(0x00000001);
+        articleInfoAdapter.openLoadAnimation(BaseQuickAdapter.ALPHAIN);
         articleInfoAdapter.isFirstOnly(true);
 
         infoListView.addOnItemTouchListener(new OnItemClickListener() {
@@ -163,7 +182,7 @@ public class ArticleListFragment extends Fragment implements BGARefreshLayout.BG
                 Bundle bundle = new Bundle();
                 bundle.putString("name", number);
                 bundle.putString("uri", uri);
-                bundle.putString("time", h.getTime());
+                bundle.putString("time", getDate(h.getTime()));
                 bundle.putString("source", h.getSource());
                 intent.putExtras(bundle);
                 startActivity(intent);
@@ -283,7 +302,7 @@ public class ArticleListFragment extends Fragment implements BGARefreshLayout.BG
                         JSONObject source = article.getJSONObject("source");
                         source_title = source.getString("title");
                         String imageurl = article.getString("image");
-                        ArticleEntity lin = new ArticleEntity(uri, title, getDate(time), source_title, imageurl, false, null);
+                        ArticleEntity lin = new ArticleEntity(uri, title, time, source_title, imageurl, false, null);
                         alArticleInfo.add(0, lin);
                         count++;
                         if (!getArticleCachedStatus(uri))
@@ -369,7 +388,7 @@ public class ArticleListFragment extends Fragment implements BGARefreshLayout.BG
                         JSONObject source = article.getJSONObject("source");
                         source_title = source.getString("title");
                         String imageurl = article.getString("image");
-                        ArticleEntity lin = new ArticleEntity(uri, title, getDate(time), source_title, imageurl, false, null);
+                        ArticleEntity lin = new ArticleEntity(uri, title, time, source_title, imageurl, false, null);
                         alArticleInfo.add(lin);
                         count++;
                         if (!getArticleCachedStatus(uri))
@@ -386,21 +405,6 @@ public class ArticleListFragment extends Fragment implements BGARefreshLayout.BG
         }
     }
 
-    private String getDate(String OurDate) {
-        try {
-            SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
-            formatter.setTimeZone(TimeZone.getTimeZone("UTC"));
-            Date value = formatter.parse(OurDate);
-
-            SimpleDateFormat dateFormatter = new SimpleDateFormat("MM-dd HH:mm"); //this format changeable
-            dateFormatter.setTimeZone(TimeZone.getDefault());
-            OurDate = dateFormatter.format(value);
-
-        } catch (Exception e) {
-            OurDate = "00-00-0000 00:00";
-        }
-        return OurDate;
-    }
 
     @Override
     public boolean onBGARefreshLayoutBeginLoadingMore(BGARefreshLayout refreshLayout) {
@@ -437,7 +441,7 @@ public class ArticleListFragment extends Fragment implements BGARefreshLayout.BG
         current_source = event.title;
         switch (event.title) {
             case "所有": {//all
-                requestUrl = "http://eventregistry.org/json/article?lang=eng&action=getArticles&resultType=articles&articlesSortBy=date&articlesCount=5&articlesIncludeArticleEventUri=false&articlesIncludeArticleImage=true&articlesArticleBodyLen=0&articlesIncludeConceptLabel=false&apiKey=475f7fdb-7929-4222-800e-0151bdcd4af2";
+                requestUrl = "http://eventregistry.org/json/article?lang=eng&action=getArticles&resultType=articles&articlesSortBy=date&articlesCount=10&articlesIncludeArticleEventUri=false&articlesIncludeArticleImage=true&articlesArticleBodyLen=0&articlesIncludeConceptLabel=false&apiKey=475f7fdb-7929-4222-800e-0151bdcd4af2";
                 setSourceForView("所有");
 
                 break;
@@ -558,7 +562,7 @@ public class ArticleListFragment extends Fragment implements BGARefreshLayout.BG
                 "&action=getArticles&" +
                 "resultType=articles&" +
                 "articlesSortBy=date&" +
-                "articlesCount=5&" +
+                "articlesCount=10&" +
                 "articlesIncludeArticleEventUri=false&" +
                 "articlesIncludeArticleImage=true&" +
                 "articlesArticleBodyLen=0&" +
@@ -580,7 +584,25 @@ public class ArticleListFragment extends Fragment implements BGARefreshLayout.BG
         pageMap.put(source, pageMap.get(source) / 5);
 
     }
+    private String getDate(String OurDate)
+    {
+        try
+        {
+            SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+            formatter.setTimeZone(TimeZone.getTimeZone("UTC"));
+            Date value = formatter.parse(OurDate);
 
+            SimpleDateFormat dateFormatter = new SimpleDateFormat("MM-dd HH:mm"); //this format changeable
+            dateFormatter.setTimeZone(TimeZone.getDefault());
+            OurDate = dateFormatter.format(value);
+
+        }
+        catch (Exception e)
+        {
+            OurDate = "00-00-0000 00:00";
+        }
+        return OurDate;
+    }
 
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void onBackToTopEvent(BackToTopEvent event) {

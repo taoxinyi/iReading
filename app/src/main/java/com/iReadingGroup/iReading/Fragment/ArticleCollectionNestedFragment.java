@@ -115,7 +115,7 @@ public  class ArticleCollectionNestedFragment extends Fragment implements BGARef
         infoListView.setLayoutManager(llm);
         //Set click event for listView and pass the arguments through Bundle to the following activity.
 
-        articleInfoAdapter.openLoadAnimation(0x00000001);
+        articleInfoAdapter.openLoadAnimation(BaseQuickAdapter.ALPHAIN);
         articleInfoAdapter.isFirstOnly(true);
         infoListView.addOnItemTouchListener(new  OnItemClickListener( ) {
             @Override
@@ -128,7 +128,7 @@ public  class ArticleCollectionNestedFragment extends Fragment implements BGARef
                 Bundle bundle = new Bundle();
                 bundle.putString("name", number);
                 bundle.putString("uri",uri);
-                bundle.putString("time",h.getTime());
+                bundle.putString("time",getDate(h.getTime()));
                 bundle.putString("source",h.getSource());
                 intent.putExtras(bundle);
                 startActivity(intent);
@@ -143,6 +143,17 @@ public  class ArticleCollectionNestedFragment extends Fragment implements BGARef
             mRefreshLayout.endRefreshing();
         }
 
+
+
+    /**
+     *
+     * @param refreshLayout
+     * @return
+     */
+    @Override
+    public boolean onBGARefreshLayoutBeginLoadingMore(BGARefreshLayout refreshLayout) {
+        return  false;
+    }
     private String getDate(String OurDate)
     {
         try
@@ -162,17 +173,6 @@ public  class ArticleCollectionNestedFragment extends Fragment implements BGARef
         }
         return OurDate;
     }
-
-    /**
-     *
-     * @param refreshLayout
-     * @return
-     */
-    @Override
-    public boolean onBGARefreshLayoutBeginLoadingMore(BGARefreshLayout refreshLayout) {
-        return  false;
-    }
-
     /**
      * On CollectArticleEvent
      *

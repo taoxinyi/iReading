@@ -8,8 +8,8 @@ android {
         applicationId "com.iReadingGroup.iReading"
         minSdkVersion 21
         targetSdkVersion 26
-        versionCode 1
-        versionName "1.0"
+        versionCode 2
+        versionName "1.1.0"
     }
     buildTypes {
         release {
@@ -28,11 +28,11 @@ dependencies {
     compile 'org.greenrobot:greendao:3.2.2'
     compile 'com.r0adkll:slidableactivity:2.0.6'
     compile 'com.ganxin.library:loaddatalayout:1.0.1'
-    compile 'com.github.CymChad:BaseRecyclerViewAdapterHelper:2.9.36'
+    //compile 'com.github.CymChad:BaseRecyclerViewAdapterHelper:2.9.36'
     compile 'com.github.zcweng:switch-button:0.0.3@aar'
     compile 'com.github.mcxtzhang:SwipeDelMenuLayout:V1.2.1'
     compile 'com.github.daniel-stoneuk:material-about-library:2.2.4'
-
+    compile project(':library')
     implementation 'cn.bingoogolapple:bga-badgeview-api:1.1.7'
     annotationProcessor "cn.bingoogolapple:bga-badgeview-compiler:1.1.7"
     // -------------------- 以下三个库是必须依赖的 ----------------------------

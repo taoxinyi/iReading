@@ -1,0 +1,6 @@
+*{ font-size:18px; }
+*{ -webkit-tap-highlight-color:rgba(0,0,0,0); }
+a:link {color:#000000;text-decoration:none;background-color: transparent;}
+a:visited {color:#FFFFFF;text-decoration:none;background-color: #0571b0;}
+a:hover {color:#FFFFFF;text-decoration:none; background-color: #0571b0;}
+a:active {color:#FFFFFF;text-decoration:none;background-color: #0571b0;}

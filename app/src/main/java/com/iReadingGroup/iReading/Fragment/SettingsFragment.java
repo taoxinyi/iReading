@@ -31,7 +31,7 @@ public class SettingsFragment extends MaterialAboutFragment {
                 .build());
         appCardBuilder.addItem(new MaterialAboutActionItem.Builder()
                 .text("Version")
-                .subText("1.0.0")
+                .subText("1.1.0")
                 .build());
         MaterialAboutCard.Builder authorCardBuilder = new MaterialAboutCard.Builder();
         authorCardBuilder.title("Author");
@@ -43,6 +43,7 @@ public class SettingsFragment extends MaterialAboutFragment {
                 .build());
         authorCardBuilder.addItem(new MaterialAboutActionItem.Builder()
                 .text("捐赠")
+                .subText("(=・ω・=)")
                 .icon(R.mipmap.pay)
                 .setOnClickAction(new MaterialAboutItemOnClickAction() {
                     @Override

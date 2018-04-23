@@ -12,6 +12,7 @@ import android.text.Spannable;
 import android.text.SpannableString;
 import android.text.style.ForegroundColorSpan;
 import android.view.View;
+import android.view.WindowManager;
 import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -57,7 +58,7 @@ public class WordDetailActivity extends AppCompatActivity {
         current_meaning=getMeaningFromBundle();
         TextView word = findViewById(R.id.word_itself);
         word.setText(current_word);
-
+        getWindow().setStatusBarColor(ContextCompat.getColor(this, R.color.colorPrimary));
         initializeDatabase();
         initializeToolBar();
         initializeImageButton();
