@@ -170,7 +170,7 @@ App类，每个进程开启时会调用
 - 的所有存活的不同进程中各自的`MyApplication`(包括先前发出广播的)的广播接收器通过`EventBus`告知与收藏相关的Activity/Fragment数据库已被更改，并告知更改的内容
     - `ArticleDataSetChangedEvent`
     - `WordDataSetChangedEvent`
-- 与收藏相关的Activity/Fragment数据库通过`EventBus`得知数据库更改，获取更改的内容，更新UI
+- 与收藏相关的Activity/Fragment通过`EventBus`得知数据库更改，获取更改的内容，更新UI
 ## 3.4. 主要API
 - `EventRegistry` 获取新闻数据
 - `金山词霸` 获取在线词库
