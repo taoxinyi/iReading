@@ -140,7 +140,10 @@ public class FetchingWordDetailAsyncTask extends AsyncTask<String, String, Strin
                             } else if ("pos".equals(parser.getName())) {
                                 pos = parser.nextText().replaceAll("\n", "");
                             } else if ("acceptation".equals(parser.getName())) {
-                                wordDetail.addMeaning(pos, parser.nextText().replaceAll("\n", ""));
+                                //get rid of last ';'
+                                String s=parser.nextText().replaceAll("\n", "");
+                                s=s.substring(0,s.length()-1);
+                                wordDetail.addMeaning(pos, s);
                             } else if ("orig".equals(parser.getName())) {
                                 orig = parser.nextText().replaceAll("\n", "");
                             } else if ("trans".equals(parser.getName())) {

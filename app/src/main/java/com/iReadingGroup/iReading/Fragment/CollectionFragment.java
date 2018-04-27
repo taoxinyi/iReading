@@ -13,13 +13,7 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 
 import com.iReadingGroup.iReading.Activity.MainActivity;
-import com.iReadingGroup.iReading.Event.CollectArticleEvent;
-import com.iReadingGroup.iReading.Event.CollectWordEvent;
 import com.iReadingGroup.iReading.R;
-
-import org.greenrobot.eventbus.EventBus;
-import org.greenrobot.eventbus.Subscribe;
-import org.greenrobot.eventbus.ThreadMode;
 
 import cn.bingoogolapple.badgeview.BGABadgeTextView;
 
@@ -143,14 +137,7 @@ public class CollectionFragment extends Fragment {
         tab.setCustomView(view);
     }
 
-    private void showTabBadge(int position) {
-        TabLayout.Tab tab = mTabLayout.getTabAt(position);
-        if (tab != null) {
-            View view = tab.getCustomView();
-            //((BGABadgeTextView) view.findViewById(R.id.tv_title)).showCirclePointBadge();
 
-        }
-    }
 
     private void hideTabBadge(int position) {
         TabLayout.Tab tab = mTabLayout.getTabAt(position);
@@ -160,26 +147,8 @@ public class CollectionFragment extends Fragment {
 
         }
     }
-    @Subscribe(threadMode = ThreadMode.MAIN,sticky = true)
-    public void onCollectWordEvent(CollectWordEvent event){
-        showTabBadge(0);
-    }
 
-    @Subscribe(threadMode = ThreadMode.MAIN,sticky = true)
-    public void onCollectArticleEvent(CollectArticleEvent event) {
-        showTabBadge(1);
-    }
-    @Override
-    public void onStart() {
-        super.onStart();
-        EventBus.getDefault().register(this);
-    }
 
-    @Override
-    public void onStop() {
-        super.onStop();
-        EventBus.getDefault().unregister(this);
-    }
 
     @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {

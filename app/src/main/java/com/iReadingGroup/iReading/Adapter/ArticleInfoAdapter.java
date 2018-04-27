@@ -13,14 +13,13 @@ import com.bumptech.glide.request.RequestOptions;
 import com.chad.library.adapter.base.BaseQuickAdapter;
 import com.chad.library.adapter.base.BaseViewHolder;
 import com.iReadingGroup.iReading.Activity.MainActivity;
-import com.iReadingGroup.iReading.Event.ArticleCollectionStatusChangedEvent;
 import com.iReadingGroup.iReading.Bean.ArticleEntity;
+import com.iReadingGroup.iReading.Event.changeArticleCollectionDBEvent;
 import com.iReadingGroup.iReading.R;
 import com.iReadingGroup.iReading.TimeUtil;
 
 import org.greenrobot.eventbus.EventBus;
 
-import java.sql.Time;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
@@ -33,52 +32,65 @@ import java.util.TimeZone;
  * Set Text and Image to Class:ArticleInfo
  */
 public class ArticleInfoAdapter extends BaseQuickAdapter<ArticleEntity, BaseViewHolder> {
-    private int time=0;
+    private int time = 0;
+
     public ArticleInfoAdapter(Context context, int layoutResId, List<ArticleEntity> data) {
         super(layoutResId, data);
-        mContext=context;
+        mContext = context;
 
     }
+
     @Override
     protected void convert(BaseViewHolder helper, final ArticleEntity item, List<Object> payloads) {
-        if (payloads.isEmpty()){
-            convert(helper,item);
-        }else
-        {   Date currentTime = Calendar.getInstance().getTime();
-            Log.d("convert", currentTime.toString());
-            helper.setText(R.id.txt_time,getRelativeTime(item.getTime()));
+        String command = payloads.get(0).toString();
+        if (payloads.isEmpty()) {
+            convert(helper, item);
+        }
+        else if (command.equals("ChangeSwipeButton")){
+            Button a = helper.getView(R.id.swipe_collection);
+            if (item.getCollectStatus()) a.setText("取消收藏");
+            else a.setText("收藏");
+        }
+        else {
+            Date currentTime = Calendar.getInstance().getTime();
+            helper.setText(R.id.txt_time, getRelativeTime(item.getTime()));
         }
     }
 
     @Override
     protected void convert(BaseViewHolder helper, final ArticleEntity item) {
-        final String uri=item.getUri();
-        boolean collectionStatus=item.getCollectStatus();
+        final String uri = item.getUri();
         helper.setText(R.id.txt_title, item.getName());
-        helper.setText(R.id.txt_source,item.getSource());
-        helper.setText(R.id.txt_time,getRelativeTime(item.getTime()));
+        helper.setText(R.id.txt_source, item.getSource());
+        helper.setText(R.id.txt_time, getRelativeTime(item.getTime()));
         RequestOptions options = new RequestOptions()
                 .centerCrop()
                 .error(R.mipmap.icon)
                 .diskCacheStrategy(DiskCacheStrategy.AUTOMATIC)
-                .priority(Priority.HIGH);
-        Glide.with(((MainActivity)mContext).getApplicationContext()).load(item.getImageUrl()).apply(options).into((ImageView) helper.getView(R.id.img));
-        Button a=helper.getView(R.id.swipe_collection);
+                ;
+        Glide.with( mContext).load(item.getImageUrl()).apply(options).into((ImageView) helper.getView(R.id.img));
+        final Button a = helper.getView(R.id.swipe_collection);
 
-        if(collectionStatus) a.setText("取消收藏");
+        if (item.getCollectStatus()) a.setText("取消收藏");
         else a.setText("收藏");
         a.setOnClickListener(new View.OnClickListener() {
 
             public void onClick(View v) {
-                EventBus.getDefault().post(new ArticleCollectionStatusChangedEvent(uri));
-                if(((Button)v).getText()=="收藏") ((Button)v).setText("取消收藏");
-                else ((Button)v).setText("收藏");
+                if (item.getCollectStatus()) {
+                    a.setText("收藏");
+                    EventBus.getDefault().post(new changeArticleCollectionDBEvent(uri, "remove"));
+                } else {
+                    a.setText("取消收藏");
+                    EventBus.getDefault().post(new changeArticleCollectionDBEvent(uri, "add"));
+
+                }
 
             }
         });
 
     }
-    private  String getRelativeTime(String uploadTime_UTC) {
+
+    private String getRelativeTime(String uploadTime_UTC) {
         try {
             SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
             formatter.setTimeZone(TimeZone.getTimeZone("UTC"));

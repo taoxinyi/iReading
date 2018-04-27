@@ -2,16 +2,13 @@ package com.iReadingGroup.iReading.Fragment;
 
 import android.content.Context;
 import android.content.Intent;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Toast;
 
 import com.chad.library.adapter.base.BaseQuickAdapter;
 import com.chad.library.adapter.base.listener.OnItemClickListener;
@@ -20,11 +17,7 @@ import com.iReadingGroup.iReading.Activity.MainActivity;
 import com.iReadingGroup.iReading.Adapter.ArticleInfoAdapter;
 import com.iReadingGroup.iReading.Bean.ArticleEntity;
 import com.iReadingGroup.iReading.Bean.ArticleEntityDao;
-import com.iReadingGroup.iReading.Bean.WordCollectionBean;
-import com.iReadingGroup.iReading.Bean.WordCollectionBeanDao;
-import com.iReadingGroup.iReading.Event.CollectArticleEvent;
-import com.iReadingGroup.iReading.R;
-import com.iReadingGroup.iReading.WordInfo;
+import com.iReadingGroup.iReading.Event.ArticleDatabaseChangedEvent;
 
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
@@ -174,18 +167,17 @@ public  class ArticleCollectionNestedFragment extends Fragment implements BGARef
         return OurDate;
     }
     /**
-     * On CollectArticleEvent
+     * On ArticleDatabaseChangedEvent
      *
      * Receive the event when new article(s) collected
      * than read data from database again and update view
      * @param event the event
      */
     @Subscribe(threadMode = ThreadMode.MAIN)
-    public void onProcessCollectArticleEvent(CollectArticleEvent event) {
+    public void onArticleDatabaseChangedEvent (ArticleDatabaseChangedEvent event) {
         String uri=event.uri;
+        String operation=event.operation;
         ArticleEntity article = daoArticle.queryBuilder().where(ArticleEntityDao.Properties.Uri.eq(uri)).list().get(0);
-        boolean collectStatus=article.getCollectStatus();
-
         int index=-1;
         for (int i=0;i<alArticleInfo.size();i++) {
             if (alArticleInfo.get(i).getUri().equals(uri)) {
@@ -193,12 +185,12 @@ public  class ArticleCollectionNestedFragment extends Fragment implements BGARef
                 break;
             }
         }
-        if (!collectStatus && index!=-1)
+        if (operation.equals("remove") && index!=-1)
         {//not collected but in collection list
             alArticleInfo.remove(index);
             articleInfoAdapter.notifyItemRemoved(index);
         }
-        else if (collectStatus && index==-1) {//collected but not in the list
+        else if (operation.equals("add")&& index==-1) {//collected but not in the list
             alArticleInfo.add(0, article);
             articleInfoAdapter.notifyItemInserted(0);
         }

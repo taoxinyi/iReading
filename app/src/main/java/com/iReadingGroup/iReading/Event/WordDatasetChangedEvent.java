@@ -10,6 +10,7 @@ public class WordDatasetChangedEvent  {
      */
     public final String word;
     public final String meaning;
+    public final String operation;
 
     /**
      * Instantiates a new Collect word event.
@@ -18,8 +19,9 @@ public class WordDatasetChangedEvent  {
      *
      *
      */
-    public WordDatasetChangedEvent(String word,String meaning) {
+    public WordDatasetChangedEvent(String word,String meaning,String operation) {
         this.word = word;
         this.meaning=meaning;
+        this.operation=operation;
     }
 }

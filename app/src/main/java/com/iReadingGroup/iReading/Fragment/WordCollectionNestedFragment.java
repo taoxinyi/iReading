@@ -1,29 +1,28 @@
 package com.iReadingGroup.iReading.Fragment;
 
+import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.LinearLayout;
 
 import com.chad.library.adapter.base.BaseQuickAdapter;
 import com.chad.library.adapter.base.listener.OnItemClickListener;
-import com.iReadingGroup.iReading.Activity.ArticleDetailActivity;
 import com.iReadingGroup.iReading.Activity.MainActivity;
 import com.iReadingGroup.iReading.Activity.WordDetailActivity;
 import com.iReadingGroup.iReading.Adapter.WordInfoAdapter;
-import com.iReadingGroup.iReading.Bean.ArticleEntity;
-import com.iReadingGroup.iReading.Bean.OfflineDictBean;
 import com.iReadingGroup.iReading.Bean.OfflineDictBeanDao;
 import com.iReadingGroup.iReading.Bean.WordCollectionBean;
 import com.iReadingGroup.iReading.Bean.WordCollectionBeanDao;
 import com.iReadingGroup.iReading.Event.ButtonCheckEvent;
-import com.iReadingGroup.iReading.Event.CollectWordEvent;
-import com.iReadingGroup.iReading.R;
 import com.iReadingGroup.iReading.Event.WordDatasetChangedEvent;
+import com.iReadingGroup.iReading.R;
 import com.iReadingGroup.iReading.WordInfo;
 
 import org.greenrobot.eventbus.EventBus;
@@ -49,6 +48,7 @@ public class WordCollectionNestedFragment extends Fragment {
     private ArrayList<WordInfo> alWordInfo = new ArrayList<>();//ArrayList linked to adapter for listview
     private WordCollectionBeanDao daoCollection;
     private OfflineDictBeanDao daoDictionary;
+    private LinearLayoutManager llm;
 
     /**
      * New instance word search fragment.
@@ -93,9 +93,15 @@ public class WordCollectionNestedFragment extends Fragment {
                     R.layout.listitem_word_info, alWordInfo);//link the arrayList to adapter,using custom layout for each item
             infoListView.setAdapter(wordInfoAdapter);//link the adapter to ListView
 
-            LinearLayoutManager llm = new LinearLayoutManager(getActivity());
-            llm.setOrientation(LinearLayoutManager.VERTICAL);
+            llm = new LinearLayoutManager(getContext(), LinearLayout.VERTICAL,false){
+                @Override
+                public boolean canScrollVertically() {
+                    return false;
+                }
+            };
             infoListView.setLayoutManager(llm);
+            //llm.setOrientation(LinearLayoutManager.VERTICAL);
+            //nfoListView.setLayoutManager(llm);
 
             daoCollection = ((MainActivity) getActivity()).getDaoCollection();
             List<WordCollectionBean> wordlist = daoCollection.loadAll();
@@ -109,9 +115,8 @@ public class WordCollectionNestedFragment extends Fragment {
                 public void onSimpleItemClick(BaseQuickAdapter parent, View view, int position) {
                     WordInfo h = (WordInfo) alWordInfo.get(position);
 
-                    String current_word=h.getWord();
-                    String meaning=h.getMeaning();
-
+                    String current_word = h.getWord();
+                    String meaning = h.getRealMeaning();
                     Intent intent = new Intent(getActivity(), WordDetailActivity.class);
                     Bundle bundle = new Bundle();
                     bundle.putString("word", current_word);
@@ -128,18 +133,6 @@ public class WordCollectionNestedFragment extends Fragment {
         return v;
     }
 
-    @Subscribe(threadMode = ThreadMode.MAIN, sticky = true)
-    public void onCollectWordEvent(CollectWordEvent event) {
-
-        List<WordCollectionBean> wordlist = daoCollection.loadAll();
-        alWordInfo.clear();
-        for (WordCollectionBean word : wordlist) {
-            alWordInfo.add(0, new WordInfo(word.getWord(), word.getMeaning(), R.drawable.collect_true, ((MainActivity) getActivity()).buttonStatus, true));
-        }
-        wordInfoAdapter.notifyDataSetChanged();
-        EventBus.getDefault().removeStickyEvent(event);
-
-    }
 
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void onButtonCheckEvent(ButtonCheckEvent event) {
@@ -149,28 +142,25 @@ public class WordCollectionNestedFragment extends Fragment {
         }
         wordInfoAdapter.notifyDataSetChanged();
 
+
     }
 
-    @Subscribe(threadMode = ThreadMode.MAIN, sticky = true)
-    public void WordDatasetChangedEvent(WordDatasetChangedEvent event) {
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void onWordDatasetChangedEvent(WordDatasetChangedEvent event) {
         String word = event.word;
         String meaning = event.meaning;
-        List<WordCollectionBean> l = daoCollection.queryBuilder().where(WordCollectionBeanDao.Properties.Word.eq(word)).list();
-        int size = l.size();
-
-        int index=-1;
-        for (int i=0;i<alWordInfo.size();i++) {
+        String operation = event.operation;
+        int index = -1;
+        for (int i = 0; i < alWordInfo.size(); i++) {
             if (alWordInfo.get(i).getWord().equals(word)) {
                 index = i;
                 break;
             }
         }
-        if (size==0 && index!=-1)
-        {//not in dataset but in collection list
+        if (operation.equals("remove") && index != -1) {//not in dataset but in collection list
             alWordInfo.remove(index);
             wordInfoAdapter.notifyItemRemoved(index);
-        }
-        else if (size!=0 && index==-1) {//in the dataset but not in the list
+        } else if (operation.equals("add") && index == -1) {//in the dataset but not in the list
             alWordInfo.add(0, new WordInfo(word, meaning, R.drawable.collect_true, ((MainActivity) getActivity()).buttonStatus, true));
             wordInfoAdapter.notifyItemInserted(0);
         }
@@ -178,15 +168,17 @@ public class WordCollectionNestedFragment extends Fragment {
     }
 
     @Override
-    public void onStart() {
-        super.onStart();
-        EventBus.getDefault().register(this);
-
+    public void onAttach(Context context) {
+        super.onAttach(context);
+        if (!EventBus.getDefault().isRegistered(this))
+            EventBus.getDefault().register(this);
     }
+
 
     @Override
-    public void onStop() {
+    public void onDetach() {
+        super.onDetach();
         EventBus.getDefault().unregister(this);
-        super.onStop();
     }
+
 }

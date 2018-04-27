@@ -4,7 +4,7 @@ import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentPagerAdapter;
 
-import com.iReadingGroup.iReading.Fragment.SettingsFragment;
+import com.iReadingGroup.iReading.Fragment.AboutFragment;
 import com.iReadingGroup.iReading.Fragment.WordSearchFragment;
 import com.iReadingGroup.iReading.Fragment.ArticleListFragment;
 import com.iReadingGroup.iReading.Fragment.CollectionFragment;
@@ -34,7 +34,7 @@ public class MainActivityPagesAdapter extends FragmentPagerAdapter {
         fragments.add(new ArticleListFragment());
         fragments.add(new WordSearchFragment());
         fragments.add(new CollectionFragment());
-        fragments.add(new SettingsFragment());
+        fragments.add(new AboutFragment());
     }
 
     @Override

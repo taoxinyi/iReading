@@ -1,6 +1,7 @@
 package com.iReadingGroup.iReading;
 
 import android.os.AsyncTask;
+import android.util.Log;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -89,25 +90,44 @@ public class FetchingBriefMeaningAsyncTask extends AsyncTask<String, String, Str
             //sample link.:http://dict-co.iciba.com/api/dictionary.php?w=go&key=341DEFE6E5CA504E62A567082590D0BD&type=json
             if (result == null) delegate.processFinish("无网络\n请先联网");
             else {
+                WordDetail word=new WordDetail();
+                Log.d("fetch", "onPostExecute: ");
+
                 JSONObject reader = new JSONObject(result);
                 JSONArray symbols = reader.getJSONArray("symbols");
                 JSONObject symbols_0 = symbols.getJSONObject(0);
-                JSONArray parts = symbols_0.getJSONArray("parts");
-                JSONObject parts_0 = parts.getJSONObject(0);
-                String part = parts_0.getString("part");
-                JSONArray means = parts_0.getJSONArray("means");
-                String meaning = "";
-                for (int i = 0; i < means.length(); i++) {
-                    meaning += means.getString(i) + ";";
-                }
-                meaning = meaning.substring(0, meaning.length() - 1);
+                //add pron
+                String ph_am=symbols_0.getString("ph_am");
+                String ph_en_mp3=symbols_0.getString("ph_am_mp3");
+                word.addPron(ph_am,ph_en_mp3);
 
+                JSONArray parts = symbols_0.getJSONArray("parts");
+                String meaning ;
+                for (int i = 0; i < parts.length(); i++) {
+                    //for each parts
+                    meaning = "";
+                    JSONObject parts_0 = parts.getJSONObject(i);
+                    String part = parts_0.getString("part");
+                    JSONArray means = parts_0.getJSONArray("means");
+
+                    for (int j = 0; j < means.length(); j++) {
+                        meaning += means.getString(j) + " ; ";
+                    }
+                    meaning = meaning.substring(0, meaning.length() - 2);
+                    //add meaning
+                    word.addMeaning(part,meaning);
+
+                }
+                //set word
                 String word_name = reader.getString("word_name");
+                word.setWord(word_name);
 
                 //return word_name+part+meaning
-                delegate.processFinish(word_name + "\n" + part + " " + meaning);
+                Log.d("fetch", "onPostExecute: "+word.getMeaning().toString());
+                delegate.processFinish(word);
             }
         } catch (JSONException e) {
+            e.printStackTrace();
 
         }
 

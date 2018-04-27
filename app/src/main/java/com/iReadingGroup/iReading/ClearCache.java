@@ -17,13 +17,19 @@ public class ClearCache {
      * @return
      * @throws Exception 获取当前缓存
      */
-    public static String getTotalCacheSize(Context context) throws Exception {
-        long cacheSize = getFolderSize(context.getCacheDir());
-        if (Environment.getExternalStorageState().equals(
-                Environment.MEDIA_MOUNTED)) {
-            cacheSize += getFolderSize(context.getExternalCacheDir());
+    public static String getTotalCacheSize(Context context) {
+        try {
+            long cacheSize = getFolderSize(context.getCacheDir());
+            if (Environment.getExternalStorageState().equals(
+                    Environment.MEDIA_MOUNTED)) {
+                cacheSize += getFolderSize(context.getExternalCacheDir());
+            }
+            return getFormatSize(cacheSize);
+        }catch (Exception e) {
+            e.printStackTrace();
+            return "unknown";
         }
-        return getFormatSize(cacheSize);
+
     }
 
     /**

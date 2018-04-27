@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/background_material_light"
+    xmlns:leon="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:orientation="vertical">
+    <android.support.v7.widget.Toolbar
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/colorPrimary"
+        app:contentInsetStart="0dp">
+
+        <TextView
+            android:id="@+id/toolbar_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true"
+            android:layout_gravity="center"
+            android:gravity="center"
+            android:textColor="@color/colorWhite"
+            android:textSize="20sp"
+            android:text="设置"/>
+    </android.support.v7.widget.Toolbar>
+    <com.leon.lib.settingview.LSettingItem
+        android:id="@+id/item_one"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        leon:leftText="清除缓存"
+        leon:isShowRightText="true"
+        leon:rightText="清除缓存"
+        />
+    <com.leon.lib.settingview.LSettingItem
+        android:id="@+id/item_number"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        leon:leftText="修改刷新/加载的数量"
+        leon:isShowRightText="true"
+        />
+</LinearLayout>

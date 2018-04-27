@@ -11,6 +11,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.LinearLayout;
 
 import com.chad.library.adapter.base.BaseQuickAdapter;
 import com.chad.library.adapter.base.listener.OnItemClickListener;
@@ -42,8 +43,6 @@ public class WordSearchFragment extends Fragment {
     /**
      * The constant BUNDLE_TITLE.
      */
-    public static final String BUNDLE_TITLE = "title";
-    private String mTitle = "DefaultValue";
     private View v;
     private RecyclerView infoListView;////infoListView for list of brief info of each article
     private WordInfoAdapter wordInfoAdapter;//Custom adapter for article info
@@ -62,18 +61,12 @@ public class WordSearchFragment extends Fragment {
                 parent.removeView(v);
             }
         } else {//start initializing
-            //Bundle arguments = getArguments();
-            //if (arguments != null) {
-            //mTitle = arguments.getString(BUNDLE_TITLE);
-            // }
 
             v = inflater.inflate(R.layout.fragment_word_search, container, false);
             final SearchView sv = v.findViewById(R.id.search_word);
             sv.setIconifiedByDefault(true);
-            //sv.setFocusable(true);
             sv.setIconified(false);
-            //sv.clearFocus();
-            //sv.requestFocusFromTouch();
+
             SearchView.SearchAutoComplete theTextArea = (SearchView.SearchAutoComplete) sv.findViewById(R.id.search_src_text);
             theTextArea.setTextColor(Color.GRAY);
             theTextArea.setHintTextColor(Color.GRAY);
@@ -95,8 +88,12 @@ public class WordSearchFragment extends Fragment {
             wordInfoAdapter = new WordInfoAdapter(getActivity(),
                     R.layout.listitem_word_info, alWordInfo);//link the arrayList to adapter,using custom layout for each item
             infoListView.setAdapter(wordInfoAdapter);//link the adapter to ListView
-            LinearLayoutManager llm = new LinearLayoutManager(getActivity());
-            llm.setOrientation(LinearLayoutManager.VERTICAL);
+            LinearLayoutManager llm = new LinearLayoutManager(getContext(), LinearLayout.VERTICAL,false){
+                @Override
+                public boolean canScrollVertically() {
+                    return false;
+                }
+            };
             infoListView.setLayoutManager(llm);
             infoListView.addOnItemTouchListener(new OnItemClickListener() {
                 @Override
@@ -105,7 +102,7 @@ public class WordSearchFragment extends Fragment {
                     WordInfo h = (WordInfo) alWordInfo.get(position);
 
                     String current_word=h.getWord();
-                    String meaning=h.getMeaning();
+                    String meaning=h.getRealMeaning();
                     Intent intent = new Intent(getActivity(), WordDetailActivity.class);
                     Bundle bundle = new Bundle();
                     bundle.putString("word", current_word);
@@ -183,17 +180,16 @@ public class WordSearchFragment extends Fragment {
 
     }
 
-    @Subscribe(threadMode = ThreadMode.MAIN, sticky = true)
+    @Subscribe(threadMode = ThreadMode.MAIN)
     public void WordDatasetChangedEvent(WordDatasetChangedEvent event) {
         String word = event.word;
         String meaning = event.meaning;
-        List<WordCollectionBean> l = daoCollection.queryBuilder().where(WordCollectionBeanDao.Properties.Word.eq(word)).list();
-        int size = l.size();
+        String operation=event.operation;
         for (int i=0;i<alWordInfo.size();i++)
         {
             if (alWordInfo.get(i).getWord().equals(word))
             {
-                if (size==0)
+                if (operation.equals("remove"))
                 {
                     alWordInfo.get(i).setCollectStatus(false);
                     alWordInfo.get(i).setImageId(R.drawable.collect_false);
@@ -203,7 +199,7 @@ public class WordSearchFragment extends Fragment {
                     alWordInfo.get(i).setCollectStatus(true);
                     alWordInfo.get(i).setImageId(R.drawable.collect_true);
                 }
-                wordInfoAdapter.notifyItemChanged(i);
+                wordInfoAdapter.notifyItemChanged(i,"partial");
                 break;
             }
         }

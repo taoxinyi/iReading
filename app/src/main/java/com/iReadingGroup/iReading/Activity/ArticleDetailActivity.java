@@ -1,11 +1,14 @@
 package com.iReadingGroup.iReading.Activity;
 
 import android.content.Context;
+import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
@@ -16,20 +19,22 @@ import android.text.method.LinkMovementMethod;
 import android.text.style.BackgroundColorSpan;
 import android.text.style.ClickableSpan;
 import android.util.Log;
-import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.ViewGroup;
-import android.view.WindowManager;
-import android.webkit.WebSettings;
+import android.view.ViewTreeObserver;
+import android.webkit.JavascriptInterface;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.ImageButton;
+import android.widget.LinearLayout;
 import android.widget.PopupWindow;
 import android.widget.TextView;
 
 import com.bumptech.glide.Glide;
+import com.daasuu.bl.ArrowDirection;
+import com.daasuu.bl.BubbleLayout;
+import com.daasuu.bl.BubblePopupHelper;
 import com.ganxin.library.LoadDataLayout;
 import com.github.chrisbanes.photoview.PhotoView;
 import com.iReadingGroup.iReading.AsyncResponse;
@@ -39,13 +44,14 @@ import com.iReadingGroup.iReading.Bean.OfflineDictBean;
 import com.iReadingGroup.iReading.Bean.OfflineDictBeanDao;
 import com.iReadingGroup.iReading.Bean.WordCollectionBean;
 import com.iReadingGroup.iReading.Bean.WordCollectionBeanDao;
-import com.iReadingGroup.iReading.Event.ArticleCollectionStatusChangedEvent;
-import com.iReadingGroup.iReading.Event.CollectArticleEvent;
-import com.iReadingGroup.iReading.Event.CollectWordEvent;
+import com.iReadingGroup.iReading.Event.ChangeWordCollectionDBEvent;
+import com.iReadingGroup.iReading.Event.WordDatasetChangedEvent;
+import com.iReadingGroup.iReading.Event.changeArticleCollectionDBEvent;
 import com.iReadingGroup.iReading.FetchArticleAsyncTask;
 import com.iReadingGroup.iReading.FetchingBriefMeaningAsyncTask;
 import com.iReadingGroup.iReading.MyApplication;
 import com.iReadingGroup.iReading.R;
+import com.iReadingGroup.iReading.WordDetail;
 import com.r0adkll.slidr.Slidr;
 
 import org.greenrobot.eventbus.EventBus;
@@ -54,12 +60,12 @@ import org.greenrobot.eventbus.ThreadMode;
 
 import java.text.BreakIterator;
 import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import me.codeboy.android.aligntextview.AlignTextView;
 
 
 /**
@@ -76,7 +82,7 @@ import java.util.regex.Pattern;
  * The collection of this article and word(in popup window) is handled here
  * This should query in the database and then make change,add or delete
  */
-public class ArticleDetailActivity extends AppCompatActivity {
+public class ArticleDetailActivity extends DetailBaseActivity {
     private Context mContext;
     private String articleTitleFromBundle;
     private String article;
@@ -88,16 +94,17 @@ public class ArticleDetailActivity extends AppCompatActivity {
     private String current_word;
     private String current_meaning;
     private String meaning_result = "Loading";
-    private TextView articleTextView;
     private PopupWindow popupWindow;
-    private View ppwContentView;
     private OfflineDictBeanDao daoDictionary;//database instance
     private WordCollectionBeanDao daoCollection;//database instance
     private ArticleEntityDao daoArticle;//database instance
-    private ArrayList<String> list_selected_words = new ArrayList<String>();
-    private LoadDataLayout loadDataLayout;
+    public LoadDataLayout loadDataLayout;
     private ArticleEntity articleEntity;
-
+    private ImageButton ppwCollectionButton;
+    private WebView textWebview;
+    private BubbleLayout bubbleLayout;
+    private int x, y;
+    private String pron="";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -120,7 +127,6 @@ public class ArticleDetailActivity extends AppCompatActivity {
         }
 
 
-
     }
 
     /**
@@ -130,19 +136,24 @@ public class ArticleDetailActivity extends AppCompatActivity {
     private void initUI() {
 
         initializeToolBar();
-        initializeStatusBar();
+        initializeStatusBar(R.color.colorPrimary);
         initializeTextView();
         initializeImageView();
         Slidr.attach(this);//Silde Back function
-        loadDataLayout.setStatus(LoadDataLayout.SUCCESS);//load succeed
 
 
     }
 
     private void initializeToolBar() {
         Toolbar toolBar = (Toolbar) findViewById(com.iReadingGroup.iReading.R.id.toolbar);
-        toolBar.setTitle(articleTitleFromBundle);//set corresponding title in toolbar
+        toolBar.setTitle("");//set corresponding title in toolbar
         setSupportActionBar(toolBar);
+        findViewById(R.id.backLayout).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                finish();
+            }
+        });
         ImageButton button = findViewById(R.id.collect_article_button);
         articleEntity = daoArticle.queryBuilder().where(ArticleEntityDao.Properties.Uri.eq(uri)).list().get(0);
         if (articleEntity.getCollectStatus()) button.setImageDrawable(
@@ -156,33 +167,32 @@ public class ArticleDetailActivity extends AppCompatActivity {
             public void onClick(View v) {
                 ImageButton button = (ImageButton) v;
                 if (articleEntity.getCollectStatus()) {
+                    //already collected,need to remove collection
                     button.setImageDrawable(
                             ContextCompat.getDrawable(getApplicationContext(), R.drawable.collect_false));
+                    EventBus.getDefault().post(new changeArticleCollectionDBEvent(uri, "remove"));
                 } else {
                     //add collection
                     button.setImageDrawable(
                             ContextCompat.getDrawable(getApplicationContext(), R.drawable.collect_true));
-                    Date currentTime = Calendar.getInstance().getTime();
+                    EventBus.getDefault().post(new changeArticleCollectionDBEvent(uri, "add"));
+
 
                 }
-                EventBus.getDefault().postSticky(new ArticleCollectionStatusChangedEvent(uri));
+
             }
 
         });
     }
 
-    private void initializeStatusBar() {
-        //set StatusBar Color
-        getWindow().setStatusBarColor(ContextCompat.getColor(this, R.color.colorPrimary));
 
-    }
 
     private void initializeDatabase() {
 
-        MyApplication app = (MyApplication) getApplicationContext();//initialize UI
-        daoDictionary = app.getDaoDicitionary();
-        daoCollection = app.getDaoCollection();
-        daoArticle = app.getDaoArticle();
+
+        daoDictionary = ((MyApplication) getApplication()).getDaoDictionary();//this is the offline dictionary database
+        daoCollection = ((MyApplication) getApplication()).getDaoCollection();// this is the database recording user's word collection
+        daoArticle = ((MyApplication) getApplication()).getDaoArticle();
 
     }
 
@@ -204,8 +214,7 @@ public class ArticleDetailActivity extends AppCompatActivity {
                     article = getArticle(uri);
                     //initialize database
                     initializeDatabase();
-                }
-                else loadDataLayout.setStatus(LoadDataLayout.NO_NETWORK);
+                } else loadDataLayout.setStatus(LoadDataLayout.NO_NETWORK);
             }
         });
         loadDataLayout.setStatus(LoadDataLayout.LOADING);
@@ -230,44 +239,122 @@ public class ArticleDetailActivity extends AppCompatActivity {
         makeTextViewSpannable(categoryTextView, "Category : " + category + "\nSource: " + source + "\nTime: " + time);
 
     }
-    private void initializeWebView()
-    {
-        WebView textWebview=findViewById(R.id.wv);
-        textWebview.setWebViewClient(new MyWebViewClient(this));
+
+    private void managePopup(int px, int py) {
+        x = px;
+        y = -textWebview.getHeight() + py;
+
+    }
+
+    private class MyJavaScriptInterface {
+        private Context ctx;
+
+        public MyJavaScriptInterface(Context ctx) {
+            this.ctx = ctx;
+        }
+
+        @JavascriptInterface
+        public void showMenu(int x, int y) {
+            final int px = (int) (x * ctx.getResources().getDisplayMetrics().density);
+            final int py = (int) (y * ctx.getResources().getDisplayMetrics().density);
+
+            Handler mainHandler = new Handler(Looper.getMainLooper());
+            Runnable myRunnable = new Runnable() {
+                @Override
+                public void run() {
+                    managePopup(px, py);
+                }
+            };
+            mainHandler.post(myRunnable);
+        }
+    }
+
+    private void initializeWebView() {
+        textWebview = findViewById(R.id.wv);
+        textWebview.setWebViewClient(new MyWebViewClient());
         textWebview.requestFocus();
-        StringBuilder sum=new StringBuilder("<p style=\"text-align: justify\">");
-        Pattern ptrn = Pattern.compile("[^\\s\\W]+|\\S+|(\\s)+");
+        textWebview.getSettings().setJavaScriptEnabled(true);
+        textWebview.addJavascriptInterface(new MyJavaScriptInterface(this), "Android");
+        textWebview.setBackgroundColor(0);
+        // disable scroll on touch
+        textWebview.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                return (event.getAction() == MotionEvent.ACTION_MOVE);
+            }
+        });
+
+        StringBuilder sum = new StringBuilder("<p style=\"text-align: justify;line-height: 130%\">");
+        Pattern ptrn = Pattern.compile("((?:\\w+-)+\\w+)|[^\\s\\W]+|\\S+|(\\s)+");
         Matcher m = ptrn.matcher(article);
         List<String> list = new ArrayList<>();
         while (m.find()) {
             list.add(m.group(0));
         }
-        for (String a:list)
-        {   a=a.replace("\n","<br>");
-            if (isAlpha(a))
-            {
-                sum.append("<a href=\"a://"+a+"\">"+a+"</a>");
-            }
-            else sum.append(a);
+        for (String a : list) {
+            a = a.replace("\n", "<br>");
+            if (isAlpha(a)) {
+                sum.append("<a href=\"a://" + a + "\">" + a + "</a>");
+            } else sum.append(a);
         }
         sum.append("</p>");
-        String htmlBody = "<link rel=\"stylesheet\" type=\"text/css\" href=\"style.css\" />" + sum;
+        String htmlBody = "<link rel=\"stylesheet\" type=\"text/css\" href=\"style.css\" />" + sum + "<script>\n" +
+                "       var myHref = document.getElementsByTagName(\"a\");\n" +
+                "        for (var i = 0,mylength = myHref.length; i<mylength; i++) {\n" +
+                "    (function(i){  //这里的i跟外部的i实际不是一个i\n" +
+                "        myHref[i].addEventListener(\"click\",function(e){\n" +
+                "\t\t\tvar rect = myHref[i].getBoundingClientRect();\n" +
+                "\t\t\tAndroid.showMenu((rect.left+rect.right)/2, rect.top + rect.height);\n" +
+                "        },\"false\");\n" +
+                "    })(i);\n" +
+                "}\n" +
+                "</script>";
         textWebview.loadDataWithBaseURL("file:///android_asset/", htmlBody, "text/html", "utf-8",
                 null);
     }
+
     private void initializeImageView() {
         PhotoView imageView = findViewById(R.id.img_article);
         Glide.with(this).load(imageUrl).into(imageView);
     }
 
     private void initializePopupWindow() {
-        ppwContentView = LayoutInflater.from(mContext).inflate(
-                com.iReadingGroup.iReading.R.layout.ppw_tap_search, null);
+        bubbleLayout = (BubbleLayout) LayoutInflater.from(this).inflate(R.layout.ppw_tap_search, null);
+        popupWindow = BubblePopupHelper.create(this, bubbleLayout);
+        bubbleLayout.setVisibility(View.INVISIBLE);
 
-        //initialize  popupwindow
-        popupWindow = new PopupWindow(ppwContentView,
-                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT,
-                true);
+        bubbleLayout.getViewTreeObserver().addOnGlobalLayoutListener(
+                new ViewTreeObserver.OnGlobalLayoutListener() {
+
+                    @Override
+                    public void onGlobalLayout() {
+                        bubbleLayout.getViewTreeObserver()
+                                .removeOnGlobalLayoutListener(this);
+
+                        int width = bubbleLayout.getWidth(); // 获取宽度
+                        int height = bubbleLayout.getHeight(); // 获取高度
+                        int totalWidth = textWebview.getWidth();
+                        int arrowWidth = Math.round(bubbleLayout.getArrowWidth());
+                        popupWindow.dismiss();
+                        if (x + width / 2 > totalWidth) {//bottom-right
+                            bubbleLayout.setArrowDirection(ArrowDirection.BOTTOM);
+                            bubbleLayout.setArrowPosition(width - 30 - arrowWidth);
+                            popupWindow.showAsDropDown(textWebview, x + 30 - width + arrowWidth / 2, y - height - 85);
+
+                        } else if (x - width / 2 < 0) {
+                            bubbleLayout.setArrowDirection(ArrowDirection.BOTTOM);
+                            bubbleLayout.setArrowPosition(30);
+                            popupWindow.showAsDropDown(textWebview, x - 20 - arrowWidth / 2, y - height - 85);
+
+
+                        } else
+                            popupWindow.showAsDropDown(textWebview, x - width / 2, y - height - 85);
+                        bubbleLayout.setVisibility(View.VISIBLE);
+
+
+                    }
+                });
+
         popupWindow.setOutsideTouchable(true);
         popupWindow.setFocusable(false);
         popupWindow.setTouchable(true);
@@ -280,40 +367,57 @@ public class ArticleDetailActivity extends AppCompatActivity {
                 // 拦截后 PopupWindow的onTouchEvent不被调用，这样点击外部区域无法dismiss
             }
         });
+        bubbleLayout.setOnClickListener(new View.OnClickListener() {   //once click, goto WordDetailActivity
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(getApplicationContext(), WordDetailActivity.class);
+                Bundle bundle = new Bundle();
+                bundle.putString("word", current_word);
+                bundle.putString("meaning", current_meaning);
+                intent.putExtras(bundle);
+                startActivity(intent);
+            }
+        });
     }
 
     private void initializeWordTextView() {
         //initial text in popupwindow
-        ((TextView) popupWindow.getContentView().findViewById(com.iReadingGroup.iReading.R.id.meaning)).setText(meaning_result);
+        ((TextView) bubbleLayout.findViewById(R.id.word)).setText(current_word);
+        if (!pron.equals("")) {
+            ((TextView) bubbleLayout.findViewById(R.id.pron)).setText(String.format("/%s/", pron));
+            bubbleLayout.findViewById(R.id.pronLayout).setVisibility(View.VISIBLE);
+        }
+        pron="";
+        ((AlignTextView) bubbleLayout.findViewById(R.id.meaning)).setText(current_meaning);
     }
 
     private void initializeCollectButton() {
-        ImageButton button = (ImageButton) ppwContentView.findViewById(com.iReadingGroup.iReading.R.id.collect);
+        ppwCollectionButton = (ImageButton) bubbleLayout.findViewById(com.iReadingGroup.iReading.R.id.collect);
         final boolean flag_collected = getWordCollectedStatus(current_word);
         if (flag_collected) {   //already collected
-            button.setImageDrawable(
+            ppwCollectionButton.setImageDrawable(
                     ContextCompat.getDrawable(getApplicationContext(), R.drawable.collect_true));
         } else {   //not collected yet
-            button.setImageDrawable(
+            ppwCollectionButton.setImageDrawable(
                     ContextCompat.getDrawable(getApplicationContext(), R.drawable.collect_false));
         }
-        button.setOnClickListener(new View.OnClickListener() {
+        ppwCollectionButton.setOnClickListener(new View.OnClickListener() {
             //collect word function.
             @Override
             public void onClick(View v) {
                 ImageButton button = (ImageButton) v;
                 if (getWordCollectedStatus(current_word)) {
-                    removeWordFromCollection(current_word);
-                    removeWordFromCurrentSelectedList(current_word);
                     //already in the db, the user means to removed this word from collection
                     button.setImageDrawable(
                             ContextCompat.getDrawable(getApplicationContext(), R.drawable.collect_false));
+                    EventBus.getDefault().post(new ChangeWordCollectionDBEvent(current_word, current_meaning, "remove"));
+
                 } else {
                     //not in the db, the user means to add this word to collection
-                    addWordIntoCollection(current_word);
-                    addWordIntoCurrentSelectedList(current_word);
                     button.setImageDrawable(
                             ContextCompat.getDrawable(getApplicationContext(), R.drawable.collect_true));
+                    EventBus.getDefault().post(new ChangeWordCollectionDBEvent(current_word, current_meaning, "add"));
+
 
                 }
             }
@@ -410,7 +514,7 @@ public class ArticleDetailActivity extends AppCompatActivity {
                         meaning_result = (String) output;
                         current_meaning = meaning_result.split("\n")[1];
                         //show popup window
-                        showPopupWindow(widget);
+                        showPopupWindow();
                     }
                 });
                 //using iciba api to search the word, type json is small to transfer
@@ -425,7 +529,7 @@ public class ArticleDetailActivity extends AppCompatActivity {
                     current_meaning = joes.get(0).getMeaning();
                     meaning_result = mWord + "[离线]\n" + current_meaning;
                     //show popup window
-                    showPopupWindow(widget);
+                    showPopupWindow();
 
                 }
                 //set the selected word color transparent which means highlighted
@@ -444,45 +548,59 @@ public class ArticleDetailActivity extends AppCompatActivity {
         };
     }
 
-    private void showPopupWindow(View view) {
+    private void showPopupWindow() {
         //loading layOut file
+
+
         initializePopupWindow();
         initializeWordTextView();
         initializeCollectButton();
-        //show the popup window at the bottom
-        popupWindow.showAtLocation(view, Gravity.BOTTOM,
-                0, 0);
+        popupWindow.showAsDropDown(textWebview, x, y);
 
 
     }
-    public class MyWebViewClient extends WebViewClient {
 
-        private Context context;
+    private class MyWebViewClient extends WebViewClient {
 
-        public MyWebViewClient(Context context) {
-            this.context = context;
+
+        public MyWebViewClient() {
+        }
+
+        @Override
+        public void onPageCommitVisible(WebView view,
+                                        String url) {
+            loadDataLayout.setStatus(LoadDataLayout.SUCCESS);
+
+
         }
 
         @Override
         public boolean shouldOverrideUrlLoading(final WebView view, String url) {
-            String mWord=url.substring(4).toLowerCase();
+            String mWord = url.substring(4).toLowerCase();
             //if clicked on a word
             //if the asyncTask finishes fetching word meaning from Internet
             current_word = mWord;
             FetchingBriefMeaningAsyncTask asyncTask = new FetchingBriefMeaningAsyncTask(new AsyncResponse() {
                 @Override
                 public void processFinish(Object output) {
-                    meaning_result = (String) output;
-                    current_meaning = meaning_result.split("\n")[1];
+                    WordDetail wordDetail = (WordDetail) output;
+                    current_meaning = "";
+                    for (List<String> meaningPair : wordDetail.getMeaning()) {
+                        meaningPair.get(0);
+                        current_meaning += meaningPair.get(0) + " " + meaningPair.get(1) + "\n";
+
+                    }
+                    current_meaning = current_meaning.substring(0, current_meaning.length() - 1);
+                    pron = wordDetail.getPron().get(0).get(0);
                     //show popup window
-                    showPopupWindow(view);
+                    showPopupWindow();
                 }
             });
             //using iciba api to search the word, type json is small to transfer
             List<OfflineDictBean> joes = daoDictionary.queryBuilder()
                     .where(OfflineDictBeanDao.Properties.Word.eq(mWord))
                     .list();
-            if (joes.size() == 0) {   //find nothing in offline dictionary,using online query
+            if (true) {   //find nothing in offline dictionary,using online query
                 asyncTask.execute("https://dict-co.iciba.com/api/dictionary.php?key=341DEFE6E5CA504E62A567082590D0BD&type=json&w=" + mWord);
 
             } else {
@@ -490,7 +608,7 @@ public class ArticleDetailActivity extends AppCompatActivity {
                 current_meaning = joes.get(0).getMeaning();
                 meaning_result = mWord + "[离线]\n" + current_meaning;
                 //show popup window
-                showPopupWindow(view);
+                showPopupWindow();
 
             }
 
@@ -499,38 +617,20 @@ public class ArticleDetailActivity extends AppCompatActivity {
     }
 
     private boolean isAlpha(String name) {
-        return name.matches("[a-zA-Z]+");
+        return name.matches("[a-zA-Z-]+");
     }
 
-    @Subscribe(threadMode = ThreadMode.MAIN)
-    public void onArticleCollectionStatusChangedEvent(ArticleCollectionStatusChangedEvent event) {
-        String uri = event.uri;
-        final ArticleEntity article = daoArticle.queryBuilder().where(ArticleEntityDao.Properties.Uri.eq(uri)).list().get(0);
-        if (article.getCollectStatus()) {
-            article.setCollectStatus(false);
-            daoArticle.update(article);
-        } else {
-            //add collection
-            article.setCollectStatus(true);
-            Date currentTime = Calendar.getInstance().getTime();
-            article.setCollectTime(currentTime);
-            daoArticle.update(article);
 
-        }
-        EventBus.getDefault().postSticky(new CollectArticleEvent(uri));
+    @Override
+    public void onStart() {
+        super.onStart();
+        EventBus.getDefault().register(this);
+
     }
 
-    /**
-     * Before Stop
-     * Save to the database and post the event when new word(s) collected.
-     */
     @Override
     public void onStop() {
-
-        if (list_selected_words.size() > 0) {
-            EventBus.getDefault().postSticky(new CollectWordEvent(0));
-
-        }
+        EventBus.getDefault().unregister(this);
         super.onStop();
     }
 
@@ -543,37 +643,31 @@ public class ArticleDetailActivity extends AppCompatActivity {
         } else return true;
     }
 
-    private void addWordIntoCollection(String word) {
-        WordCollectionBean newWord = new WordCollectionBean();
-        newWord.setWord(word);
-        newWord.setMeaning(current_meaning);
-        daoCollection.insertOrReplace(newWord);
-    }
-
-    private void removeWordFromCollection(String word) {
-        List<WordCollectionBean> l = daoCollection.queryBuilder()
-                .where(WordCollectionBeanDao.Properties.Word.eq(word))
-                .list();
-        for (WordCollectionBean existedWord : l) {
-            daoCollection.delete(existedWord);
-        }
-    }
-
-    private void removeWordFromCurrentSelectedList(String word) {
-        if (list_selected_words.contains(word)) {
-            list_selected_words.remove(word);
-        }
-    }
-
-    private void addWordIntoCurrentSelectedList(String word) {
-        list_selected_words.add(word);
-    }
-
     private boolean isNetworkAvailable() {
         ConnectivityManager connectivityManager
                 = (ConnectivityManager) getApplication().getSystemService(Context.CONNECTIVITY_SERVICE);
         NetworkInfo activeNetworkInfo = connectivityManager.getActiveNetworkInfo();
         return activeNetworkInfo != null && activeNetworkInfo.isConnected();
+    }
+
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void onWordDatasetChangedEvent(WordDatasetChangedEvent event) {
+        final boolean flag_collected = getWordCollectedStatus(current_word);
+        if (flag_collected) {   //already collected
+            ppwCollectionButton.setImageDrawable(
+                    ContextCompat.getDrawable(getApplicationContext(), R.drawable.collect_true));
+        } else {   //not collected yet
+            ppwCollectionButton.setImageDrawable(
+                    ContextCompat.getDrawable(getApplicationContext(), R.drawable.collect_false));
+        }
+
+    }
+
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();  // Always call the superclass
+        System.exit(0);
     }
 
 }

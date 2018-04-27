@@ -1,8 +1,6 @@
 package com.iReadingGroup.iReading.Activity;
 
-import android.annotation.SuppressLint;
 import android.app.DialogFragment;
-import android.app.FragmentTransaction;
 import android.os.Bundle;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.view.ViewPager;
@@ -16,31 +14,23 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.WindowManager;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.iReadingGroup.iReading.Adapter.MainActivityPagesAdapter;
-import com.iReadingGroup.iReading.DoubleClickBackToContentTopListener;
-import com.iReadingGroup.iReading.Event.ArticleSearchDoneEvent;
-import com.iReadingGroup.iReading.Event.ArticleSearchEvent;
-import com.iReadingGroup.iReading.Event.ArticleCollectionStatusChangedEvent;
-import com.iReadingGroup.iReading.Bean.ArticleEntity;
 import com.iReadingGroup.iReading.Bean.ArticleEntityDao;
 import com.iReadingGroup.iReading.Bean.DaoMaster;
 import com.iReadingGroup.iReading.Bean.DaoSession;
 import com.iReadingGroup.iReading.Bean.OfflineDictBeanDao;
-import com.iReadingGroup.iReading.Bean.WordCollectionBean;
 import com.iReadingGroup.iReading.Bean.WordCollectionBeanDao;
+import com.iReadingGroup.iReading.DoubleClickBackToContentTopListener;
+import com.iReadingGroup.iReading.Event.ArticleSearchDoneEvent;
+import com.iReadingGroup.iReading.Event.ArticleSearchEvent;
 import com.iReadingGroup.iReading.Event.BackToTopEvent;
 import com.iReadingGroup.iReading.Event.ButtonCheckEvent;
-import com.iReadingGroup.iReading.Event.CollectArticleEvent;
-import com.iReadingGroup.iReading.Event.CollectWordEvent;
+import com.iReadingGroup.iReading.Event.SourceSelectEvent;
 import com.iReadingGroup.iReading.MyApplication;
 import com.iReadingGroup.iReading.R;
-import com.iReadingGroup.iReading.Event.SourceSelectEvent;
-import com.iReadingGroup.iReading.Event.WordDatasetChangedEvent;
-import com.iReadingGroup.iReading.Event.WordCollectionStatusChangedEvent;
 import com.lzy.widget.AlphaIndicator;
 import com.mikepenz.materialdrawer.AccountHeader;
 import com.mikepenz.materialdrawer.AccountHeaderBuilder;
@@ -54,19 +44,9 @@ import com.mikepenz.materialdrawer.model.interfaces.IProfile;
 import com.suke.widget.SwitchButton;
 
 import org.greenrobot.eventbus.EventBus;
-import org.greenrobot.eventbus.Subscribe;
-import org.greenrobot.eventbus.ThreadMode;
 import org.greenrobot.greendao.database.Database;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.util.Calendar;
-import java.util.Date;
 import java.util.HashMap;
-import java.util.List;
 
 import cn.bingoogolapple.badgeview.BGABadgeAlphaView;
 
@@ -74,15 +54,15 @@ import cn.bingoogolapple.badgeview.BGABadgeAlphaView;
 /**
  * MainActivity
  * Initialize UI and database when app launched
- *
+ * <p>
  * Keep in mind that every UI object in menu,toolbar,slide drawer is initialized here
  * The visibility of such object is controlled here
  * They are handled here and post Event to according fragment(or nested fragment if necessary)
- *
+ * <p>
  * Databases are loaded here in service of other fragment in this activity
  *
  * @author iReadingGroup
- * @version 1.0
+ * @version 1.1.0
  */
 public class MainActivity extends AppCompatActivity implements
         DoubleClickBackToContentTopListener.IBackToContentTopView {
@@ -98,26 +78,7 @@ public class MainActivity extends AppCompatActivity implements
     public boolean buttonStatus = false;//whether the button is clicked
     public int last_nested_page = 0;//which nested page is selected when the page changes
     private Drawer drawer;
-    private String last_section="所有";
-    @SuppressLint("SdCardPath")
-    private static final String DB_PATH = "/data/data/com.iReadingGroup.iReading/databases/";//database external path
-    private static final String DB_NAME = "wordDetail.db";//database name
-
-    public static class MyDialogFragment extends DialogFragment {
-
-        static MyDialogFragment newInstance() {
-            MyDialogFragment f = new MyDialogFragment();
-            return f;
-        }
-
-        @Override
-        public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                                 Bundle savedInstanceState) {
-            View v = inflater.inflate(R.layout.fragment_dialog, container, false);
-            return v;
-        }
-
-    }
+    private String last_section = "所有";
 
     /**
      * Create the activity
@@ -128,27 +89,21 @@ public class MainActivity extends AppCompatActivity implements
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        //FragmentTransaction ft = getFragmentManager().beginTransaction();
-        //DialogFragment newFragment = MyDialogFragment.newInstance();
-        //newFragment.show(ft, "dialog");
-
-        Time time = new Time();
-        time.setToNow();
         setContentView(com.iReadingGroup.iReading.R.layout.activity_main);//set layout
         initializeUI();
         MyApplication app = (MyApplication) getApplicationContext();//initialize UI
-        copyDBToDatabases();//copy offline database to external
         initializeDatabase();//initializeDatabase
         app.setDaoArticle(daoArticle);
         app.setDaoCollection(daoCollection);
-        app.setDaoDicitionary(daoDictionary);
+        app.setDaoDictionary(daoDictionary);
 
-        time.setToNow();
     }
+
     @Override
     public void backToContentTop() {
         EventBus.getDefault().post(new BackToTopEvent());
     }
+
     /**
      * Initialize UI
      * Including toolbar,status bar, view pager, tab layout and badge
@@ -168,54 +123,13 @@ public class MainActivity extends AppCompatActivity implements
     /**
      * Copy the database in asset into external storage
      */
-    private void copyDBToDatabases() {
-        //copy offline database to external.
-        try {
-            String outFileName = DB_PATH + DB_NAME;
-            File file = new File(DB_PATH);
-            if (!file.mkdirs()) {
-                file.mkdirs();
-            }
-            File dataFile = new File(outFileName);
-            if (dataFile.exists()) {
-               return;
-            }
-            InputStream myInput;
-            myInput = getApplicationContext().getAssets().open(DB_NAME);
-            OutputStream myOutput = new FileOutputStream(outFileName);
-            byte[] buffer = new byte[1024];
-            int length;
-            while ((length = myInput.read(buffer)) > 0) {
-                myOutput.write(buffer, 0, length);
-            }
-            myOutput.flush();
-            myOutput.close();
-            myInput.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
 
-    }
-
-    /**
-     * Initialize the database into instance
-     */
     private void initializeDatabase() {
 
-        DaoMaster.DevOpenHelper helper = new DaoMaster.DevOpenHelper(this, DB_NAME);
-        Database db = helper.getWritableDb();
-        DaoSession daoSession = new DaoMaster(db).newSession();
-        daoDictionary = daoSession.getOfflineDictBeanDao();//this is the offline dictionary database
 
-        DaoMaster.DevOpenHelper helper_collection = new DaoMaster.DevOpenHelper(this, "userCollection.db");
-        Database db_collection = helper_collection.getWritableDb();
-        DaoSession daoSession_collection = new DaoMaster(db_collection).newSession();
-        daoCollection = daoSession_collection.getWordCollectionBeanDao();// this is the database recording user's word collection
-
-        DaoMaster.DevOpenHelper helper_article = new DaoMaster.DevOpenHelper(this, "userArticle.db");
-        Database db_article = helper_article.getWritableDb();
-        DaoSession daoSession_article = new DaoMaster(db_article).newSession();
-        daoArticle = daoSession_article.getArticleEntityDao();// this is the database(cache) recording user's articles
+        daoDictionary =  ((MyApplication)getApplication()).getDaoDictionary();//this is the offline dictionary database
+        daoCollection =  ((MyApplication)getApplication()).getDaoCollection();// this is the database recording user's word collection
+        daoArticle = ((MyApplication)getApplication()).getDaoArticle();
 
     }
 
@@ -389,7 +303,7 @@ public class MainActivity extends AppCompatActivity implements
                         //post the event to article list fragment about what section is selected
                         String title = ((PrimaryDrawerItem) drawerItem).getName().toString();
                         ((TextView) findViewById(R.id.toolbar_title)).setText(title);
-                        last_section=title;
+                        last_section = title;
                         EventBus.getDefault().post(new SourceSelectEvent(title));
                         headerResult.updateProfile(new ProfileDrawerItem().withIdentifier(0).withEmail(title)
                                 .withIcon(((PrimaryDrawerItem) drawerItem).getIcon().getIconRes()).withName(map.get(title)));
@@ -400,85 +314,6 @@ public class MainActivity extends AppCompatActivity implements
 
     }
 
-    /**
-     * On collect word event.
-     * Show red circle when new word(s) collected
-     *
-     * @param event the event that is fired in any other place
-     */
-    @Subscribe(threadMode = ThreadMode.MAIN, sticky = true)
-    public void onCollectWordEvent(CollectWordEvent event) {
-        //show the badge when the event is fired;
-        //collectionBadge.showCirclePointBadge();//show red when collected
-    }
-
-    @Subscribe(threadMode = ThreadMode.MAIN, sticky = true)
-    public void onProcessCollectArticleEvent(CollectArticleEvent event) {
-        //show the badge when the event is fired;
-        //collectionBadge.showCirclePointBadge();//show red when collected
-    }
-
-    @Subscribe(threadMode = ThreadMode.MAIN)
-    public void onWordCollectionStatusChangedEvent(WordCollectionStatusChangedEvent event) {
-        String word = event.word;
-        String meaning = event.meaning;
-        List<WordCollectionBean> l = daoCollection.queryBuilder().where(WordCollectionBeanDao.Properties.Word.eq(word)).list();
-        int size = l.size();//get if in the database
-        if (size==0)
-        {//not in the database, we should add
-            daoCollection.insert(new WordCollectionBean(word,meaning));
-        }
-        else
-        {
-            daoCollection.delete(l.get(0));
-        }
-        EventBus.getDefault().postSticky(new WordDatasetChangedEvent(word,meaning));
-    }
-
-
-    @Subscribe(threadMode = ThreadMode.MAIN)
-    public void onArticleCollectionStatusChangedEvent(ArticleCollectionStatusChangedEvent event) {
-        String uri = event.uri;
-        final ArticleEntity article = daoArticle.queryBuilder().where(ArticleEntityDao.Properties.Uri.eq(uri)).list().get(0);
-        if (article.getCollectStatus()) {
-            article.setCollectStatus(false);
-            daoArticle.update(article);
-        } else {
-            //add collection
-            article.setCollectStatus(true);
-            Date currentTime = Calendar.getInstance().getTime();
-            article.setCollectTime(currentTime);
-            daoArticle.update(article);
-
-        }
-        EventBus.getDefault().post(new CollectArticleEvent(uri));
-    }
-    /**
-     * On start.
-     * Register for EventBus on CollectWordEvent
-     */
-    @Override
-    public void onStart() {
-        super.onStart();
-        EventBus.getDefault().register(this);
-
-    }
-
-    /**
-     * On start.
-     * Unregister for EventBus on CollectWordEvent
-     */
-    @Override
-    public void onStop() {
-        //get rid of the CollectWordEvent before it dies.
-        CollectWordEvent event = EventBus.getDefault().getStickyEvent(CollectWordEvent.class);
-        if (event != null) {
-            //remove the received stickyEvent
-            EventBus.getDefault().removeStickyEvent(event);
-        }
-        EventBus.getDefault().unregister(this);
-        super.onStop();
-    }
 
     /**
      * Get the database instance of WordCollection
@@ -512,6 +347,7 @@ public class MainActivity extends AppCompatActivity implements
 
     /**
      * Create custom option menu
+     *
      * @param menu
      * @return super of it's original function
      */

@@ -1,33 +1,87 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="match_parent"
+<com.daasuu.bl.BubbleLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/ppwView"
+    android:layout_width="200dp"
     android:layout_height="wrap_content"
-    android:background="@color/colorPrimary"
-    android:orientation="horizontal" >
+    android:padding="10dp"
+    app:bl_arrowHeight="12dp"
+    app:bl_arrowDirection="bottom_center"
+    app:bl_arrowWidth="20dp"
+    app:bl_bubbleColor="@color/md_white_1000"
+    app:bl_cornersRadius="10dp"
+    app:bl_strokeWidth="2dp"
+    app:bl_strokeColor="#C8C8C8"
+    >
 
-    <TextView
-        android:id="@+id/meaning"
-        android:layout_width="match_parent"
+    <LinearLayout
+        android:layout_width="200dp"
         android:layout_height="wrap_content"
-        android:layout_gravity="left"
-        android:padding="10dp"
-        android:text="Loading"
-        android:textColor="@color/white"
-        android:textSize="20sp"
-        />
+        android:orientation="vertical">
 
-    <ImageButton
-        android:id="@+id/collect"
-        android:layout_width="30dp"
-        android:layout_height="30dp"
-        android:layout_alignParentEnd="true"
-        android:layout_alignParentTop="true"
-        android:background="@null"
-        android:padding="1dp"
-        android:src="@drawable/collect_false"
-        android:text="Button"
-        android:scaleType="fitXY"
-        android:textSize="20sp" />
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            >
 
-</RelativeLayout>
+            <TextView
+                android:id="@+id/word"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="left"
+                android:textColor="@color/black"
+                android:textSize="15sp"
+                android:textStyle="bold"/>
+
+            <ImageButton
+                android:id="@+id/collect"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:layout_alignParentEnd="true"
+                android:layout_alignParentTop="true"
+                android:layout_gravity="center"
+                android:background="@null"
+                android:scaleType="fitXY"
+                android:src="@drawable/collect_false"
+
+                />
+
+        </RelativeLayout>
+    <LinearLayout
+        android:layout_width="200dp"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:id="@+id/pronLayout"
+        android:visibility="gone"
+        >
+        <TextView
+            android:id="@+id/pron"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical"
+            android:textColor="@color/black"
+            android:textSize="13sp"
+            android:paddingEnd="10dp"
+            android:paddingTop="2dp"
+            android:fontFamily="@font/gwipa"
+            android:text="aaaa"
+            />
+        <ImageButton
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:src="@drawable/read"
+            android:background="@null"
+            android:scaleType="fitXY"/>
+    </LinearLayout>
+        <me.codeboy.android.aligntextview.AlignTextView
+            android:id="@+id/meaning"
+            android:layout_width="200dp"
+            android:layout_height="wrap_content"
+            android:layout_gravity="left"
+            android:text="Loading"
+            android:textColor="@color/black"
+            android:textSize="15sp" />
+
+    </LinearLayout>
+
+</com.daasuu.bl.BubbleLayout>

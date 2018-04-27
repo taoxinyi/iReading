@@ -64,6 +64,8 @@ public class WordInfo {
      *
      * @return the string
      */
+    public String getRealMeaning(){return meaning;}
+
     public String getMeaning() {
         if (isShowingMeaning)return meaning;
         else return "";

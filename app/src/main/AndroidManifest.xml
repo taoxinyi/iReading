@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest package="com.iReadingGroup.iReading"
-          xmlns:android="http://schemas.android.com/apk/res/android">
-    <uses-permission android:name="android.permission.INTERNET"/>
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.iReadingGroup.iReading">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
     <application
@@ -13,18 +14,29 @@
         android:label="@string/app_name"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <activity android:name="com.iReadingGroup.iReading.Activity.MainActivity" android:windowSoftInputMode="adjustPan">
+        <activity
+            android:name="com.iReadingGroup.iReading.Activity.MainActivity"
+            android:process=":main"
+            android:windowSoftInputMode="adjustPan">
 
             <intent-filter>
-                <action android:name="android.intent.action.MAIN"/>
+                <action android:name="android.intent.action.MAIN" />
 
-                <category android:name="android.intent.category.LAUNCHER"/>
+                <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name="com.iReadingGroup.iReading.Activity.ArticleDetailActivity" android:theme="@style/AppSlideTheme">
-        </activity>
-        <activity android:name="com.iReadingGroup.iReading.Activity.WordDetailActivity" android:theme="@style/AppSlideTheme">
-        </activity>
+        <activity
+            android:name="com.iReadingGroup.iReading.Activity.ArticleDetailActivity"
+            android:process=":article"
+            android:theme="@style/AppSlideTheme"></activity>
+        <activity
+            android:name="com.iReadingGroup.iReading.Activity.WordDetailActivity"
+            android:process=":word"
+            android:theme="@style/AppSlideTheme"></activity>
+        <activity
+            android:name="com.iReadingGroup.iReading.Activity.SettingsActivity"
+            android:process=":main"
+            android:theme="@style/AppSlideTheme"></activity>
     </application>
 
 </manifest>

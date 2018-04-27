@@ -1,36 +1,42 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:orientation="vertical"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:descendantFocusability="beforeDescendants"
     android:focusableInTouchMode="true"
-    android:descendantFocusability="beforeDescendants">
+    android:orientation="vertical">
+
     <android.support.v7.widget.Toolbar
         android:id="@+id/toolbar_word_search"
-        app:theme="@style/AppTheme.Toolbar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@color/colorPrimary"
-        app:contentInsetStart="0dp">
-    <android.support.v7.widget.SearchView
-        android:id="@+id/search_word"
-        style="@style/SearchViewStyle"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_marginBottom="10dp"
-        />
+        app:contentInsetStart="0dp"
+        app:theme="@style/AppTheme.Toolbar">
+
+        <android.support.v7.widget.SearchView
+            android:id="@+id/search_word"
+            style="@style/SearchViewStyle"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_marginBottom="10dp" />
     </android.support.v7.widget.Toolbar>
+
     <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
         android:layout_width="fill_parent"
         android:layout_height="fill_parent"
-        android:orientation="vertical"
-        android:fillViewport="true">
-        <android.support.v7.widget.RecyclerView
-            android:id="@+id/list_word_search"
+        android:fillViewport="true"
+        android:orientation="vertical">
+
+        <RelativeLayout
             android:layout_width="match_parent"
-            android:layout_height="fill_parent"
-            >
-        </android.support.v7.widget.RecyclerView>
+            android:layout_height="wrap_content">
+
+            <android.support.v7.widget.RecyclerView
+                android:id="@+id/list_word_search"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+        </RelativeLayout>
     </ScrollView>
 </LinearLayout>
