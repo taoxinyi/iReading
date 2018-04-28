@@ -4,7 +4,10 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.view.View;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.bigkoo.alertview.AlertView;
@@ -33,6 +36,7 @@ public class SettingsActivity extends AppCompatActivity {
         mContent = this;
         initializeClearCache();
         initializeSetNumber();
+        initializeToolBar();
 
 
 //更改右侧文字
@@ -40,7 +44,7 @@ public class SettingsActivity extends AppCompatActivity {
     }
 
     private void initializeClearCache() {
-        final LSettingItem mSettingItemOne = (LSettingItem) findViewById(R.id.item_one);
+        final LSettingItem mSettingItemOne = findViewById(R.id.item_one);
         final String size = ClearCache.getTotalCacheSize(getApplicationContext());
         mSettingItemOne.setRightText("当前缓存大小：" + size);
         mSettingItemOne.setmOnLSettingItemClick(new LSettingItem.OnLSettingItemClick() {
@@ -56,7 +60,7 @@ public class SettingsActivity extends AppCompatActivity {
     }
 
     private void initializeSetNumber() {
-        final LSettingItem NumberSettingItem = (LSettingItem) findViewById(R.id.item_number);
+        final LSettingItem NumberSettingItem = findViewById(R.id.item_number);
         NumberSettingItem.setRightText(((MyApplication)getApplication()).getSetting("number"));
         final String[] list = {"1", "5", "10", "15", "20"};
         NumberSettingItem.setmOnLSettingItemClick(new LSettingItem.OnLSettingItemClick() {
@@ -79,6 +83,16 @@ public class SettingsActivity extends AppCompatActivity {
         });
     }
 
-
+    private void initializeToolBar() {
+        Toolbar toolBar = findViewById(R.id.toolbar);
+        toolBar.setTitle("");//set corresponding title in toolbar
+        setSupportActionBar(toolBar);
+        findViewById(R.id.backLayout).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                finish();
+            }
+        });
+    }
 
 }

@@ -1,46 +1,28 @@
 package com.iReadingGroup.iReading.Activity;
 
 import android.content.Context;
-import android.content.Intent;
-import android.graphics.Color;
-import android.graphics.drawable.ColorDrawable;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
 import android.support.v4.content.ContextCompat;
-import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.Toolbar;
-import android.util.Log;
-import android.view.Gravity;
-import android.view.LayoutInflater;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewTreeObserver;
-import android.webkit.JavascriptInterface;
 import android.webkit.WebView;
-import android.webkit.WebViewClient;
 import android.widget.ImageButton;
 import android.widget.ImageView;
-import android.widget.PopupWindow;
 import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.daasuu.bl.ArrowDirection;
-import com.daasuu.bl.BubbleLayout;
-import com.daasuu.bl.BubblePopupHelper;
-import com.iReadingGroup.iReading.AsyncResponse;
+import com.iReadingGroup.iReading.AsyncTask.AsyncResponse;
+import com.iReadingGroup.iReading.AsyncTask.FetchingWordDetailAsyncTask;
 import com.iReadingGroup.iReading.Bean.OfflineDictBean;
 import com.iReadingGroup.iReading.Bean.OfflineDictBeanDao;
-import com.iReadingGroup.iReading.Bean.WordCollectionBean;
 import com.iReadingGroup.iReading.Bean.WordCollectionBeanDao;
+import com.iReadingGroup.iReading.CollectionImageView;
 import com.iReadingGroup.iReading.Event.ChangeWordCollectionDBEvent;
 import com.iReadingGroup.iReading.Event.WordDatasetChangedEvent;
-import com.iReadingGroup.iReading.FetchingBriefMeaningAsyncTask;
-import com.iReadingGroup.iReading.FetchingWordDetailAsyncTask;
 import com.iReadingGroup.iReading.MyApplication;
 import com.iReadingGroup.iReading.R;
 import com.iReadingGroup.iReading.WordDetail;
@@ -53,40 +35,25 @@ import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
 
 import java.io.IOException;
-import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import me.codeboy.android.aligntextview.AlignTextView;
-
 /**
- * Created by taota on 2018/4/9.
+ * The type Word detail activity.
  */
-
-public class WordDetailActivity extends AppCompatActivity {
+public class WordDetailActivity extends DetailBaseActivity {
     private String detailed_word, detailed_meaning, meaning, sentence;
     private String online_meaning;
     private WordDetail wordDetail;
     private Context mContext;
-    private String current_word;
-    private String current_meaning;
-    private String meaning_result;
-    private PopupWindow popupWindow;
-    private OfflineDictBeanDao daoDictionary;//database instance
-    private WordCollectionBeanDao daoCollection;//database instance
-    private ImageButton ppwCollectionButton;
     private String sumString = "";
-    private ImageButton collectionButtonToolbar;
+    private CollectionImageView collectionImageViewToolbar;
     private View pronView;
-    private WebView textWebview;
-    private BubbleLayout bubbleLayout;
-    private String pron = "";
     private ScrollView scrollView;
     private boolean expandLast = false;
-    private boolean current_expand=false;
-    private int x, y;
+    private boolean current_expand = false;
     private boolean collectedInOffline = false;
     private ExpandableLayout expandableLayoutOnline, expandableLayoutOffline;
 
@@ -106,9 +73,11 @@ public class WordDetailActivity extends AppCompatActivity {
         word.setText(detailed_word);
         word = findViewById(R.id.word_offline);
         word.setText(detailed_word);
-        getWindow().setStatusBarColor(ContextCompat.getColor(this, R.color.colorPrimary));
+
+        initializeStatusBar(R.color.colorPrimary);
         initializeDatabase();
-        initializeToolBar();
+        initializeToolBar(R.id.toolbar, R.id.backLayout, R.id.title, detailed_word);
+
         initializeImageButton();
         initializeOfflineCollectionUI();
 
@@ -118,7 +87,7 @@ public class WordDetailActivity extends AppCompatActivity {
         scrollView.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
             @Override
             public void onGlobalLayout() {
-                if (expandLast &&current_expand)
+                if (expandLast && current_expand)
                     scrollView.post(new Runnable() {
                         public void run() {
                             scrollView.fullScroll(View.FOCUS_DOWN);
@@ -128,8 +97,6 @@ public class WordDetailActivity extends AppCompatActivity {
 
             }
         });
-        //make unsure part gone
-
         //fetching word from internet
         FetchingWordDetailAsyncTask asyncTask = new FetchingWordDetailAsyncTask(new AsyncResponse() {
             @Override
@@ -146,7 +113,7 @@ public class WordDetailActivity extends AppCompatActivity {
         a.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                current_expand=false;
+                current_expand = false;
                 if (expandableLayoutOnline.isExpanded()) {
                     expandableLayoutOnline.collapse();
                     b.setImageResource(R.drawable.arrow_down);
@@ -165,7 +132,7 @@ public class WordDetailActivity extends AppCompatActivity {
         a1.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                current_expand=true;
+                current_expand = true;
                 expandLast = false;
                 if (expandableLayoutOffline.isExpanded()) {
                     expandableLayoutOffline.collapse();
@@ -206,7 +173,10 @@ public class WordDetailActivity extends AppCompatActivity {
         for (List<String> meaningPair : wordDetail.getMeaning()) {
             meaningPair.get(0);
             online_meaning += meaningPair.get(0) + " " + meaningPair.get(1) + "<br>";
+
         }
+        if (detailed_meaning == null)
+            detailed_meaning = online_meaning.substring(31).replace("<br>", "\t");
         online_meaning += "</p>";
     }
 
@@ -215,11 +185,42 @@ public class WordDetailActivity extends AppCompatActivity {
             sumString += getClickedString(sentPair.get(0)) + "<span style=\"color: #0D47A1;\">" + sentPair.get(1) + "</span>" + "<br>";
         }
         sumString += "<p>";
-        initializeWebView();
+        initializeWebView(R.id.wv, getWebViewString());
+        textWebview.setWebViewClient(new MyWebViewClient() {
+            @Override
+            public void onPageCommitVisible(WebView view,
+                                            String url) {
+                if (collectedInOffline)//if in offline
+                    expandableLayoutOffline.setVisibility(View.VISIBLE);
+                else { // if not in offline ,make them all gone
+                    for (int i = 0; i < expandableLayoutOffline.getChildCount(); i++) {
+                        View child = expandableLayoutOffline.getChildAt(i);
+                        child.setVisibility(View.GONE);
+                    }
+                }
+                //offline title visible
+                findViewById(R.id.title_offline).setVisibility(View.VISIBLE);
+                //pro view visible
+                pronView.setVisibility(View.VISIBLE);
+                //webview visible
+                view.setVisibility(View.VISIBLE);
+                if (!wordDetail.getMeaning().isEmpty()) {//if online fetched something
+                    expandableLayoutOnline.setVisibility(View.VISIBLE);
+                } else { // if online fetched nothing,make them all gone
+                    for (int i = 0; i < expandableLayoutOnline.getChildCount(); i++) {
+                        View child = expandableLayoutOnline.getChildAt(i);
+                        child.setVisibility(View.GONE);
+                    }
+
+                }
+
+
+            }
+
+        });
     }
 
     private void updateOnlinePronunciation() {
-
         int index = 0;
         TextView tv;
         ImageButton ib;
@@ -244,6 +245,7 @@ public class WordDetailActivity extends AppCompatActivity {
                             player.prepare();
                             player.start();
                         } catch (IOException e) {
+                            e.printStackTrace();
                         }
                     }
                 });
@@ -266,6 +268,7 @@ public class WordDetailActivity extends AppCompatActivity {
                             player.prepare();
                             player.start();
                         } catch (IOException e) {
+                            e.printStackTrace();
                         }
                     }
                 });
@@ -284,35 +287,24 @@ public class WordDetailActivity extends AppCompatActivity {
     }
 
     private void initializeImageButton() {
-        collectionButtonToolbar = findViewById(R.id.collect_word_button);
-
+        collectionImageViewToolbar = findViewById(R.id.collect_word_button);
         if (getWordCollectionStatus(detailed_word))
-            collectionButtonToolbar.setImageDrawable(
-                    ContextCompat.getDrawable(mContext, R.drawable.collect_true));
-        else collectionButtonToolbar.setImageDrawable(
-                ContextCompat.getDrawable(mContext, R.drawable.collect_false));
-        collectionButtonToolbar.setOnClickListener(new View.OnClickListener() {
+            collectionImageViewToolbar.initialize(R.drawable.collect_true);
+        else
+            collectionImageViewToolbar.initialize(R.drawable.collect_false);
+        collectionImageViewToolbar.setOnClickListener(new View.OnClickListener() {
             //collect word function.
             @Override
             public void onClick(View v) {
-                String operation;
-                ImageButton button = (ImageButton) v;
+                ((CollectionImageView) v).toggleImage();
                 if (getWordCollectionStatus(detailed_word)) {
-                    operation = "remove";
                     //already in the db, the user means to removed this word from collection
-                    button.setImageDrawable(
-                            ContextCompat.getDrawable(mContext, R.drawable.collect_false));
                     EventBus.getDefault().post(new ChangeWordCollectionDBEvent(detailed_word, detailed_meaning, "remove"));
 
                 } else {
                     //not in the db, the user means to add this word to collection
-                    operation = "add";
-                    button.setImageDrawable(
-                            ContextCompat.getDrawable(mContext, R.drawable.collect_true));
                     EventBus.getDefault().post(new ChangeWordCollectionDBEvent(detailed_word, detailed_meaning, "add"));
-
                 }
-
             }
         });
     }
@@ -327,81 +319,16 @@ public class WordDetailActivity extends AppCompatActivity {
         return bundle.getString("meaning");
     }
 
-    private void initializeDatabase() {
-
-
-        daoDictionary = ((MyApplication) getApplication()).getDaoDictionary();//this is the offline dictionary database
-        daoCollection = ((MyApplication) getApplication()).getDaoCollection();// this is the database recording user's word collection
-
-
-    }
-
-    private void initializeToolBar() {
-        Toolbar toolBar = (Toolbar) findViewById(R.id.toolbar);
-        toolBar.setTitle("");//set corresponding title in toolbar
-        ((TextView) findViewById(R.id.title)).setText(detailed_word);
-        setSupportActionBar(toolBar);
-        findViewById(R.id.backLayout).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                finish();
-            }
-        });
-    }
 
     private boolean getWordCollectionStatus(String word) {
-        if (daoCollection.queryBuilder().where(WordCollectionBeanDao.Properties.Word.eq(word)).list().size() == 0)
-            return false;
-        else
-            return true;
+        return daoCollection.queryBuilder().where(WordCollectionBeanDao.Properties.Word.eq(word)).list().size() != 0;
 
     }
 
-    private void managePopup(int px, int py) {
-        x = px;
-        y = -textWebview.getHeight() + py;
 
-    }
+    private String getWebViewString() {
 
-    private class MyJavaScriptInterface {
-        private Context ctx;
-
-        public MyJavaScriptInterface(Context ctx) {
-            this.ctx = ctx;
-        }
-
-        @JavascriptInterface
-        public void showMenu(int x, int y) {
-            final int px = (int) (x * ctx.getResources().getDisplayMetrics().density);
-            final int py = (int) (y * ctx.getResources().getDisplayMetrics().density);
-
-            Handler mainHandler = new Handler(Looper.getMainLooper());
-            Runnable myRunnable = new Runnable() {
-                @Override
-                public void run() {
-                    managePopup(px, py);
-                }
-            };
-            mainHandler.post(myRunnable);
-        }
-    }
-
-    private void initializeWebView() {
-        textWebview = findViewById(R.id.wv);
-        textWebview.setWebViewClient(new MyWebViewClient(this));
-        textWebview.requestFocus();
-        textWebview.getSettings().setJavaScriptEnabled(true);
-        textWebview.addJavascriptInterface(new MyJavaScriptInterface(this), "Android");
-        textWebview.setBackgroundColor(0);
-        textWebview.setOnTouchListener(new View.OnTouchListener() {
-            @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                return (event.getAction() == MotionEvent.ACTION_MOVE);
-            }
-
-
-        });
-        String htmlBody = "<link rel=\"stylesheet\" type=\"text/css\" href=\"style.css\" />" + online_meaning + sumString +
+        return "<link rel=\"stylesheet\" type=\"text/css\" href=\"style.css\" />" + online_meaning + sumString +
                 "<script>\n" +
                 "       var myHref = document.getElementsByTagName(\"a\");\n" +
                 "        for (var i = 0,mylength = myHref.length; i<mylength; i++) {\n" +
@@ -413,8 +340,7 @@ public class WordDetailActivity extends AppCompatActivity {
                 "    })(i);\n" +
                 "}\n" +
                 "</script>";
-        textWebview.loadDataWithBaseURL("file:///android_asset/", htmlBody, "text/html", "utf-8",
-                null);
+
     }
 
     private String getClickedString(String originalString) {
@@ -435,238 +361,33 @@ public class WordDetailActivity extends AppCompatActivity {
         return sum.toString();
     }
 
-    private static class MyWebViewClient extends WebViewClient {
-
-        private final WeakReference<WordDetailActivity> mActivity;
-
-        public MyWebViewClient(WordDetailActivity activity) {
-            mActivity = new WeakReference<WordDetailActivity>(activity);
-        }
-
-        @Override
-        public void onPageCommitVisible(WebView view,
-                                        String url) {
-            final WordDetailActivity activity = mActivity.get();
-            if (activity.collectedInOffline)//if in offline
-                activity.expandableLayoutOffline.setVisibility(View.VISIBLE);
-            else { // if not in offline ,make them all gone
-                for (int i = 0; i < activity.expandableLayoutOffline.getChildCount(); i++) {
-                    View child = activity.expandableLayoutOffline.getChildAt(i);
-                    child.setVisibility(View.GONE);
-                }
-            }
-            //offline title visible
-            activity.findViewById(R.id.title_offline).setVisibility(View.VISIBLE);
-            //pro view visible
-            activity.pronView.setVisibility(View.VISIBLE);
-            //webview visible
-            view.setVisibility(View.VISIBLE);
-            if (!activity.wordDetail.getMeaning().isEmpty()) {//if online fetched something
-                activity.expandableLayoutOnline.setVisibility(View.VISIBLE);
-            } else { // if online fetched nothing,make them all gone
-                for (int i = 0; i < activity.expandableLayoutOnline.getChildCount(); i++) {
-                    View child = activity.expandableLayoutOnline.getChildAt(i);
-                    child.setVisibility(View.GONE);
-                }
-
-            }
-
-
-        }
-
-        @Override
-        public boolean shouldOverrideUrlLoading(final WebView view, String url) {
-            String mWord = url.substring(4).toLowerCase();
-            final WordDetailActivity activity = mActivity.get();
-            //if clicked on a word
-            //if the asyncTask finishes fetching word meaning from Internet
-            activity.current_word = mWord;
-            FetchingBriefMeaningAsyncTask asyncTask = new FetchingBriefMeaningAsyncTask(new AsyncResponse() {
-                @Override
-                public void processFinish(Object output) {
-                    WordDetail wordDetail = (WordDetail) output;
-                    activity.current_meaning = "";
-                    for (List<String> meaningPair : wordDetail.getMeaning()) {
-                        meaningPair.get(0);
-                        activity.current_meaning += meaningPair.get(0) + " " + meaningPair.get(1) + "\n";
-                    }
-                    activity.current_meaning = activity.current_meaning.substring(0, activity.current_meaning.length() - 1);
-
-                    activity.pron = wordDetail.getPron().get(0).get(0);
-
-                    //show popup window
-                    activity.showPopupWindow();
-                }
-            });
-            //using iciba api to search the word, type json is small to transfer
-            List<OfflineDictBean> joes = activity.daoDictionary.queryBuilder()
-                    .where(OfflineDictBeanDao.Properties.Word.eq(mWord))
-                    .list();
-            if (joes.size() == 0) {   //find nothing in offline dictionary,using online query
-                asyncTask.execute("https://dict-co.iciba.com/api/dictionary.php?key=341DEFE6E5CA504E62A567082590D0BD&type=json&w=" + mWord);
-
-            } else {
-                //find meaning in offline dictionary
-                activity.current_meaning = joes.get(0).getMeaning();
-                activity.meaning_result = mWord + "[离线]\n" + activity.current_meaning;
-                //show popup window
-                activity.showPopupWindow();
-
-            }
-
-            return true;
-        }
-    }
 
     private boolean isAlpha(String name) {
         return name.matches("[a-zA-Z-]+");
     }
 
-    private void showPopupWindow() {
-        //loading layOut file
-        initializePopupWindow();
-        initializeWordTextView();
-        initializeCollectButton();
-        //show the popup window at the bottom
-        popupWindow.showAtLocation(findViewById(R.id.content), Gravity.BOTTOM,
-                0, 0);
 
-
-    }
-
-    private void initializePopupWindow() {
-        bubbleLayout = (BubbleLayout) LayoutInflater.from(this).inflate(R.layout.ppw_tap_search, null);
-        popupWindow = BubblePopupHelper.create(this, bubbleLayout);
-        bubbleLayout.setVisibility(View.INVISIBLE);
-
-        bubbleLayout.getViewTreeObserver().addOnGlobalLayoutListener(
-                new ViewTreeObserver.OnGlobalLayoutListener() {
-
-                    @Override
-                    public void onGlobalLayout() {
-                        bubbleLayout.getViewTreeObserver()
-                                .removeOnGlobalLayoutListener(this);
-
-                        int width = bubbleLayout.getWidth(); // 获取宽度
-                        int height = bubbleLayout.getHeight(); // 获取高度
-                        int totalWidth = textWebview.getWidth();
-                        int arrowWidth = Math.round(bubbleLayout.getArrowWidth());
-                        popupWindow.dismiss();
-                        if (x + width / 2 > totalWidth) {//bottom-right
-                            bubbleLayout.setArrowDirection(ArrowDirection.BOTTOM);
-                            bubbleLayout.setArrowPosition(width - 30 - arrowWidth);
-                            popupWindow.showAsDropDown(textWebview, x + 30 - width + arrowWidth / 2, y - height - 85);
-
-                        } else if (x - width / 2 < 0) {
-                            bubbleLayout.setArrowDirection(ArrowDirection.BOTTOM);
-                            bubbleLayout.setArrowPosition(30);
-                            popupWindow.showAsDropDown(textWebview, x - 20 - arrowWidth / 2, y - height - 85);
-
-
-                        } else
-                            popupWindow.showAsDropDown(textWebview, x - width / 2, y - height - 85);
-                        bubbleLayout.setVisibility(View.VISIBLE);
-
-
-                    }
-                });
-
-        popupWindow.setOutsideTouchable(true);
-        popupWindow.setFocusable(false);
-        popupWindow.setTouchable(true);
-        popupWindow.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
-        popupWindow.setTouchInterceptor(new View.OnTouchListener() {
-            @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                return false;
-                // 这里如果返回true的话，touch事件将被拦截
-                // 拦截后 PopupWindow的onTouchEvent不被调用，这样点击外部区域无法dismiss
-            }
-        });
-        bubbleLayout.setOnClickListener(new View.OnClickListener() {   //once click, goto WordDetailActivity
-            @Override
-            public void onClick(View v) {
-                Intent intent = new Intent(getApplicationContext(), WordDetailActivity.class);
-                Bundle bundle = new Bundle();
-                bundle.putString("word", current_word);
-                bundle.putString("meaning", current_meaning);
-                intent.putExtras(bundle);
-                startActivity(intent);
-            }
-        });
-    }
-
-    private void initializeWordTextView() {
-        //initial text in popupwindow
-        ((TextView) bubbleLayout.findViewById(R.id.word)).setText(current_word);
-        if (!pron.equals("")) {
-            ((TextView) bubbleLayout.findViewById(R.id.pron)).setText(String.format("/%s/", pron));
-            bubbleLayout.findViewById(R.id.pronLayout).setVisibility(View.VISIBLE);
-        }
-        pron = "";
-        ((AlignTextView) bubbleLayout.findViewById(R.id.meaning)).setText(current_meaning);
-
-    }
-
-
-    private void initializeCollectButton() {
-        ppwCollectionButton = (ImageButton) bubbleLayout.findViewById(com.iReadingGroup.iReading.R.id.collect);
-        final boolean flag_collected = getWordCollectedStatus(current_word);
-        if (flag_collected) {   //already collected
-            ppwCollectionButton.setImageDrawable(
-                    ContextCompat.getDrawable(getApplicationContext(), R.drawable.collect_true));
-        } else {   //not collected yet
-            ppwCollectionButton.setImageDrawable(
-                    ContextCompat.getDrawable(getApplicationContext(), R.drawable.collect_false));
-        }
-        ppwCollectionButton.setOnClickListener(new View.OnClickListener() {
-            //collect word function.
-            @Override
-            public void onClick(View v) {
-                ImageButton button = (ImageButton) v;
-                if (getWordCollectedStatus(current_word)) {
-                    //already in the db, the user means to removed this word from collection
-                    button.setImageDrawable(
-                            ContextCompat.getDrawable(getApplicationContext(), R.drawable.collect_false));
-                    EventBus.getDefault().post(new ChangeWordCollectionDBEvent(current_word, current_meaning, "remove"));
-
-                } else {
-                    //not in the db, the user means to add this word to collection
-                    button.setImageDrawable(
-                            ContextCompat.getDrawable(getApplicationContext(), R.drawable.collect_true));
-                    EventBus.getDefault().post(new ChangeWordCollectionDBEvent(current_word, current_meaning, "add"));
-
-
-                }
-            }
-        });
-    }
-
-    private boolean getWordCollectedStatus(String word) {
-        List<WordCollectionBean> l = daoCollection.queryBuilder()
-                .where(WordCollectionBeanDao.Properties.Word.eq(word))
-                .list();
-        if (l.size() == 0) {
-            return false;//not collected yet
-        } else return true;
-    }
-
+    /**
+     * On word dataset changed event.
+     *
+     * @param event the event
+     */
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void onWordDatasetChangedEvent(WordDatasetChangedEvent event) {
         boolean flag_collected = getWordCollectedStatus(current_word);
         if (flag_collected) {   //already collected
-            ppwCollectionButton.setImageDrawable(
+            ppwCollectionImageView.setImageDrawable(
                     ContextCompat.getDrawable(mContext, R.drawable.collect_true));
         } else {   //not collected yet
-            ppwCollectionButton.setImageDrawable(
+            ppwCollectionImageView.setImageDrawable(
                     ContextCompat.getDrawable(mContext, R.drawable.collect_false));
         }
         flag_collected = getWordCollectedStatus(detailed_word);
         if (flag_collected) {   //already collected
-            collectionButtonToolbar.setImageDrawable(
+            collectionImageViewToolbar.setImageDrawable(
                     ContextCompat.getDrawable(mContext, R.drawable.collect_true));
         } else {   //not collected yet
-            collectionButtonToolbar.setImageDrawable(
+            collectionImageViewToolbar.setImageDrawable(
                     ContextCompat.getDrawable(mContext, R.drawable.collect_false));
         }
     }

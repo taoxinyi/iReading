@@ -15,7 +15,6 @@ import static com.chad.library.adapter.base.listener.SimpleClickListener.TAG;
 /**
  * Created by taota on 2018/4/26.
  */
-
 public class MyBroadcastReceiver extends BroadcastReceiver {
 
     @Override

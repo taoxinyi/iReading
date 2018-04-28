@@ -13,7 +13,36 @@
         android:layout_height="wrap_content"
         android:background="@color/colorPrimary"
         app:contentInsetStart="0dp">
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingEnd="50dp"
+            android:id="@+id/backLayout">
 
+            <ImageButton
+                android:id="@+id/back"
+                android:layout_width="30dp"
+                android:layout_height="30dp"
+                android:layout_alignParentStart="true"
+                android:layout_alignParentTop="true"
+                android:layout_gravity="start"
+                android:layout_marginStart="0dp"
+                android:background="@null"
+                android:contentDescription="Back"
+                android:padding="1dp"
+                android:scaleType="fitXY"
+                android:src="@drawable/back" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical"
+                android:paddingBottom="2dp"
+                android:text="返回"
+                android:textColor="@color/white"
+                android:textSize="20sp" />
+        </LinearLayout>
         <TextView
             android:id="@+id/toolbar_title"
             android:layout_width="wrap_content"

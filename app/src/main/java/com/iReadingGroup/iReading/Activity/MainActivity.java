@@ -48,8 +48,6 @@ import org.greenrobot.greendao.database.Database;
 
 import java.util.HashMap;
 
-import cn.bingoogolapple.badgeview.BGABadgeAlphaView;
-
 
 /**
  * MainActivity
@@ -66,16 +64,33 @@ import cn.bingoogolapple.badgeview.BGABadgeAlphaView;
  */
 public class MainActivity extends AppCompatActivity implements
         DoubleClickBackToContentTopListener.IBackToContentTopView {
+    /**
+     * The Tool bar.
+     */
     public Toolbar toolBar;
     private ViewPager viewPager;
-    private BGABadgeAlphaView collectionBadge;
     private WordCollectionBeanDao daoCollection;
     private OfflineDictBeanDao daoDictionary;
     private ArticleEntityDao daoArticle;
+    /**
+     * The Switch button.
+     */
     public SwitchButton switchButton;
+    /**
+     * The Button.
+     */
     public MenuItem button;
+    /**
+     * The Search item.
+     */
     public MenuItem searchItem;
+    /**
+     * The Button status.
+     */
     public boolean buttonStatus = false;//whether the button is clicked
+    /**
+     * The Last nested page.
+     */
     public int last_nested_page = 0;//which nested page is selected when the page changes
     private Drawer drawer;
     private String last_section = "所有";
@@ -115,7 +130,6 @@ public class MainActivity extends AppCompatActivity implements
         initializeStatusBar();//set color for status bar for immersive looking
         initializeViewPager();//initialize ViewPage for each tab's fragment
         initializeTabLayout();//initialize weChat stle tabLayout and link it to viewpager
-        initializeCollectionBadge();//initialize the Badge of Collection
         initializeDrawer();
 
     }
@@ -139,7 +153,7 @@ public class MainActivity extends AppCompatActivity implements
 
     private void initializeToolBar() {
         //initialize ToolBar
-        toolBar = (Toolbar) findViewById(com.iReadingGroup.iReading.R.id.toolbar);
+        toolBar = findViewById(R.id.toolbar);
         ((TextView) findViewById(R.id.toolbar_title)).setText("所有");
 
         toolBar.setTitle("");
@@ -163,7 +177,7 @@ public class MainActivity extends AppCompatActivity implements
     private void initializeViewPager() {
         //initialize ViewPage for each tab's fragment
         MainActivityPagesAdapter mainActivityPagesAdapter = new MainActivityPagesAdapter(getSupportFragmentManager());//set Fragment main adapter
-        viewPager = (ViewPager) findViewById(com.iReadingGroup.iReading.R.id.viewPager);
+        viewPager = findViewById(R.id.viewPager);
         viewPager.setAdapter(mainActivityPagesAdapter);//set adapter,link to each fragment
         viewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
             // This method will be invoked when a new page becomes selected.
@@ -183,7 +197,6 @@ public class MainActivity extends AppCompatActivity implements
                     case 2:
                         viewPager.setCurrentItem(2);
                         ((TextView) findViewById(R.id.toolbar_title)).setText("收藏");
-                        collectionBadge.hiddenBadge();
                         break;
                     case 3:
                         viewPager.setCurrentItem(3);
@@ -209,13 +222,10 @@ public class MainActivity extends AppCompatActivity implements
     }
 
     private void initializeTabLayout() {
-        AlphaIndicator alphaIndicator = (AlphaIndicator) findViewById(com.iReadingGroup.iReading.R.id.alphaIndicator);//
+        AlphaIndicator alphaIndicator = findViewById(R.id.alphaIndicator);//
         alphaIndicator.setViewPager(viewPager);
     }
 
-    private void initializeCollectionBadge() {
-        collectionBadge = findViewById(R.id.collectionIcon);
-    }
 
     /**
      * Initialize the side drawer with source and icon
@@ -339,7 +349,7 @@ public class MainActivity extends AppCompatActivity implements
      * Get the database instance of OfflineDictionary
      * It can be used for other fragment.
      *
-     * @return ArticleEntityDao  the article cache instance
+     * @return ArticleEntityDao the article cache instance
      */
     public ArticleEntityDao getDaoArticle() {
         return daoArticle;

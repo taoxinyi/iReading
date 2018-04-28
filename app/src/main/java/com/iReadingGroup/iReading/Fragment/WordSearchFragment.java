@@ -67,7 +67,7 @@ public class WordSearchFragment extends Fragment {
             sv.setIconifiedByDefault(true);
             sv.setIconified(false);
 
-            SearchView.SearchAutoComplete theTextArea = (SearchView.SearchAutoComplete) sv.findViewById(R.id.search_src_text);
+            SearchView.SearchAutoComplete theTextArea = sv.findViewById(R.id.search_src_text);
             theTextArea.setTextColor(Color.GRAY);
             theTextArea.setHintTextColor(Color.GRAY);
             sv.setQueryHint("输入需要查找的单词");
@@ -76,7 +76,7 @@ public class WordSearchFragment extends Fragment {
 
             daoDictionary = ((MainActivity) getActivity()).getDaoDictionary();
             daoCollection = ((MainActivity) getActivity()).getDaoCollection();
-            infoListView = (RecyclerView) v.findViewById(R.id.list_word_search);//
+            infoListView = v.findViewById(R.id.list_word_search);//
             List<OfflineDictBean> l = daoDictionary.queryBuilder().limit(20).list();
             //sample of add initial articles' info.
             for (OfflineDictBean word : l) {
@@ -99,24 +99,16 @@ public class WordSearchFragment extends Fragment {
                 @Override
                 public void onSimpleItemClick(BaseQuickAdapter parent, View view, int position) {
                     sv.clearFocus();
-                    WordInfo h = (WordInfo) alWordInfo.get(position);
-
+                    WordInfo h = alWordInfo.get(position);
                     String current_word=h.getWord();
-                    String meaning=h.getRealMeaning();
-                    Intent intent = new Intent(getActivity(), WordDetailActivity.class);
-                    Bundle bundle = new Bundle();
-                    bundle.putString("word", current_word);
-                    bundle.putString("meaning", meaning);
-                    intent.putExtras(bundle);
-                    startActivity(intent);
-                    //FruitList.this.finish();
+                    goToWordDetail(current_word);
                 }
             });
             //searchview's listener
             sv.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
                                           @Override
                                           public boolean onQueryTextSubmit(String query) {
-                                              search(query);
+                                              goToWordDetail(query);
                                               sv.clearFocus();
                                               return true;
                                           }
@@ -173,13 +165,25 @@ public class WordSearchFragment extends Fragment {
     }
 
     private boolean getWordCollectionStatus(String word) {
-        if (daoCollection.queryBuilder().where(WordCollectionBeanDao.Properties.Word.eq(word)).list().size() == 0)
-            return false;
-        else
-            return true;
+        return daoCollection.queryBuilder().where(WordCollectionBeanDao.Properties.Word.eq(word)).list().size() != 0;
+
+    }
+    private void goToWordDetail(String word)
+    {
+
+        Intent intent = new Intent(getActivity(), WordDetailActivity.class);
+        Bundle bundle = new Bundle();
+        bundle.putString("word", word);
+        intent.putExtras(bundle);
+        startActivity(intent);
 
     }
 
+    /**
+     * Word dataset changed event.
+     *
+     * @param event the event
+     */
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void WordDatasetChangedEvent(WordDatasetChangedEvent event) {
         String word = event.word;

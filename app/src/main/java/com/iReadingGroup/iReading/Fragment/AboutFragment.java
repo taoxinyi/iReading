@@ -19,7 +19,13 @@ import com.iReadingGroup.iReading.R;
 
 import java.net.URLEncoder;
 
+/**
+ * The type About fragment.
+ */
 public class AboutFragment extends MaterialAboutFragment {
+    /**
+     * The constant ALIPAY_PERSON.
+     */
     public static final String ALIPAY_PERSON = "HTTPS://QR.ALIPAY.COM/FKX06332TUSRAIPEXK1818";
 
     @Override
@@ -91,6 +97,13 @@ public class AboutFragment extends MaterialAboutFragment {
         }
     }
 
+    /**
+     * Open alipay pay page boolean.
+     *
+     * @param context the context
+     * @param qrcode  the qrcode
+     * @return the boolean
+     */
     public static boolean openAlipayPayPage(Context context, String qrcode) {
         try {
             qrcode = URLEncoder.encode(qrcode, "utf-8");

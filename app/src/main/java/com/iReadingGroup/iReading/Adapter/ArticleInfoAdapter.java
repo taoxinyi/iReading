@@ -34,6 +34,13 @@ import java.util.TimeZone;
 public class ArticleInfoAdapter extends BaseQuickAdapter<ArticleEntity, BaseViewHolder> {
     private int time = 0;
 
+    /**
+     * Instantiates a new Article info adapter.
+     *
+     * @param context     the context
+     * @param layoutResId the layout res id
+     * @param data        the data
+     */
     public ArticleInfoAdapter(Context context, int layoutResId, List<ArticleEntity> data) {
         super(layoutResId, data);
         mContext = context;

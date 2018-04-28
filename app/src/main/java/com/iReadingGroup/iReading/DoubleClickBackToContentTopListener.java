@@ -12,7 +12,13 @@ public class DoubleClickBackToContentTopListener implements View.OnClickListener
     private long lastClickTime = 0;
     private final IBackToContentTopView backToContentTopView;
 
+    /**
+     * The interface Back to content top view.
+     */
     public interface IBackToContentTopView {
+        /**
+         * Back to content top.
+         */
         void backToContentTop();
     }
 
@@ -26,10 +32,20 @@ public class DoubleClickBackToContentTopListener implements View.OnClickListener
         }
     }
 
+    /**
+     * Instantiates a new Double click back to content top listener.
+     *
+     * @param backToContentTopView the back to content top view
+     */
     public DoubleClickBackToContentTopListener(@NonNull IBackToContentTopView backToContentTopView) {
         this.backToContentTopView = backToContentTopView;
     }
 
+    /**
+     * On double click.
+     *
+     * @param v the v
+     */
     public void onDoubleClick(View v) {
         backToContentTopView.backToContentTop();
     }

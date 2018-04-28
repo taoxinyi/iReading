@@ -10,7 +10,9 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.TextView;
 
 import com.chad.library.adapter.base.BaseQuickAdapter;
 import com.chad.library.adapter.base.listener.OnItemClickListener;
@@ -25,6 +27,8 @@ import com.iReadingGroup.iReading.Event.WordDatasetChangedEvent;
 import com.iReadingGroup.iReading.R;
 import com.iReadingGroup.iReading.WordInfo;
 
+import net.cachapa.expandablelayout.ExpandableLayout;
+
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
@@ -35,7 +39,6 @@ import java.util.List;
 /**
  * Created by taota on 2018/4/2.
  */
-
 public class WordCollectionNestedFragment extends Fragment {
     /**
      * The constant BUNDLE_TITLE.
@@ -49,20 +52,6 @@ public class WordCollectionNestedFragment extends Fragment {
     private WordCollectionBeanDao daoCollection;
     private OfflineDictBeanDao daoDictionary;
     private LinearLayoutManager llm;
-
-    /**
-     * New instance word search fragment.
-     *
-     * @param title the title
-     * @return the word search fragment
-     */
-    public static WordSearchFragment newInstance(String title) {
-        Bundle bundle = new Bundle();
-        bundle.putString(BUNDLE_TITLE, title);
-        WordSearchFragment fragment = new WordSearchFragment();
-        fragment.setArguments(bundle);
-        return fragment;
-    }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -84,7 +73,7 @@ public class WordCollectionNestedFragment extends Fragment {
 
             daoDictionary = ((MainActivity) getActivity()).getDaoDictionary();
 
-            infoListView = (RecyclerView) v.findViewById(R.id.list_word_collected);//
+            infoListView = v.findViewById(R.id.list_word_collected);//
 
             //sample of add initial articles' info.
 
@@ -113,7 +102,7 @@ public class WordCollectionNestedFragment extends Fragment {
             infoListView.addOnItemTouchListener(new OnItemClickListener() {
                 @Override
                 public void onSimpleItemClick(BaseQuickAdapter parent, View view, int position) {
-                    WordInfo h = (WordInfo) alWordInfo.get(position);
+                    WordInfo h = alWordInfo.get(position);
 
                     String current_word = h.getWord();
                     String meaning = h.getRealMeaning();
@@ -128,12 +117,18 @@ public class WordCollectionNestedFragment extends Fragment {
             });
 
 
+
         }
 
         return v;
     }
 
 
+    /**
+     * On button check event.
+     *
+     * @param event the event
+     */
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void onButtonCheckEvent(ButtonCheckEvent event) {
         ((MainActivity) getActivity()).buttonStatus = event.message;
@@ -145,6 +140,11 @@ public class WordCollectionNestedFragment extends Fragment {
 
     }
 
+    /**
+     * On word dataset changed event.
+     *
+     * @param event the event
+     */
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void onWordDatasetChangedEvent(WordDatasetChangedEvent event) {
         String word = event.word;

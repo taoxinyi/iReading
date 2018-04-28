@@ -23,11 +23,11 @@
             app:contentInsetStartWithNavigation="0dp">
 
             <LinearLayout
+                android:id="@+id/backLayout"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
-                android:paddingEnd="50dp"
-                android:id="@+id/backLayout">
+                android:paddingEnd="50dp">
 
                 <ImageButton
                     android:id="@+id/back"
@@ -54,15 +54,15 @@
             </LinearLayout>
 
             <TextView
+                android:id="@+id/toolbar_title"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center_vertical|center"
                 android:paddingBottom="2dp"
-                android:text="正文"
                 android:textColor="@color/white"
                 android:textSize="22sp" />
 
-            <ImageButton
+            <com.iReadingGroup.iReading.CollectionImageView
                 android:id="@+id/collect_article_button"
                 android:layout_width="30dp"
                 android:layout_height="30dp"
@@ -83,7 +83,8 @@
             android:layout_height="wrap_content"
             android:fillViewport="false"
             android:orientation="vertical"
-            android:padding="0dp">
+            android:paddingEnd="10dp"
+            android:paddingStart="10dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -97,24 +98,55 @@
                     android:layout_height="wrap_content"
                     android:fontFamily="@font/vollkorn_italic"
                     android:paddingStart="10dp"
+                    android:paddingEnd="10dp"
+                    android:paddingTop="15dp"
                     android:textColor="#000000"
                     android:textSize="30dp"
                     android:textStyle="bold" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/source"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="@font/vollkorn_italic"
+                        android:paddingEnd="10dp"
+                        android:paddingStart="10dp"
+                        android:textColor="@color/black"
+                        android:textSize="19sp" />
+
+                    <TextView
+                        android:id="@+id/time"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:paddingStart="10dp"
+                        android:paddingEnd="10dp"
+                        android:fontFamily="Times New Roman"
+                        android:textColor="@color/gray"
+                        android:textSize="15sp" />
+                </LinearLayout>
 
                 <TextView
                     android:id="@+id/category"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:paddingEnd="10dp"
                     android:paddingStart="10dp"
-                    android:textColor="@color/text_grey"
-                    android:textSize="20dp" />
+                    android:textColor="@color/gray"
+                    android:textSize="17sp"
+                    android:fontFamily="@font/vollkorn_regular"/>
 
                 <com.github.chrisbanes.photoview.PhotoView
                     android:id="@+id/img_article"
-                    android:layout_width="fill_parent"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:paddingEnd="10dp"
-                    android:paddingStart="10dp" />
+                    android:paddingStart="10dp"
+                    android:paddingTop="20dp" />
 
                 <WebView
                     android:id="@+id/wv"

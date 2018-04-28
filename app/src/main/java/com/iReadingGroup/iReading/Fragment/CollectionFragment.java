@@ -15,8 +15,6 @@ import android.widget.TextView;
 import com.iReadingGroup.iReading.Activity.MainActivity;
 import com.iReadingGroup.iReading.R;
 
-import cn.bingoogolapple.badgeview.BGABadgeTextView;
-
 
 /**
  * CollectionFragment
@@ -25,9 +23,21 @@ import cn.bingoogolapple.badgeview.BGABadgeTextView;
 public class CollectionFragment extends Fragment {
 
     private View view;
+    /**
+     * The M title.
+     */
     String[] mTitle = new String[20];
+    /**
+     * The M data.
+     */
     String[] mData = new String[20];
+    /**
+     * The M tab layout.
+     */
     TabLayout mTabLayout;
+    /**
+     * The M view pager.
+     */
     ViewPager mViewPager;
 
 
@@ -50,8 +60,8 @@ public class CollectionFragment extends Fragment {
 
 
     private void initView() {
-        mTabLayout = (TabLayout) view.findViewById(R.id.tl_tab);
-        mViewPager = (ViewPager) view.findViewById(R.id.vp_pager);
+        mTabLayout = view.findViewById(R.id.tl_tab);
+        mViewPager = view.findViewById(R.id.vp_pager);
         mViewPager.setAdapter(new FragmentPagerAdapter(getChildFragmentManager()) {
             //此方法用来显示tab上的名字
             @Override
@@ -100,13 +110,11 @@ public class CollectionFragment extends Fragment {
                 switch (position) {
                     case 0:
                         mViewPager.setCurrentItem(0);
-                        hideTabBadge(0);
                         ((MainActivity)getActivity()).button.setVisible(true);
                         ((MainActivity)getActivity()).last_nested_page=0;
                         break;
                     case 1:
                         mViewPager.setCurrentItem(1);
-                        hideTabBadge(1);
                         ((MainActivity)getActivity()).button.setVisible(false);
                         ((MainActivity)getActivity()).last_nested_page=1;
                         break;
@@ -128,25 +136,11 @@ public class CollectionFragment extends Fragment {
             }
         });
         TabLayout.Tab tab = mTabLayout.getTabAt(0);
-        View view = LayoutInflater.from(getContext()).inflate(R.layout.badged_tab, null);
-        ((TextView) view.findViewById(R.id.tv_title)).setText("单词");
-        tab.setCustomView(view);
-        tab = mTabLayout.getTabAt(1);
-        view = LayoutInflater.from(getContext()).inflate(R.layout.badged_tab, null);
-        ((TextView) view.findViewById(R.id.tv_title)).setText("阅读");
-        tab.setCustomView(view);
+
     }
 
 
 
-    private void hideTabBadge(int position) {
-        TabLayout.Tab tab = mTabLayout.getTabAt(position);
-        if (tab != null) {
-            View view = tab.getCustomView();
-            ((BGABadgeTextView) view.findViewById(R.id.tv_title)).hiddenBadge();
-
-        }
-    }
 
 
 

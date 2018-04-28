@@ -11,19 +11,38 @@ import android.util.DisplayMetrics;
 /**
  * Created by taota on 2018/4/19.
  */
-
 public class SpeedyLinearLayoutManager extends LinearLayoutManager {
 
     private static final float MILLISECONDS_PER_INCH = 5f; //default is 25f (bigger = slower)
 
+    /**
+     * Instantiates a new Speedy linear layout manager.
+     *
+     * @param context the context
+     */
     public SpeedyLinearLayoutManager(Context context) {
         super(context);
     }
 
+    /**
+     * Instantiates a new Speedy linear layout manager.
+     *
+     * @param context       the context
+     * @param orientation   the orientation
+     * @param reverseLayout the reverse layout
+     */
     public SpeedyLinearLayoutManager(Context context, int orientation, boolean reverseLayout) {
         super(context, orientation, reverseLayout);
     }
 
+    /**
+     * Instantiates a new Speedy linear layout manager.
+     *
+     * @param context      the context
+     * @param attrs        the attrs
+     * @param defStyleAttr the def style attr
+     * @param defStyleRes  the def style res
+     */
     public SpeedyLinearLayoutManager(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes) {
         super(context, attrs, defStyleAttr, defStyleRes);
     }

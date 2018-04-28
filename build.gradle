@@ -30,9 +30,9 @@ task clean(type: Delete) {
 }
 ext {
     configs = [
-            buildToolsVersion : "26.0.2",
-            compileSdkVersion : 26,
-            targetSdkVersion : 26
+            buildToolsVersion : "27.0.3",
+            compileSdkVersion : 27,
+            targetSdkVersion : 27
     ]
 
     libs = [

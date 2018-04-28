@@ -17,34 +17,34 @@
         app:contentInsetStartWithNavigation="0dp">
         <!--make this size bigger for touch-->
         <LinearLayout
+            android:id="@+id/backLayout"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:paddingEnd="50dp"
-            android:id="@+id/backLayout"
-            >
-        <ImageButton
-            android:id="@+id/back"
-            android:layout_width="30dp"
-            android:layout_height="30dp"
-            android:layout_alignParentStart="true"
-            android:layout_alignParentTop="true"
-            android:layout_gravity="start"
-            android:layout_marginStart="0dp"
-            android:background="@null"
-            android:contentDescription="Back"
-            android:padding="1dp"
-            android:scaleType="fitXY"
-            android:src="@drawable/back" />
+            android:paddingEnd="50dp">
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:paddingBottom="2dp"
-            android:text="返回"
-            android:textColor="@color/white"
-            android:textSize="20sp" />
+            <ImageButton
+                android:id="@+id/back"
+                android:layout_width="30dp"
+                android:layout_height="30dp"
+                android:layout_alignParentStart="true"
+                android:layout_alignParentTop="true"
+                android:layout_gravity="start"
+                android:layout_marginStart="0dp"
+                android:background="@null"
+                android:contentDescription="Back"
+                android:padding="1dp"
+                android:scaleType="fitXY"
+                android:src="@drawable/back" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:paddingBottom="2dp"
+                android:text="返回"
+                android:textColor="@color/white"
+                android:textSize="20sp" />
         </LinearLayout>
 
         <TextView
@@ -54,10 +54,9 @@
             android:layout_gravity="center_vertical|center"
             android:paddingBottom="2dp"
             android:textColor="@color/white"
-            android:textSize="22sp"
-            />
+            android:textSize="22sp" />
 
-        <ImageButton
+        <com.iReadingGroup.iReading.CollectionImageView
             android:id="@+id/collect_word_button"
             android:layout_width="30dp"
             android:layout_height="30dp"
@@ -165,9 +164,9 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginStart="10dp"
+                            android:fontFamily="font/gwipa"
                             android:textColor="@color/md_blue_900"
                             android:textSize="15sp"
-                            android:fontFamily="font/gwipa"
                             android:visibility="gone" />
 
                         <ImageButton
@@ -177,19 +176,19 @@
                             android:layout_gravity="center"
                             android:layout_marginStart="2dp"
                             android:background="@color/transparent"
+                            android:contentDescription="Play British Style Pronunciation"
                             android:scaleType="fitXY"
                             android:src="@drawable/read"
-                            android:visibility="gone"
-                            android:contentDescription="Play British Style Pronunciation"/>
+                            android:visibility="gone" />
 
                         <TextView
                             android:id="@+id/pron_2"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginStart="10dp"
+                            android:fontFamily="font/gwipa"
                             android:textColor="@color/md_blue_900"
                             android:textSize="15sp"
-                            android:fontFamily="font/gwipa"
                             android:visibility="gone" />
 
                         <ImageButton
@@ -199,10 +198,10 @@
                             android:layout_gravity="center"
                             android:layout_marginStart="2dp"
                             android:background="@color/transparent"
+                            android:contentDescription="Play American Style Pronunciation"
                             android:scaleType="fitXY"
                             android:src="@drawable/read"
-                            android:visibility="gone"
-                            android:contentDescription="Play American Style Pronunciation"/>
+                            android:visibility="gone" />
 
                     </LinearLayout>
 
@@ -221,10 +220,10 @@
 
             <!--Offline Fold Title-->
             <RelativeLayout
+                android:id="@+id/title_offline"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:background="#FFFFFF"
-                android:id="@+id/title_offline"
                 android:visibility="gone">
 
                 <TextView
@@ -283,6 +282,7 @@
                         android:layout_marginStart="10dp"
                         android:layout_marginTop="5dp"
                         android:background="@color/colorPrimary" />
+
                     <TextView
                         android:id="@+id/word_meaning"
                         android:layout_width="match_parent"

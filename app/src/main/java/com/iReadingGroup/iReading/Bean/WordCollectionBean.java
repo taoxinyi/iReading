@@ -5,13 +5,6 @@ import org.greenrobot.greendao.annotation.Generated;
 import org.greenrobot.greendao.annotation.Id;
 import org.greenrobot.greendao.annotation.Property;
 
-/**
- * WordCollectionBean
- *
- * Entity Class of word collection
- * item instance of database
- * including:word meaning
- */
 @Entity
 public class WordCollectionBean {
     @Property(nameInDb = "word")
@@ -31,20 +24,10 @@ public class WordCollectionBean {
     public WordCollectionBean() {
     }
 
-    /**
-     * Gets word.
-     *
-     * @return the word
-     */
     public String getWord() {
         return this.word;
     }
 
-    /**
-     * Sets word.
-     *
-     * @param word the word
-     */
     public void setWord(String word) {
         this.word = word;
     }

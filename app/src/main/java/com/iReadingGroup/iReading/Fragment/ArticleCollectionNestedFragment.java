@@ -37,12 +37,9 @@ import static java.util.Collections.max;
 /**
  * ArticleCollectionNestedFragment
  * The nested fragment from CollectionFragment
- *
+ * <p>
  * Load the articles from database and add them into ArrayList
  * Almost identical to ArticleListFragment, unless here we cannot refresh
- *
-
- *
  */
 public  class ArticleCollectionNestedFragment extends Fragment implements BGARefreshLayout.BGARefreshLayoutDelegate{
     private BGARefreshLayout mRefreshLayout; //Layout for refreshing and loading
@@ -83,7 +80,7 @@ public  class ArticleCollectionNestedFragment extends Fragment implements BGARef
      * Initialize refreshing layout.
      */
     public void initializeRefreshingLayout(){
-        mRefreshLayout = (BGARefreshLayout) view.findViewById(com.iReadingGroup.iReading.R.id.rl_modulename_refresh);
+        mRefreshLayout = view.findViewById(com.iReadingGroup.iReading.R.id.rl_modulename_refresh);
         mRefreshLayout.setDelegate(this);
         mRefreshLayout.setIsShowLoadingMoreView(true);
         mRefreshLayout.setPullDownRefreshEnable(false);//disable refresh
@@ -95,9 +92,9 @@ public  class ArticleCollectionNestedFragment extends Fragment implements BGARef
      */
     public void initializeRecycleView(){//Establish the connection among listView,adapter and arrayList.
 
-        infoListView = (RecyclerView) view.findViewById(com.iReadingGroup.iReading.R.id.list);//
+        infoListView = view.findViewById(com.iReadingGroup.iReading.R.id.list);//
 
-       alArticleInfo=daoArticle.queryBuilder().orderAsc(ArticleEntityDao.Properties.CollectTime)
+       alArticleInfo=daoArticle.queryBuilder().orderDesc(ArticleEntityDao.Properties.CollectTime)
                 .where(ArticleEntityDao.Properties.CollectStatus.eq(true)).list();
 
         articleInfoAdapter = new ArticleInfoAdapter(getActivity(),
@@ -114,7 +111,7 @@ public  class ArticleCollectionNestedFragment extends Fragment implements BGARef
             @Override
             public void onSimpleItemClick(BaseQuickAdapter parent, View view, int position)
             {
-                ArticleEntity h = (ArticleEntity) alArticleInfo.get(position);
+                ArticleEntity h = alArticleInfo.get(position);
                 String number=h.getName();
                 String uri=h.getUri();
                 Intent intent = new Intent(getActivity(),ArticleDetailActivity.class);
@@ -166,11 +163,13 @@ public  class ArticleCollectionNestedFragment extends Fragment implements BGARef
         }
         return OurDate;
     }
+
     /**
      * On ArticleDatabaseChangedEvent
-     *
+     * <p>
      * Receive the event when new article(s) collected
      * than read data from database again and update view
+     *
      * @param event the event
      */
     @Subscribe(threadMode = ThreadMode.MAIN)

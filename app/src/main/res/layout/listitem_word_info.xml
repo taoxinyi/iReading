@@ -7,7 +7,7 @@
     android:layout_marginRight="10dp"
     android:orientation="horizontal">
 
-    <ImageView
+    <com.iReadingGroup.iReading.CollectionImageView
         android:id="@+id/img_word_info"
         android:layout_width="50dp"
         android:layout_height="50dp"

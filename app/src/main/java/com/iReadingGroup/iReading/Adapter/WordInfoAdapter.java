@@ -27,6 +27,13 @@ import java.util.List;
  * Set Text and Image to Class:ArticleInfo
  */
 public class WordInfoAdapter extends BaseQuickAdapter<WordInfo, BaseViewHolder> {
+    /**
+     * Instantiates a new Word info adapter.
+     *
+     * @param context     the context
+     * @param layoutResId the layout res id
+     * @param data        the data
+     */
     public WordInfoAdapter(Context context, int layoutResId, List<WordInfo> data) {
         super(layoutResId, data);
         mContext = context;

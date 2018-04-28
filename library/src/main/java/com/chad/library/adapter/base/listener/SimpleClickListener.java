@@ -272,13 +272,10 @@ public abstract class SimpleClickListener implements RecyclerView.OnItemTouchLis
         view.getLocationOnScreen(location);
         int x = location[0];
         int y = location[1];
-        if (ev.getRawX() < x
+        return !(ev.getRawX() < x
                 || ev.getRawX() > (x + view.getWidth())
                 || ev.getRawY() < y
-                || ev.getRawY() > (y + view.getHeight())) {
-            return false;
-        }
-        return true;
+                || ev.getRawY() > (y + view.getHeight()));
     }
 
     private boolean isHeaderOrFooterPosition(int position) {

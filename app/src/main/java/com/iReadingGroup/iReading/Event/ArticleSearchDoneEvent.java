@@ -7,6 +7,9 @@ package com.iReadingGroup.iReading.Event;
 public class ArticleSearchDoneEvent {
 
 
+    /**
+     * Instantiates a new Article search done event.
+     */
     public ArticleSearchDoneEvent() {
 
     }

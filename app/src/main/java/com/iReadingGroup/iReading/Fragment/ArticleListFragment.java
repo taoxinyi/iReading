@@ -58,6 +58,8 @@ import java.util.TimeZone;
 import cn.bingoogolapple.refreshlayout.BGAMoocStyleRefreshViewHolder;
 import cn.bingoogolapple.refreshlayout.BGARefreshLayout;
 
+import static android.content.ContentValues.TAG;
+
 
 /**
  * ArticleListFragment
@@ -84,7 +86,7 @@ public class ArticleListFragment extends Fragment implements BGARefreshLayout.BG
     private HashMap<String, Integer> pageMap = new HashMap<>();
     private String current_source = "所有";
     private String requestUrlCache;
-    private String searchUrlPrefix = requestUrl + "&keywordLoc=title&keyword=";
+    private String searchUrlPrefix;
     private Integer pageCache;
     private SpeedyLinearLayoutManager layoutManager;
 
@@ -102,6 +104,7 @@ public class ArticleListFragment extends Fragment implements BGARefreshLayout.BG
                     "apiKey=475f7fdb-7929-4222-800e-0151bdcd4af2";
         else
             requestUrl=requestUrl.replaceAll("(articlesCount=)[^&]*(&)", String.format("$1%s$2",numberPerLoading));
+        searchUrlPrefix = requestUrl + "&keywordLoc=title&keyword=";
     }
 
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -140,7 +143,6 @@ public class ArticleListFragment extends Fragment implements BGARefreshLayout.BG
      */
     public void initializeUI() {
         initializeRefreshingLayout();//Initialize refreshing and loading layout
-        initializeSearchView();
         initializeListView();
     }
 
@@ -148,7 +150,7 @@ public class ArticleListFragment extends Fragment implements BGARefreshLayout.BG
      * Initialize refreshing layout.
      */
     public void initializeRefreshingLayout() {
-        mRefreshLayout = (BGARefreshLayout) view.findViewById(com.iReadingGroup.iReading.R.id.rl_modulename_refresh);
+        mRefreshLayout = view.findViewById(R.id.rl_modulename_refresh);
         mRefreshLayout.setDelegate(this);
         BGAMoocStyleRefreshViewHolder refreshViewHolder = new BGAMoocStyleRefreshViewHolder(getContext(), true);
         refreshViewHolder.setOriginalImage(R.mipmap.icon1);
@@ -158,19 +160,13 @@ public class ArticleListFragment extends Fragment implements BGARefreshLayout.BG
         mRefreshLayout.setRefreshViewHolder(refreshViewHolder);
     }
 
-    /**
-     * Initialize search view.
-     */
-    public void initializeSearchView() {            //search view
-
-    }
 
     /**
      * Initialize list view.
      */
     public void initializeListView() {//Establish the connection among listView,adapter and arrayList.
 
-        infoListView = (RecyclerView) view.findViewById(com.iReadingGroup.iReading.R.id.list);//
+        infoListView = view.findViewById(R.id.list);//
 
         alArticleInfo = daoArticle.queryBuilder().orderDesc(ArticleEntityDao.Properties.Time).list();
         alArticleInfoCache.addAll(alArticleInfo);
@@ -191,7 +187,7 @@ public class ArticleListFragment extends Fragment implements BGARefreshLayout.BG
         infoListView.addOnItemTouchListener(new OnItemClickListener() {
             @Override
             public void onSimpleItemClick(BaseQuickAdapter parent, View view, int position) {
-                ArticleEntity h = (ArticleEntity) alArticleInfo.get(position);
+                ArticleEntity h = alArticleInfo.get(position);
                 String number = h.getName();
                 String uri = h.getUri();
                 Intent intent = new Intent(getActivity(), ArticleDetailActivity.class);
@@ -251,9 +247,17 @@ public class ArticleListFragment extends Fragment implements BGARefreshLayout.BG
         }
     }
 
+    /**
+     * The type Refreshing task.
+     */
     static class RefreshingTask extends AsyncTask<String, String, String> {
         private WeakReference<ArticleListFragment> weakFragmentRef;
 
+        /**
+         * Instantiates a new Refreshing task.
+         *
+         * @param fragment the fragment
+         */
         public RefreshingTask(ArticleListFragment fragment) {
             weakFragmentRef = new WeakReference<ArticleListFragment>(fragment);
         }
@@ -265,6 +269,7 @@ public class ArticleListFragment extends Fragment implements BGARefreshLayout.BG
 
             try {
                 URL url = new URL(params[0]);
+                Log.d("here",params[0]);
                 connection = (HttpURLConnection) url.openConnection();
 
                 connection.connect();
@@ -314,6 +319,7 @@ public class ArticleListFragment extends Fragment implements BGARefreshLayout.BG
             if (result != null) {
                 try {   //parse word from json
                     //sample link.:http://dict-co.iciba.com/api/dictionary.php?w=go&key=341DEFE6E5CA504E62A567082590D0BD&type=json
+                    Log.d(TAG, "here "+result);
                     String uri, title, source_title, time;
                     JSONObject reader = new JSONObject(result);
                     JSONObject articles = reader.getJSONObject("articles");
@@ -349,9 +355,17 @@ public class ArticleListFragment extends Fragment implements BGARefreshLayout.BG
         }
     }
 
+    /**
+     * The type Loading task.
+     */
     static class LoadingTask extends AsyncTask<String, String, String> {
         private WeakReference<ArticleListFragment> weakFragmentRef;
 
+        /**
+         * Instantiates a new Loading task.
+         *
+         * @param fragment the fragment
+         */
         public LoadingTask(ArticleListFragment fragment) {
             weakFragmentRef = new WeakReference<ArticleListFragment>(fragment);
         }
@@ -451,7 +465,7 @@ public class ArticleListFragment extends Fragment implements BGARefreshLayout.BG
 
         if (isNetworkAvailable()) {
             pageMap.put(current_source, pageMap.get(current_source) + 1);
-            new LoadingTask(this).execute(requestUrl + "&articlesPage=" + (String) (pageMap.get(current_source) + ""));
+            new LoadingTask(this).execute(requestUrl + "&articlesPage=" + pageMap.get(current_source) + "");
             return true;
         } else {
             // The network is not connected
@@ -572,6 +586,11 @@ public class ArticleListFragment extends Fragment implements BGARefreshLayout.BG
     }
 
 
+    /**
+     * On article search event.
+     *
+     * @param event the event
+     */
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void onArticleSearchEvent(ArticleSearchEvent event) {
         if (!flag_search) {
@@ -582,13 +601,18 @@ public class ArticleListFragment extends Fragment implements BGARefreshLayout.BG
         requestUrl = searchUrlPrefix + event.keyword;
         alArticleInfo.clear();
         articleInfoAdapter.notifyDataSetChanged();
-
+        Log.d(TAG, "hereonArticleSearchEvent: "+requestUrl);
         mRefreshLayout.beginRefreshing();
 
 
     }
 
 
+    /**
+     * On article search done event.
+     *
+     * @param event the event
+     */
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void onArticleSearchDoneEvent(ArticleSearchDoneEvent event) {
         flag_search = false;
@@ -647,6 +671,11 @@ public class ArticleListFragment extends Fragment implements BGARefreshLayout.BG
         return OurDate;
     }
 
+    /**
+     * On article database changed event.
+     *
+     * @param event the event
+     */
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void onArticleDatabaseChangedEvent(ArticleDatabaseChangedEvent event) {
         int first = layoutManager.findFirstVisibleItemPosition();
@@ -654,6 +683,11 @@ public class ArticleListFragment extends Fragment implements BGARefreshLayout.BG
         articleInfoAdapter.notifyItemRangeChanged(first, last, "ChangeSwipeButton");
     }
 
+    /**
+     * On back to top event.
+     *
+     * @param event the event
+     */
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void onBackToTopEvent(BackToTopEvent event) {
         infoListView.smoothScrollToPosition(0);
@@ -696,8 +730,7 @@ public class ArticleListFragment extends Fragment implements BGARefreshLayout.BG
         for (ArticleEntity exist : daoArticle.loadAll()) {
             current_uri_list.add(exist.getUri());
         }
-        if (current_uri_list.contains(uri)) return true;
-        else return false;
+        return current_uri_list.contains(uri);
     }
 
 }

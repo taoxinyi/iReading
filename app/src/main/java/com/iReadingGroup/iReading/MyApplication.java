@@ -37,17 +37,58 @@ import java.util.Date;
 
 import static com.chad.library.adapter.base.listener.SimpleClickListener.TAG;
 
+/**
+ * The type My application.
+ */
 public class MyApplication extends Application {
     private ArticleEntityDao daoArticle;
     private OfflineDictBeanDao daoDictionary;
     private WordCollectionBeanDao daoCollection;
+    /**
+     * The Count activity.
+     */
     public int countActivity=0;
 
+    /**
+     * Gets dao article.
+     *
+     * @return the dao article
+     */
     public ArticleEntityDao getDaoArticle() {return daoArticle;}
+
+    /**
+     * Gets dao dictionary.
+     *
+     * @return the dao dictionary
+     */
     public OfflineDictBeanDao getDaoDictionary() {return daoDictionary;}
+
+    /**
+     * Gets dao collection.
+     *
+     * @return the dao collection
+     */
     public WordCollectionBeanDao getDaoCollection() {return daoCollection;}
+
+    /**
+     * Sets dao article.
+     *
+     * @param daoArticle the dao article
+     */
     public void setDaoArticle(ArticleEntityDao daoArticle) {this.daoArticle=daoArticle;}
+
+    /**
+     * Sets dao dictionary.
+     *
+     * @param daoDictionary the dao dictionary
+     */
     public void setDaoDictionary(OfflineDictBeanDao daoDictionary) {this.daoDictionary = daoDictionary;}
+
+    /**
+     * Sets dao collection.
+     *
+     * @param daoCollection the dao collection
+     */
     public void setDaoCollection(WordCollectionBeanDao daoCollection) {this.daoCollection=daoCollection;}
     @SuppressLint("SdCardPath")
     private static final String DB_PATH = "/data/data/com.iReadingGroup.iReading/databases/";//database external path
@@ -120,11 +161,18 @@ public class MyApplication extends Application {
 
     }
 
+    /**
+     * On change word collection db event.
+     *
+     * @param event the event
+     */
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void onChangeWordCollectionDBEvent(ChangeWordCollectionDBEvent event) {
         String word = event.word;
         String meaning = event.meaning;
         String operation = event.operation;
+        Log.d(word+meaning, "onChangeWordCollectionDBEvent: ");
+
         if (operation.equals("add")) {   //add into database
             daoCollection.insert(new WordCollectionBean(word, meaning));
             Toast.makeText(getApplicationContext(),"已收藏单词: "+word,Toast.LENGTH_SHORT).show();
@@ -142,6 +190,11 @@ public class MyApplication extends Application {
 
     }
 
+    /**
+     * On change article collection db event.
+     *
+     * @param event the event
+     */
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void onChangeArticleCollectionDBEvent (changeArticleCollectionDBEvent event) {
         String uri = event.uri;
@@ -167,6 +220,13 @@ public class MyApplication extends Application {
         intent.putExtra("operation",operation);
         sendBroadcast(intent);
     }
+
+    /**
+     * Save setting.
+     *
+     * @param name  the name
+     * @param value the value
+     */
     public void saveSetting(String name, String value) {
         SharedPreferences settings = getSharedPreferences("setting", 0);
         SharedPreferences.Editor editor = settings.edit();
@@ -174,6 +234,12 @@ public class MyApplication extends Application {
         editor.apply();
     }
 
+    /**
+     * Gets setting.
+     *
+     * @param name the name
+     * @return the setting
+     */
     public String getSetting(String name) {
         SharedPreferences settings = getSharedPreferences("setting", 0);
         if (name.equals("number"))

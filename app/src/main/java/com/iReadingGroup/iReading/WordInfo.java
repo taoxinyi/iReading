@@ -1,6 +1,9 @@
 package com.iReadingGroup.iReading;
 
 
+/**
+ * The type Word info.
+ */
 public class WordInfo {
     private String word;
     private String meaning;
@@ -11,9 +14,11 @@ public class WordInfo {
     /**
      * Instantiates a new Word info.
      *
-     * @param word    the word
-     * @param meaning the meaning
-     * @param imageId the image id
+     * @param word             the word
+     * @param meaning          the meaning
+     * @param imageId          the image id
+     * @param isShowingMeaning the is showing meaning
+     * @param collectStatus    the collect status
      */
     public WordInfo(String word, String meaning, int imageId,boolean isShowingMeaning,boolean collectStatus) {
         this.word = word;//word
@@ -66,6 +71,11 @@ public class WordInfo {
      */
     public String getRealMeaning(){return meaning;}
 
+    /**
+     * Gets meaning.
+     *
+     * @return the meaning
+     */
     public String getMeaning() {
         if (isShowingMeaning)return meaning;
         else return "";
@@ -79,11 +89,28 @@ public class WordInfo {
     public int getImageId() {
         return imageId;
     }
+
+    /**
+     * Sets showing meaning.
+     *
+     * @param status the status
+     */
     public void setShowingMeaning(boolean status)
     {
-        if (status) isShowingMeaning=true;
-        else isShowingMeaning=false;
+        isShowingMeaning = status;
     }
+
+    /**
+     * Get collect status boolean.
+     *
+     * @return the boolean
+     */
     public boolean getCollectStatus(){return  collectStatus;}
+
+    /**
+     * Set collect status.
+     *
+     * @param collectStatus the collect status
+     */
     public void setCollectStatus(boolean collectStatus){this.collectStatus=collectStatus;}
 }

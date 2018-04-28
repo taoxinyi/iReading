@@ -1,7 +1,9 @@
 package com.iReadingGroup.iReading.Event;
 
 
-
+/**
+ * The type Button check event.
+ */
 public class ButtonCheckEvent {
 
     /**

@@ -5,7 +5,6 @@ import java.util.Date;
 /**
  * Created by taota on 2018/4/23.
  */
-
 public class TimeUtil {
     private final static long minute = 60 * 1000;// 1分钟
     private final static long hour = 60 * minute;// 1小时
@@ -16,8 +15,8 @@ public class TimeUtil {
     /**
      * 返回文字描述的日期
      *
-     * @param date
-     * @return
+     * @param date the date
+     * @return time format text
      */
     public static String getTimeFormatText(Date date) {
         if (date == null) {

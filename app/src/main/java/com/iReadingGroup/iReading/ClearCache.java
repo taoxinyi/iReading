@@ -13,8 +13,10 @@ import java.math.BigDecimal;
 public class ClearCache {
 
     /**
-     * @param context
-     * @return
+     * Gets total cache size.
+     *
+     * @param context the context
+     * @return total cache size
      * @throws Exception 获取当前缓存
      */
     public static String getTotalCacheSize(Context context) {
@@ -33,6 +35,8 @@ public class ClearCache {
     }
 
     /**
+     * Clear all cache.
+     *
      * @param context 删除缓存
      */
     public static void clearAllCache(Context context) {
@@ -66,7 +70,14 @@ public class ClearCache {
         }
     }
 
-    // 获取文件
+    /**
+     * Gets folder size.
+     *
+     * @param file the file
+     * @return the folder size
+     * @throws Exception the exception
+     */
+// 获取文件
     // Context.getExternalFilesDir() --> SDCard/Android/data/你的应用的包名/files/
     // 目录，一般放一些长时间保存的数据
     // Context.getExternalCacheDir() -->
@@ -98,8 +109,8 @@ public class ClearCache {
      * 格式化单位
      * 计算缓存的大小
      *
-     * @param size
-     * @return
+     * @param size the size
+     * @return format size
      */
     public static String getFormatSize(double size) {
         double kiloByte = size / 1024;
