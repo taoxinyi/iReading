@@ -30,8 +30,6 @@ import java.util.List;
 import java.util.TimeZone;
 
 import cn.bingoogolapple.refreshlayout.BGARefreshLayout;
-import static java.lang.Math.max;
-import static java.util.Collections.max;
 
 
 /**

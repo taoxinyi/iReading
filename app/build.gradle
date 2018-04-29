@@ -21,8 +21,6 @@ android {
 dependencies {
     compile fileTree(include: ['*.jar'], dir: 'libs')
     compile 'com.android.support:appcompat-v7:27.1.1'
-    //page UI like wechat
-    compile 'com.lzy.widget:view-core:0.1.5'
     //Event
     compile 'org.greenrobot:eventbus:3.1.1'
     //DB
@@ -47,8 +45,12 @@ dependencies {
     compile 'me.codeboy.android:align-text-view:2.3.2'
     //Expandable layout
     compile 'net.cachapa.expandablelayout:expandablelayout:2.9.2'
-
+    //base recycleview adapter
     compile project(':library')
+    //wechatish indicator
+    compile 'com.yinglan.alphatabs:library:1.0.8'
+
+
     //Refresh /Loading Layout
     // -------------------- 以下三个库是必须依赖的 ----------------------------
     implementation 'com.android.support:recyclerview-v7:27.1.1'

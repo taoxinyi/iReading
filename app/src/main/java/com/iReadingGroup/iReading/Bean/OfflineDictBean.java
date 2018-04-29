@@ -1,11 +1,9 @@
 package com.iReadingGroup.iReading.Bean;
 
 import org.greenrobot.greendao.annotation.Entity;
+import org.greenrobot.greendao.annotation.Generated;
 import org.greenrobot.greendao.annotation.Id;
 import org.greenrobot.greendao.annotation.Property;
-import org.greenrobot.greendao.annotation.Generated;
-import org.greenrobot.greendao.annotation.ToOne;
-import org.greenrobot.greendao.DaoException;
 
 @Entity(nameInDb = "WordInfo",createInDb = false)
 public class OfflineDictBean {

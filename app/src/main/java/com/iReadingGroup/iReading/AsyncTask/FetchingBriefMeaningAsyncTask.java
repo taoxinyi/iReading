@@ -2,7 +2,6 @@ package com.iReadingGroup.iReading.AsyncTask;
 
 import android.os.AsyncTask;
 
-import com.iReadingGroup.iReading.AsyncTask.AsyncResponse;
 import com.iReadingGroup.iReading.WordDetail;
 
 import org.json.JSONArray;
@@ -20,7 +19,7 @@ import java.net.URL;
 /**
  * Created by taota on 2018/3/22.
  */
-public class FetchingBriefMeaningAsyncTask extends AsyncTask<String, String, String> {
+public class FetchingBriefMeaningAsyncTask extends BaseAsyncTask {
     /**
      * The Delegate.
      */
@@ -35,74 +34,34 @@ public class FetchingBriefMeaningAsyncTask extends AsyncTask<String, String, Str
         delegate = asyncResponse;//Assigning call back interfacethrough constructor
     }
 
-    protected void onPreExecute() {
-        super.onPreExecute();
-    }
 
-    protected String doInBackground(String... params) {
-
-
-        HttpURLConnection connection = null;
-        BufferedReader reader = null;
-
-        try {
-            URL url = new URL(params[0]);
-            connection = (HttpURLConnection) url.openConnection();
-            connection.connect();
-
-
-            InputStream stream = connection.getInputStream();
-
-            reader = new BufferedReader(new InputStreamReader(stream));
-
-            StringBuffer buffer = new StringBuffer();
-            String line = "";
-
-            while ((line = reader.readLine()) != null) {
-                buffer.append(line + "\n");
-
-            }
-
-            return buffer.toString();
-
-
-        } catch (MalformedURLException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } finally {
-            if (connection != null) {
-                connection.disconnect();
-            }
-            try {
-                if (reader != null) {
-                    reader.close();
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-        return null;
-    }
 
     @Override
     protected void onPostExecute(String result) {
         super.onPostExecute(result);
         try {   //parse word from json
             //sample link.:http://dict-co.iciba.com/api/dictionary.php?w=go&key=341DEFE6E5CA504E62A567082590D0BD&type=json
-            if (result == null) delegate.processFinish("无网络\n请先联网");
+            if (result == null || result.equals("Timeout")) delegate.processFinish(null);
             else {
-                WordDetail word=new WordDetail();
+                WordDetail word = new WordDetail();
                 JSONObject reader = new JSONObject(result);
                 JSONArray symbols = reader.getJSONArray("symbols");
                 JSONObject symbols_0 = symbols.getJSONObject(0);
                 //add voice_url
-                String ph_am=symbols_0.getString("ph_am");
-                String ph_en_mp3=symbols_0.getString("ph_am_mp3");
-                word.addPron(ph_am,ph_en_mp3);
+
+                String ph_am = symbols_0.getString("ph_am");
+                String ph_am_mp3 = symbols_0.getString("ph_am_mp3");
+                if (!ph_am.equals("") && !ph_am.equals(""))//if voice not null
+                    word.addPron(ph_am, ph_am_mp3);
+                else {
+                    String ph_en = symbols_0.getString("ph_en");
+                    String ph_en_mp3 = symbols_0.getString("ph_en_mp3");
+                    if (!ph_en.equals("") && !ph_en.equals(""))//if voice not null
+                        word.addPron(ph_en, ph_en_mp3);
+                }
 
                 JSONArray parts = symbols_0.getJSONArray("parts");
-                String meaning ;
+                String meaning;
                 for (int i = 0; i < parts.length(); i++) {
                     //for each parts
                     meaning = "";
@@ -115,7 +74,7 @@ public class FetchingBriefMeaningAsyncTask extends AsyncTask<String, String, Str
                     }
                     meaning = meaning.substring(0, meaning.length() - 2);
                     //add meaning
-                    word.addMeaning(part,meaning);
+                    word.addMeaning(part, meaning);
 
                 }
                 //set word

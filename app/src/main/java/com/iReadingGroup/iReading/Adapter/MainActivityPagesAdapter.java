@@ -5,9 +5,9 @@ import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentPagerAdapter;
 
 import com.iReadingGroup.iReading.Fragment.AboutFragment;
-import com.iReadingGroup.iReading.Fragment.WordSearchFragment;
 import com.iReadingGroup.iReading.Fragment.ArticleListFragment;
 import com.iReadingGroup.iReading.Fragment.CollectionFragment;
+import com.iReadingGroup.iReading.Fragment.WordSearchFragment;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -1,10 +1,7 @@
 package com.iReadingGroup.iReading.Activity;
 
-import android.content.Context;
 import android.graphics.Color;
 import android.graphics.Rect;
-import android.net.ConnectivityManager;
-import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.support.v4.content.ContextCompat;
 import android.text.Layout;
@@ -18,22 +15,20 @@ import android.text.style.ClickableSpan;
 import android.view.View;
 import android.webkit.WebView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
 import com.ganxin.library.LoadDataLayout;
 import com.github.chrisbanes.photoview.PhotoView;
 import com.iReadingGroup.iReading.AsyncTask.AsyncResponse;
-import com.iReadingGroup.iReading.AsyncTask.FetchArticleAsyncTask;
-import com.iReadingGroup.iReading.AsyncTask.FetchingBriefMeaningAsyncTask;
+import com.iReadingGroup.iReading.AsyncTask.FetchingArticleAsyncTask;
 import com.iReadingGroup.iReading.Bean.ArticleEntity;
 import com.iReadingGroup.iReading.Bean.ArticleEntityDao;
-import com.iReadingGroup.iReading.Bean.OfflineDictBean;
-import com.iReadingGroup.iReading.Bean.OfflineDictBeanDao;
 import com.iReadingGroup.iReading.CollectionImageView;
 import com.iReadingGroup.iReading.Event.WordDatasetChangedEvent;
 import com.iReadingGroup.iReading.Event.changeArticleCollectionDBEvent;
+import com.iReadingGroup.iReading.MyApplication;
 import com.iReadingGroup.iReading.R;
-import com.iReadingGroup.iReading.WordDetail;
 import com.r0adkll.slidr.Slidr;
 
 import org.greenrobot.eventbus.EventBus;
@@ -193,6 +188,7 @@ public class ArticleDetailActivity extends DetailBaseActivity {
 
     /**
      * get the HTML String for webview
+     *
      * @return
      */
     private String getWebViewString() {
@@ -260,19 +256,34 @@ public class ArticleDetailActivity extends DetailBaseActivity {
      * @return String  the article plain text
      */
     private String getArticle(String uri) {
-        FetchArticleAsyncTask asyncTask = new FetchArticleAsyncTask(new AsyncResponse() {
+        FetchingArticleAsyncTask asyncTask = new FetchingArticleAsyncTask(new AsyncResponse() {
             @Override
             public void processFinish(Object output) {
                 String b = (String) output;
-                String[] buff = b.split("\r\n\r\n");
-                imageUrl = buff[0];
-                category = buff[1];
-                article = buff[2];
-                initUI();
+                if (b == null) {//find nothing destory
+                    Toast.makeText(getApplicationContext(), "无网络或apiKey错误", Toast.LENGTH_SHORT).show();
+                    loadDataLayout.setStatus(LoadDataLayout.NO_NETWORK);
+                } else if (b.equals("Timeout"))//Timeout
+                {
+                    Toast.makeText(getApplicationContext(), "连接超时", Toast.LENGTH_LONG).show();
+                    loadDataLayout.setStatus(LoadDataLayout.NO_NETWORK);
+                } else {
+                    String[] buff = b.split("\r\n\r\n");
+                    imageUrl = buff[0];
+                    category = buff[1];
+                    article = buff[2];
+                    initUI();
+                }
             }
         });
         //using iciba api to search the word, type json is small to transfer
-        asyncTask.execute("http://eventregistry.org/json/article?action=getArticle&resultType=info&infoIncludeArticleBasicInfo=false&infoIncludeArticleEventUri=false&infoIncludeArticleCategories=true&infoArticleBodyLen=-1&infoIncludeArticleImage=true&infoIncludeConceptLabel=false&apiKey=475f7fdb-7929-4222-800e-0151bdcd4af2&articleUri=" + uri);
+        String apikey = ((MyApplication) getApplication()).getApiKeySetting();
+        asyncTask.execute("http://eventregistry.org/json/article?action=getArticle&" +
+                "resultType=info&infoIncludeArticleBasicInfo=false&infoIncludeArticleEventUri=false&" +
+                "infoIncludeArticleCategories=true&infoArticleBodyLen=-1&infoIncludeArticleImage=true&" +
+                "infoIncludeConceptLabel=false&" +
+                "apiKey=" + apikey +
+                "&articleUri=" + uri);
         return article;
     }
 
@@ -305,15 +316,9 @@ public class ArticleDetailActivity extends DetailBaseActivity {
 
     private ClickableSpan getClickableSpan(final String word, final int start, final int end, final Spannable spans) {
         return new ClickableSpan() {
-            final String mWord;
-
-            {
-                mWord = word.toLowerCase();
-            }
-
-            @Override
-            public void onClick(final View widget) {
-                TextView parentTextView = (TextView) widget;
+            //get pos of clickable span
+            private void getClickedPosition(View v) {
+                TextView parentTextView = (TextView) v;
                 Rect parentTextViewRect = new Rect();
 
                 // Initialize values for the computing of clickedText position
@@ -363,45 +368,16 @@ public class ArticleDetailActivity extends DetailBaseActivity {
                 if (keywordIsInMultiLine) {
                     x = parentTextViewRect.left;
                 }
+            }
 
+            @Override
+            public void onClick(final View v) {
+                getClickedPosition(v);
                 clickedTextView = true;
-                //if clicked on a word
-                //if the asyncTask finishes fetching word meaning from Internet
-                current_word = mWord;
-                FetchingBriefMeaningAsyncTask asyncTask = new FetchingBriefMeaningAsyncTask(new AsyncResponse() {
-                    @Override
-                    public void processFinish(Object output) {
-                        WordDetail wordDetail = (WordDetail) output;
-                        if (wordDetail.getMeaning().isEmpty()) searchOffline();
-                        else {
-                            current_meaning = "";
-                            for (List<String> meaningPair : wordDetail.getMeaning()) {
-                                meaningPair.get(0);
-                                current_meaning += meaningPair.get(0) + " " + meaningPair.get(1) + "\n";
+                current_word = word;
+                FetchBriefMeaning();
 
-                            }
-                            current_meaning = current_meaning.substring(0, current_meaning.length() - 1);
-                            voice_url = wordDetail.getPron().get(0).get(0);
-                            //show popup window
-                            showPopupWindow();
-                        }
-                    }
-                });
-                //using iciba api to search the word, type json is small to transfer
-                List<OfflineDictBean> joes = daoDictionary.queryBuilder()
-                        .where(OfflineDictBeanDao.Properties.Word.eq(mWord))
-                        .list();
-                if (joes.size() == 0) {   //find nothing in offline dictionary,using online query
-                    asyncTask.execute("https://dict-co.iciba.com/api/dictionary.php?key=341DEFE6E5CA504E62A567082590D0BD&type=json&w=" + mWord);
-
-                } else {
-                    //find meaning in offline dictionary
-                    current_meaning = joes.get(0).getMeaning();
-                    //show popup window
-                    showPopupWindow();
-
-                }
-                //set the selected word color transparent which means highlighted
+                //set the selected word color transparent when highlighted
                 spans.setSpan(new BackgroundColorSpan(Color.TRANSPARENT),
                         start, end,
                         Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
@@ -415,32 +391,6 @@ public class ArticleDetailActivity extends DetailBaseActivity {
         };
     }
 
-
-    private boolean isAlpha(String name) {
-        return name.matches("[a-zA-Z-]+");
-    }
-
-
-    @Override
-    public void onStart() {
-        super.onStart();
-        EventBus.getDefault().register(this);
-
-    }
-
-    @Override
-    public void onStop() {
-        EventBus.getDefault().unregister(this);
-        super.onStop();
-    }
-
-
-    private boolean isNetworkAvailable() {
-        ConnectivityManager connectivityManager
-                = (ConnectivityManager) getApplication().getSystemService(Context.CONNECTIVITY_SERVICE);
-        NetworkInfo activeNetworkInfo = connectivityManager.getActiveNetworkInfo();
-        return activeNetworkInfo != null && activeNetworkInfo.isConnected();
-    }
 
     /**
      * On word dataset changed event.
@@ -459,7 +409,6 @@ public class ArticleDetailActivity extends DetailBaseActivity {
         }
 
     }
-
 
     @Override
     public void onDestroy() {

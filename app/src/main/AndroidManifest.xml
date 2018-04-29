@@ -3,9 +3,9 @@
     package="com.iReadingGroup.iReading">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
-    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
     <application
         android:name=".MyApplication"
@@ -24,6 +24,9 @@
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <meta-data
+                android:name="android.app.shortcuts"
+                android:resource="@xml/shortcut" />
         </activity>
         <activity
             android:name="com.iReadingGroup.iReading.Activity.ArticleDetailActivity"
@@ -37,6 +40,8 @@
             android:name="com.iReadingGroup.iReading.Activity.SettingsActivity"
             android:process=":main"
             android:theme="@style/AppSlideTheme"></activity>
+
+
     </application>
 
 </manifest>

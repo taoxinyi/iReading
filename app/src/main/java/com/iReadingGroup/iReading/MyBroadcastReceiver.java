@@ -3,14 +3,11 @@ package com.iReadingGroup.iReading;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.util.Log;
 
 import com.iReadingGroup.iReading.Event.ArticleDatabaseChangedEvent;
 import com.iReadingGroup.iReading.Event.WordDatasetChangedEvent;
 
 import org.greenrobot.eventbus.EventBus;
-
-import static com.chad.library.adapter.base.listener.SimpleClickListener.TAG;
 
 /**
  * Created by taota on 2018/4/26.

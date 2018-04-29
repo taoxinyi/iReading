@@ -1,13 +1,8 @@
 package com.iReadingGroup.iReading;
 
 import android.content.Context;
-import android.support.v7.widget.AppCompatImageButton;
 import android.support.v7.widget.AppCompatImageView;
 import android.util.AttributeSet;
-import android.util.Log;
-import android.view.View;
-import android.widget.ImageButton;
-import android.widget.ImageView;
 
 /**
  * Created by xytao on 2018/4/28.

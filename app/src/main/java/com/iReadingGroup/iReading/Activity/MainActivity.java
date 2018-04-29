@@ -1,6 +1,6 @@
 package com.iReadingGroup.iReading.Activity;
 
-import android.app.DialogFragment;
+import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.view.ViewPager;
@@ -8,19 +8,15 @@ import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.SearchView;
 import android.support.v7.widget.Toolbar;
-import android.text.format.Time;
-import android.view.LayoutInflater;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.iReadingGroup.iReading.Adapter.MainActivityPagesAdapter;
 import com.iReadingGroup.iReading.Bean.ArticleEntityDao;
-import com.iReadingGroup.iReading.Bean.DaoMaster;
-import com.iReadingGroup.iReading.Bean.DaoSession;
 import com.iReadingGroup.iReading.Bean.OfflineDictBeanDao;
 import com.iReadingGroup.iReading.Bean.WordCollectionBeanDao;
 import com.iReadingGroup.iReading.DoubleClickBackToContentTopListener;
@@ -31,7 +27,6 @@ import com.iReadingGroup.iReading.Event.ButtonCheckEvent;
 import com.iReadingGroup.iReading.Event.SourceSelectEvent;
 import com.iReadingGroup.iReading.MyApplication;
 import com.iReadingGroup.iReading.R;
-import com.lzy.widget.AlphaIndicator;
 import com.mikepenz.materialdrawer.AccountHeader;
 import com.mikepenz.materialdrawer.AccountHeaderBuilder;
 import com.mikepenz.materialdrawer.Drawer;
@@ -42,9 +37,9 @@ import com.mikepenz.materialdrawer.model.ProfileDrawerItem;
 import com.mikepenz.materialdrawer.model.interfaces.IDrawerItem;
 import com.mikepenz.materialdrawer.model.interfaces.IProfile;
 import com.suke.widget.SwitchButton;
+import com.yinglan.alphatabs.AlphaTabsIndicator;
 
 import org.greenrobot.eventbus.EventBus;
-import org.greenrobot.greendao.database.Database;
 
 import java.util.HashMap;
 
@@ -68,10 +63,6 @@ public class MainActivity extends AppCompatActivity implements
      * The Tool bar.
      */
     public Toolbar toolBar;
-    private ViewPager viewPager;
-    private WordCollectionBeanDao daoCollection;
-    private OfflineDictBeanDao daoDictionary;
-    private ArticleEntityDao daoArticle;
     /**
      * The Switch button.
      */
@@ -92,8 +83,13 @@ public class MainActivity extends AppCompatActivity implements
      * The Last nested page.
      */
     public int last_nested_page = 0;//which nested page is selected when the page changes
+    private ViewPager viewPager;
+    private WordCollectionBeanDao daoCollection;
+    private OfflineDictBeanDao daoDictionary;
+    private ArticleEntityDao daoArticle;
     private Drawer drawer;
     private String last_section = "所有";
+    private AlphaTabsIndicator alphaIndicator;
 
     /**
      * Create the activity
@@ -103,7 +99,6 @@ public class MainActivity extends AppCompatActivity implements
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
         setContentView(com.iReadingGroup.iReading.R.layout.activity_main);//set layout
         initializeUI();
         MyApplication app = (MyApplication) getApplicationContext();//initialize UI
@@ -127,10 +122,10 @@ public class MainActivity extends AppCompatActivity implements
     private void initializeUI() {
         //initializeUI in main activity
         initializeToolBar(); //initialize ToolBar
+        initializeDrawer();  //initialize slide drawer
         initializeStatusBar();//set color for status bar for immersive looking
         initializeViewPager();//initialize ViewPage for each tab's fragment
         initializeTabLayout();//initialize weChat stle tabLayout and link it to viewpager
-        initializeDrawer();
 
     }
 
@@ -141,9 +136,9 @@ public class MainActivity extends AppCompatActivity implements
     private void initializeDatabase() {
 
 
-        daoDictionary =  ((MyApplication)getApplication()).getDaoDictionary();//this is the offline dictionary database
-        daoCollection =  ((MyApplication)getApplication()).getDaoCollection();// this is the database recording user's word collection
-        daoArticle = ((MyApplication)getApplication()).getDaoArticle();
+        daoDictionary = ((MyApplication) getApplication()).getDaoDictionary();//this is the offline dictionary database
+        daoCollection = ((MyApplication) getApplication()).getDaoCollection();// this is the database recording user's word collection
+        daoArticle = ((MyApplication) getApplication()).getDaoArticle();
 
     }
 
@@ -160,6 +155,7 @@ public class MainActivity extends AppCompatActivity implements
         toolBar.setOnClickListener(new DoubleClickBackToContentTopListener(this));
 
         setSupportActionBar(toolBar);
+
     }
 
     /**
@@ -179,6 +175,7 @@ public class MainActivity extends AppCompatActivity implements
         MainActivityPagesAdapter mainActivityPagesAdapter = new MainActivityPagesAdapter(getSupportFragmentManager());//set Fragment main adapter
         viewPager = findViewById(R.id.viewPager);
         viewPager.setAdapter(mainActivityPagesAdapter);//set adapter,link to each fragment
+
         viewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
             // This method will be invoked when a new page becomes selected.
             @Override
@@ -188,18 +185,22 @@ public class MainActivity extends AppCompatActivity implements
                 switch (position) {
                     case 0:
                         viewPager.setCurrentItem(0);
+                        findViewById(R.id.drawer).setVisibility(View.VISIBLE);
                         ((TextView) findViewById(R.id.toolbar_title)).setText(last_section);
                         break;
                     case 1:
                         viewPager.setCurrentItem(1);
+                        findViewById(R.id.drawer).setVisibility(View.INVISIBLE);
                         ((TextView) findViewById(R.id.toolbar_title)).setText("查词");
                         break;
                     case 2:
                         viewPager.setCurrentItem(2);
+                        findViewById(R.id.drawer).setVisibility(View.INVISIBLE);
                         ((TextView) findViewById(R.id.toolbar_title)).setText("收藏");
                         break;
                     case 3:
                         viewPager.setCurrentItem(3);
+                        findViewById(R.id.drawer).setVisibility(View.INVISIBLE);
                         ((TextView) findViewById(R.id.toolbar_title)).setText("关于");
                         break;
                 }
@@ -222,8 +223,21 @@ public class MainActivity extends AppCompatActivity implements
     }
 
     private void initializeTabLayout() {
-        AlphaIndicator alphaIndicator = findViewById(R.id.alphaIndicator);//
+        alphaIndicator = findViewById(R.id.alphaIndicator);//
         alphaIndicator.setViewPager(viewPager);
+        //whether shortcut
+        Uri data = getIntent().getData();
+        int page;
+        if (data == null) page = ((MyApplication) getApplication()).getPageSetting();
+
+        else {
+            page = Integer.parseInt(data.toString());
+        }
+
+        alphaIndicator.setTabCurrenItem(page);
+        if (page == 0) findViewById(R.id.drawer).setVisibility(View.VISIBLE);
+
+
     }
 
 
@@ -305,7 +319,6 @@ public class MainActivity extends AppCompatActivity implements
                         tNYT,
                         tT,
                         wP
-
                 )
                 .withOnDrawerItemClickListener(new Drawer.OnDrawerItemClickListener() {
                     @Override
@@ -321,7 +334,13 @@ public class MainActivity extends AppCompatActivity implements
                     }
                 })
                 .build();
-
+        //set drawer icon
+        findViewById(R.id.drawer).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                drawer.openDrawer();
+            }
+        });
     }
 
 

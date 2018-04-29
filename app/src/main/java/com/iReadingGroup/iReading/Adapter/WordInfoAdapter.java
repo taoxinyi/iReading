@@ -1,7 +1,6 @@
 package com.iReadingGroup.iReading.Adapter;
 
 import android.content.Context;
-import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 

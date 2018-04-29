@@ -6,6 +6,8 @@ import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
@@ -36,6 +38,7 @@ import com.iReadingGroup.iReading.Bean.OfflineDictBeanDao;
 import com.iReadingGroup.iReading.Bean.WordCollectionBean;
 import com.iReadingGroup.iReading.Bean.WordCollectionBeanDao;
 import com.iReadingGroup.iReading.CollectionImageView;
+import com.iReadingGroup.iReading.Constant;
 import com.iReadingGroup.iReading.Event.ChangeWordCollectionDBEvent;
 import com.iReadingGroup.iReading.MyApplication;
 import com.iReadingGroup.iReading.R;
@@ -97,14 +100,8 @@ public abstract class DetailBaseActivity extends AppCompatActivity {
      * The Ppw collection button.
      */
     protected CollectionImageView ppwCollectionImageView;
-    /**
-     * The Voice url.
-     */
-    protected String voice_url = "";
-    /**
-     * The Pron.
-     */
-    protected String pron = "";
+
+
     /**
      * The Clicked text view.
      */
@@ -226,9 +223,6 @@ public abstract class DetailBaseActivity extends AppCompatActivity {
         /**
          * Instantiates a new My web view client.
          */
-        public MyWebViewClient() {
-        }
-
 
         @Override
         public boolean shouldOverrideUrlLoading(final WebView view, String url) {
@@ -237,75 +231,134 @@ public abstract class DetailBaseActivity extends AppCompatActivity {
             //if clicked on a word
             //if the asyncTask finishes fetching word meaning from Internet
             current_word = mWord;
-            FetchingBriefMeaningAsyncTask asyncTask = new FetchingBriefMeaningAsyncTask(new AsyncResponse() {
-                @Override
-                public void processFinish(Object output) {
-                    WordDetail wordDetail = (WordDetail) output;
-                    if (wordDetail.getMeaning().isEmpty()) searchOffline();
-                    else {
-                        current_meaning = "";
-                        for (List<String> meaningPair : wordDetail.getMeaning()) {
-                            meaningPair.get(0);
-                            current_meaning += meaningPair.get(0) + " " + meaningPair.get(1) + "\n";
-
-                        }
-                        current_meaning = current_meaning.substring(0, current_meaning.length() - 1);
-                        pron = wordDetail.getPron().get(0).get(0);
-                        voice_url = wordDetail.getPron().get(0).get(1);
-                        //show popup window
-                        showPopupWindow();
-                    }
-                }
-            });
-            //using iciba api to search the word, type json is small to transfer
-
-            asyncTask.execute("https://dict-co.iciba.com/api/dictionary.php?key=341DEFE6E5CA504E62A567082590D0BD&type=json&w=" + mWord);
-
-
+            FetchBriefMeaning();
             return true;
         }
     }
 
-    /**
-     * Search offline boolean.
-     *
-     * @return the boolean
-     */
-    protected boolean searchOffline() {
-        //find meaning in offline dictionary
-        List<OfflineDictBean> joes = daoDictionary.queryBuilder()
-                .where(OfflineDictBeanDao.Properties.Word.eq(current_word))
-                .list();
-        if (joes.size() > 0) {
-            current_meaning = joes.get(0).getMeaning();
-            showPopupWindow();
-            return true;
-        } else return false;
+    protected void FetchBriefMeaning() {
+        Log.d("", "FetchBriefMeaning: " + ((MyApplication) getApplication()).getFetchingPolicy());
+        switch (((MyApplication) getApplication()).getFetchingPolicy()) {
+            case Constant.POLICY_ONLINE_FIRST:
+                fetchingFromOnlineFirst();
+                break;
+            case Constant.POLICY_OFFLINE_FIRST:
+                if (!ShowFromOffline()) fetchingBriefMeaningOnline();
+                break;
+            case Constant.POLICY_MOBILE_OFFLINE_FIRST:
+                if (isMobile()) {
+                    Log.d("", "FetchBriefMeaning: mobile");
+                    if (!ShowFromOffline()) fetchingBriefMeaningOnline();
+                } else//online
+                    fetchingBriefMeaningOnline();
+                break;
+            case Constant.POLICY_OFFLINE_ALWAYS:
+                ShowFromOffline();
+                break;
+        }
+    }
+
+    private boolean isMobile() {
+        ConnectivityManager cm;
+        cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        return cm.getNetworkInfo(ConnectivityManager.TYPE_MOBILE).getState() == NetworkInfo.State.CONNECTED;
+
+
+    }
+
+    private void fetchingBriefMeaningOnline() {
+        FetchingBriefMeaningAsyncTask asyncTask = new FetchingBriefMeaningAsyncTask(new AsyncResponse() {
+            @Override
+            public void processFinish(Object output) {
+                showFromOnline(output);
+            }
+        });
+        //using iciba api to search the word, type json is small to transfer
+        asyncTask.execute(Constant.URL_SEARCH_BRIEF_ICIBA + current_word);
+    }
+
+    private void fetchingFromOnlineFirst() {
+        FetchingBriefMeaningAsyncTask asyncTask = new FetchingBriefMeaningAsyncTask(new AsyncResponse() {
+            @Override
+            public void processFinish(Object output) {
+                if (!showFromOnline(output)) ShowFromOffline();
+            }
+        });
+        //using iciba api to search the word, type json is small to transfer
+        asyncTask.execute(Constant.URL_SEARCH_BRIEF_ICIBA + current_word);
+    }
+
+    private boolean showFromOnline(Object output) {
+        if (output != null) {
+            WordDetail wordDetail = (WordDetail) output;
+            if (wordDetail.getMeaning().isEmpty()) ShowFromOffline();
+            else {
+                current_meaning = "";
+                for (List<String> meaningPair : wordDetail.getMeaning()) {
+                    meaningPair.get(0);
+                    current_meaning += meaningPair.get(0) + " " + meaningPair.get(1) + "\n";
+                }
+                current_meaning = current_meaning.substring(0, current_meaning.length() - 2);
+                try {//determine voice
+                    String pron = wordDetail.getPron().get(0).get(0);
+                    String voice_url = wordDetail.getPron().get(0).get(1);
+                    //show popup window
+                    showPopupWindow(current_word, current_meaning, pron, voice_url, Constant.METHOD_FROM_ONLINE);
+                } catch (IndexOutOfBoundsException e) {//no voice
+                    showPopupWindow(current_word, current_meaning, null, null, Constant.METHOD_FROM_ONLINE);
+                }
+                return true;
+            }
+
+        }
+        return false;
     }
 
     /**
+     * if in offline show
+     *
+     * @return boolean : whether in offline
+     */
+    protected boolean ShowFromOffline() {
+        //find meaning in offline dictionary
+        List<OfflineDictBean> l = daoDictionary.queryBuilder()
+                .where(OfflineDictBeanDao.Properties.Word.eq(current_word))
+                .list();
+        if (l.size() > 0) {
+            current_meaning = l.get(0).getMeaning();
+            showPopupWindow(current_word, current_meaning, null, null, Constant.METHOD_FROM_OFFLINE);
+            return true;
+        } else return false;
+    }
+    protected boolean getWordOfflineStatus(String word) {
+        //find meaning in offline dictionary
+        List<OfflineDictBean> l = daoDictionary.queryBuilder()
+                .where(OfflineDictBeanDao.Properties.Word.eq(word))
+                .list();
+        return l.size()>0;
+    }
+    /**
      * Show popup window.
      */
-    public void showPopupWindow() {
+    public void showPopupWindow(String word, String meaning, String pron, String voice_url, int method) {
         //loading layOut file
 
 
         initializePopupWindow();
-        initializePopupTextView();
+        initializePopupTextView(word, meaning, pron, voice_url, method);
         initializePopupCollectButton();
 
         popupWindow.showAsDropDown(findViewById(R.id.content), x, y);
 
     }
 
-    private void initializeVoiceButton() {
+    private void initializeVoiceButton(final String voice_url) {
         ImageButton ib = bubbleLayout.findViewById(R.id.voice);
         ib.setOnClickListener(new View.OnClickListener() {
             //collect word function.
             @Override
             public void onClick(View v) {
                 try {
-                    Log.d("click", "onClick: " + voice_url);
                     Uri uri = Uri.parse(voice_url);
                     MediaPlayer player = new MediaPlayer();
                     player.setAudioStreamType(AudioManager.STREAM_MUSIC);
@@ -364,7 +417,6 @@ public abstract class DetailBaseActivity extends AppCompatActivity {
 
 
                 });
-
         popupWindow.setOutsideTouchable(true);
         popupWindow.setFocusable(false);
         popupWindow.setTouchable(true);
@@ -390,12 +442,14 @@ public abstract class DetailBaseActivity extends AppCompatActivity {
         });
     }
 
-    private void initializePopupTextView() {
+    private void initializePopupTextView(String word, String meaning, String pron, String voice_url, int method) {
         //initial text in popupwindow
-        ((TextView) bubbleLayout.findViewById(R.id.word)).setText(current_word);
-        if (!voice_url.equals("")) {
+        if (method == Constant.METHOD_FROM_OFFLINE)
+            ((TextView) bubbleLayout.findViewById(R.id.word)).setText(current_word + " [离线]");
+        else ((TextView) bubbleLayout.findViewById(R.id.word)).setText(current_word);
+        if (voice_url != null) {
             bubbleLayout.findViewById(R.id.pronLayout).setVisibility(View.VISIBLE);
-            initializeVoiceButton();
+            initializeVoiceButton(voice_url);
             ((TextView) bubbleLayout.findViewById(R.id.pron)).setText(String.format("/%s/", pron));
         }
         ((AlignTextView) bubbleLayout.findViewById(R.id.meaning)).setText(current_meaning);
@@ -437,6 +491,32 @@ public abstract class DetailBaseActivity extends AppCompatActivity {
                 .where(WordCollectionBeanDao.Properties.Word.eq(word))
                 .list();
         return l.size() != 0;
+    }
+
+    protected boolean isAlpha(String name) {
+        return name.matches("[a-zA-Z-]+");
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        EventBus.getDefault().register(this);
+
+    }
+
+    @Override
+    public void onStop() {
+        EventBus.getDefault().unregister(this);
+        super.onStop();
+    }
+
+
+    protected boolean isNetworkAvailable() {
+        ConnectivityManager connectivityManager
+                = (ConnectivityManager) getApplication().getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo activeNetworkInfo = connectivityManager.getActiveNetworkInfo();
+        return activeNetworkInfo != null && activeNetworkInfo.isConnected();
+
     }
 
 }

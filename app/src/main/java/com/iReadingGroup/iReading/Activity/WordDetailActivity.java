@@ -6,6 +6,7 @@ import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.content.ContextCompat;
+import android.util.Log;
 import android.view.View;
 import android.view.ViewTreeObserver;
 import android.webkit.WebView;
@@ -19,8 +20,8 @@ import com.iReadingGroup.iReading.AsyncTask.AsyncResponse;
 import com.iReadingGroup.iReading.AsyncTask.FetchingWordDetailAsyncTask;
 import com.iReadingGroup.iReading.Bean.OfflineDictBean;
 import com.iReadingGroup.iReading.Bean.OfflineDictBeanDao;
-import com.iReadingGroup.iReading.Bean.WordCollectionBeanDao;
 import com.iReadingGroup.iReading.CollectionImageView;
+import com.iReadingGroup.iReading.Constant;
 import com.iReadingGroup.iReading.Event.ChangeWordCollectionDBEvent;
 import com.iReadingGroup.iReading.Event.WordDatasetChangedEvent;
 import com.iReadingGroup.iReading.MyApplication;
@@ -94,18 +95,10 @@ public class WordDetailActivity extends DetailBaseActivity {
 
                         }
                     });
+            }
+        });
 
-            }
-        });
-        //fetching word from internet
-        FetchingWordDetailAsyncTask asyncTask = new FetchingWordDetailAsyncTask(new AsyncResponse() {
-            @Override
-            public void processFinish(Object output) {
-                wordDetail = (WordDetail) output;
-                updateUI();//update UI after obtaining data
-            }
-        });
-        asyncTask.execute("http://dict-co.iciba.com/api/dictionary.php?key=341DEFE6E5CA504E62A567082590D0BD&w=" + detailed_word.toLowerCase());
+
 
         expandableLayoutOnline = findViewById(R.id.expandable_iciba);
         TextView a = findViewById(R.id.expand_iciba);
@@ -147,7 +140,23 @@ public class WordDetailActivity extends DetailBaseActivity {
             }
 
         });
+        if (((MyApplication) getApplication()).getFetchingPolicy() != Constant.POLICY_OFFLINE_ALWAYS) {
+            //enable online policy
+            FetchingWordDetailAsyncTask asyncTask = new FetchingWordDetailAsyncTask(new AsyncResponse() {
+                @Override
+                public void processFinish(Object output) {
+                    wordDetail = (WordDetail) output;
+                    updateUI();//update UI after obtaining data
+                }
+            });
+            asyncTask.execute(Constant.URL_SEARCH_ENTIRE_ICIBA + detailed_word.toLowerCase());
+        } else {
+            expandableLayoutOnline.setVisibility(View.GONE);
+            findViewById(R.id.title_offline).setVisibility(View.VISIBLE);
+            if (!getWordOfflineStatus(detailed_word))
 
+                Toast.makeText(mContext, "采用仅离线模式,该词不在本地词库中", Toast.LENGTH_SHORT).show();
+        }
     }
 
     private void initializeOfflineCollectionUI() {
@@ -213,8 +222,6 @@ public class WordDetailActivity extends DetailBaseActivity {
                     }
 
                 }
-
-
             }
 
         });
@@ -288,7 +295,7 @@ public class WordDetailActivity extends DetailBaseActivity {
 
     private void initializeImageButton() {
         collectionImageViewToolbar = findViewById(R.id.collect_word_button);
-        if (getWordCollectionStatus(detailed_word))
+        if (getWordCollectedStatus(detailed_word))
             collectionImageViewToolbar.initialize(R.drawable.collect_true);
         else
             collectionImageViewToolbar.initialize(R.drawable.collect_false);
@@ -297,7 +304,7 @@ public class WordDetailActivity extends DetailBaseActivity {
             @Override
             public void onClick(View v) {
                 ((CollectionImageView) v).toggleImage();
-                if (getWordCollectionStatus(detailed_word)) {
+                if (getWordCollectedStatus(detailed_word)) {
                     //already in the db, the user means to removed this word from collection
                     EventBus.getDefault().post(new ChangeWordCollectionDBEvent(detailed_word, detailed_meaning, "remove"));
 
@@ -317,12 +324,6 @@ public class WordDetailActivity extends DetailBaseActivity {
     private String getMeaningFromBundle() {
         Bundle bundle = getIntent().getExtras();
         return bundle.getString("meaning");
-    }
-
-
-    private boolean getWordCollectionStatus(String word) {
-        return daoCollection.queryBuilder().where(WordCollectionBeanDao.Properties.Word.eq(word)).list().size() != 0;
-
     }
 
 
@@ -362,11 +363,6 @@ public class WordDetailActivity extends DetailBaseActivity {
     }
 
 
-    private boolean isAlpha(String name) {
-        return name.matches("[a-zA-Z-]+");
-    }
-
-
     /**
      * On word dataset changed event.
      *
@@ -392,18 +388,6 @@ public class WordDetailActivity extends DetailBaseActivity {
         }
     }
 
-    @Override
-    public void onStart() {
-        super.onStart();
-        EventBus.getDefault().register(this);
-
-    }
-
-    @Override
-    public void onStop() {
-        EventBus.getDefault().unregister(this);
-        super.onStop();
-    }
 
     @Override
     public void onDestroy() {

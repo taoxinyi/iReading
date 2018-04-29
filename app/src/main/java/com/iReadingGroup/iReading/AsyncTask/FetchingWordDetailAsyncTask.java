@@ -4,29 +4,20 @@ package com.iReadingGroup.iReading.AsyncTask;
  * Created by taota on 2018/4/9.
  */
 
-import android.os.AsyncTask;
-
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.StringReader;
-import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.URL;
-
 import android.util.Xml;
 
-import com.iReadingGroup.iReading.AsyncTask.AsyncResponse;
 import com.iReadingGroup.iReading.WordDetail;
 
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
 
+import java.io.IOException;
+import java.io.StringReader;
+
 /**
  * Created by taota on 2018/3/22.
  */
-public class FetchingWordDetailAsyncTask extends AsyncTask<String, String, String> {
+public class FetchingWordDetailAsyncTask extends BaseAsyncTask {
     /**
      * The Delegate.
      */
@@ -41,62 +32,13 @@ public class FetchingWordDetailAsyncTask extends AsyncTask<String, String, Strin
         delegate = asyncResponse;//Assigning call back interfacethrough constructor
     }
 
-    protected void onPreExecute() {
-        super.onPreExecute();
-    }
-
-    protected String doInBackground(String... params) {
-
-
-        HttpURLConnection connection = null;
-        BufferedReader reader = null;
-
-        try {
-            URL url = new URL(params[0]);
-            connection = (HttpURLConnection) url.openConnection();
-            connection.connect();
-
-
-            InputStream stream = connection.getInputStream();
-
-            reader = new BufferedReader(new InputStreamReader(stream));
-
-            StringBuffer buffer = new StringBuffer();
-            String line = "";
-
-            while ((line = reader.readLine()) != null) {
-                buffer.append(line + "\n");
-
-            }
-
-            return buffer.toString();
-
-
-        } catch (MalformedURLException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } finally {
-            if (connection != null) {
-                connection.disconnect();
-            }
-            try {
-                if (reader != null) {
-                    reader.close();
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-        return null;
-    }
 
     @Override
     protected void onPostExecute(String result) {
         super.onPostExecute(result);
 
-        WordDetail wordDetail=new WordDetail();
-        if (result==null) delegate.processFinish(wordDetail);
+        WordDetail wordDetail = new WordDetail();
+        if (result == null || result.equals("Timeout")) delegate.processFinish(wordDetail);
         else {
             String ps = "";
             String pos = "";
@@ -120,8 +62,8 @@ public class FetchingWordDetailAsyncTask extends AsyncTask<String, String, Strin
                                 pos = parser.nextText().replaceAll("\n", "");
                             } else if ("acceptation".equals(parser.getName())) {
                                 //get rid of last ';'
-                                String s=parser.nextText().replaceAll("\n", "");
-                                s=s.substring(0,s.length()-1);
+                                String s = parser.nextText().replaceAll("\n", "");
+                                s = s.substring(0, s.length() - 1);
                                 wordDetail.addMeaning(pos, s);
                             } else if ("orig".equals(parser.getName())) {
                                 orig = parser.nextText().replaceAll("\n", "");

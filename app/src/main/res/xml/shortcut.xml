@@ -1,0 +1,37 @@
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_reading"
+        android:shortcutId="reading"
+        android:shortcutShortLabel="@string/reading">
+        <intent
+            android:action="android.intent.action.MAIN"
+            android:targetClass="com.iReadingGroup.iReading.Activity.MainActivity"
+            android:targetPackage="com.iReadingGroup.iReading"
+            android:data="0"/>
+    </shortcut>
+    <shortcut
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_search"
+        android:shortcutId="looking_up"
+        android:shortcutShortLabel="@string/looking_up">
+        <intent
+            android:action="android.intent.action.MAIN"
+            android:targetClass="com.iReadingGroup.iReading.Activity.MainActivity"
+            android:targetPackage="com.iReadingGroup.iReading"
+            android:data="1"/>
+    </shortcut>
+    <shortcut
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_collection"
+        android:shortcutId="collection"
+        android:shortcutShortLabel="@string/collction">
+        <intent
+            android:action="android.intent.action.MAIN"
+            android:targetClass="com.iReadingGroup.iReading.Activity.MainActivity"
+            android:targetPackage="com.iReadingGroup.iReading"
+            android:data="2"/>
+    </shortcut>
+
+
+</shortcuts>

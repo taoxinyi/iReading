@@ -3,7 +3,6 @@ package com.iReadingGroup.iReading.Fragment;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
-import android.os.Bundle;
 import android.widget.Toast;
 
 import com.danielstone.materialaboutlibrary.MaterialAboutFragment;
@@ -12,9 +11,7 @@ import com.danielstone.materialaboutlibrary.items.MaterialAboutItemOnClickAction
 import com.danielstone.materialaboutlibrary.items.MaterialAboutTitleItem;
 import com.danielstone.materialaboutlibrary.model.MaterialAboutCard;
 import com.danielstone.materialaboutlibrary.model.MaterialAboutList;
-import com.iReadingGroup.iReading.Activity.ArticleDetailActivity;
 import com.iReadingGroup.iReading.Activity.SettingsActivity;
-import com.iReadingGroup.iReading.ClearCache;
 import com.iReadingGroup.iReading.R;
 
 import java.net.URLEncoder;
@@ -27,56 +24,62 @@ public class AboutFragment extends MaterialAboutFragment {
      * The constant ALIPAY_PERSON.
      */
     public static final String ALIPAY_PERSON = "HTTPS://QR.ALIPAY.COM/FKX06332TUSRAIPEXK1818";
+    private MaterialAboutList mal = new MaterialAboutList();
 
     @Override
     protected MaterialAboutList getMaterialAboutList(final Context activityContext) {
-        MaterialAboutCard.Builder appCardBuilder = new MaterialAboutCard.Builder();
+        if (mal.getCards().size() == 0) {
+            MaterialAboutCard.Builder appCardBuilder = new MaterialAboutCard.Builder();
 
 
-        appCardBuilder.addItem(new MaterialAboutTitleItem.Builder()
-                .text("iReading")
-                .desc("© iReading Group")
-                .icon(R.mipmap.icon)
-                .build());
-        appCardBuilder.addItem(new MaterialAboutActionItem.Builder()
-                .text("Version")
-                .subText("1.1.0")
-                .build());
-        MaterialAboutCard.Builder authorCardBuilder = new MaterialAboutCard.Builder();
-        authorCardBuilder.title("Author");
+            appCardBuilder.addItem(new MaterialAboutTitleItem.Builder()
+                    .text("iReading")
+                    .desc("© iReading Group")
+                    .icon(R.mipmap.icon)
+                    .build());
+            appCardBuilder.addItem(new MaterialAboutActionItem.Builder()
+                    .text("Version")
+                    .subText("1.1.0")
+                    .build());
+            MaterialAboutCard.Builder authorCardBuilder = new MaterialAboutCard.Builder();
+            authorCardBuilder.title("Author");
 
-        authorCardBuilder.addItem(new MaterialAboutActionItem.Builder()
-                .text("Rhombicosidodecahedron")
-                .subText("SJTU")
-                .icon(R.mipmap.myface)
-                .build());
-        authorCardBuilder.addItem(new MaterialAboutActionItem.Builder()
-                .text("捐赠")
-                .subText("(=・ω・=)")
-                .icon(R.mipmap.pay)
-                .setOnClickAction(new MaterialAboutItemOnClickAction() {
-                    @Override
-                    public void onClick() {
-                        openAliPay2Pay(ALIPAY_PERSON);
-                    }
-                })
-                .build());
+            authorCardBuilder.addItem(new MaterialAboutActionItem.Builder()
+                    .text("Rhombicosidodecahedron")
+                    .subText("SJTU")
+                    .icon(R.mipmap.myface)
+                    .build());
+            authorCardBuilder.addItem(new MaterialAboutActionItem.Builder()
+                    .text("捐赠")
+                    .subText("(=・ω・=)")
+                    .icon(R.mipmap.pay)
+                    .setOnClickAction(new MaterialAboutItemOnClickAction() {
+                        @Override
+                        public void onClick() {
+                            openAliPay2Pay(ALIPAY_PERSON);
+                        }
+                    })
+                    .build());
 
-        MaterialAboutCard.Builder settingbuilder = new MaterialAboutCard.Builder();
-        settingbuilder.addItem(new MaterialAboutActionItem.Builder()
-                .text("设置")
-                .icon(R.mipmap.clearcache)
-                .setOnClickAction(new MaterialAboutItemOnClickAction() {
-                    @Override
-                    public void onClick() {
-                        Intent intent = new Intent(getActivity(), SettingsActivity.class);
+            MaterialAboutCard.Builder settingbuilder = new MaterialAboutCard.Builder();
+            settingbuilder.addItem(new MaterialAboutActionItem.Builder()
+                    .text("设置")
+                    .icon(R.mipmap.clearcache)
+                    .setOnClickAction(new MaterialAboutItemOnClickAction() {
+                        @Override
+                        public void onClick() {
+                            Intent intent = new Intent(getActivity(), SettingsActivity.class);
 
-                        startActivity(intent);
+                            startActivity(intent);
 
-                    }
-                })
-                .build());
-        return new MaterialAboutList(appCardBuilder.build(), authorCardBuilder.build(), settingbuilder.build()); // This creates an empty screen, add cards with .addCard()
+                        }
+                    })
+                    .build());
+            mal.addCard(appCardBuilder.build());
+            mal.addCard(authorCardBuilder.build());
+            mal.addCard(settingbuilder.build());
+        }
+        return mal; // This creates an empty screen, add cards with .addCard()
     }
 
     @Override

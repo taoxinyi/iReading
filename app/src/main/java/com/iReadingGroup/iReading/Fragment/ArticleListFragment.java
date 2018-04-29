@@ -4,12 +4,10 @@ import android.content.Context;
 import android.content.Intent;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.RecyclerView;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -22,6 +20,7 @@ import com.chad.library.adapter.base.listener.OnItemClickListener;
 import com.iReadingGroup.iReading.Activity.ArticleDetailActivity;
 import com.iReadingGroup.iReading.Activity.MainActivity;
 import com.iReadingGroup.iReading.Adapter.ArticleInfoAdapter;
+import com.iReadingGroup.iReading.AsyncTask.BaseAsyncTask;
 import com.iReadingGroup.iReading.Bean.ArticleEntity;
 import com.iReadingGroup.iReading.Bean.ArticleEntityDao;
 import com.iReadingGroup.iReading.Event.ArticleDatabaseChangedEvent;
@@ -40,14 +39,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.lang.ref.WeakReference;
-import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -57,8 +49,6 @@ import java.util.TimeZone;
 
 import cn.bingoogolapple.refreshlayout.BGAMoocStyleRefreshViewHolder;
 import cn.bingoogolapple.refreshlayout.BGARefreshLayout;
-
-import static android.content.ContentValues.TAG;
 
 
 /**
@@ -87,24 +77,30 @@ public class ArticleListFragment extends Fragment implements BGARefreshLayout.BG
     private String current_source = "所有";
     private String requestUrlCache;
     private String searchUrlPrefix;
-    private Integer pageCache;
     private SpeedyLinearLayoutManager layoutManager;
+    private String apiKey;
 
     @Override
     public void onActivityCreated(Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
-        numberPerLoading = ((MyApplication) getActivity().getApplication()).getSetting("number");
+        numberPerLoading = ((MyApplication) getActivity().getApplication()).getNumberSetting();
+        apiKey = ((MyApplication) getActivity().getApplication()).getApiKeySetting();
         if (requestUrl == null)
             requestUrl = "http://eventregistry.org/json/article?" +
                     "lang=eng&action=getArticles&resultType=articles&articlesSortBy=date&" +
                     "articlesCount=" + numberPerLoading +
                     "&articlesIncludeArticleEventUri=false&" +
                     "articlesIncludeArticleImage=true&" +
-                    "articlesArticleBodyLen=0&articlesIncludeConceptLabel=false&" +
-                    "apiKey=475f7fdb-7929-4222-800e-0151bdcd4af2";
-        else
-            requestUrl=requestUrl.replaceAll("(articlesCount=)[^&]*(&)", String.format("$1%s$2",numberPerLoading));
+                    "apiKey=" + apiKey +
+                    "&articlesArticleBodyLen=0&articlesIncludeConceptLabel=false";
+
+        else {
+            requestUrl = requestUrl.replaceAll("(articlesCount=)[^&]*(&)", String.format("$1%s$2", numberPerLoading));
+            requestUrl = requestUrl.replaceAll("(apiKey=)[^&]*(&)", String.format("$1%s$2", apiKey));
+        }
+
         searchUrlPrefix = requestUrl + "&keywordLoc=title&keyword=";
+
     }
 
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -169,11 +165,14 @@ public class ArticleListFragment extends Fragment implements BGARefreshLayout.BG
         infoListView = view.findViewById(R.id.list);//
 
         alArticleInfo = daoArticle.queryBuilder().orderDesc(ArticleEntityDao.Properties.Time).list();
+        //first time,show intro
+        boolean isFirstUser = ((MyApplication) getActivity().getApplication()).getFirstStatus();
+        if (isFirstUser)
+            view.findViewById(R.id.intro_text).setVisibility(View.VISIBLE);
+
         alArticleInfoCache.addAll(alArticleInfo);
 
 
-        //articleInfoAdapter = new ArticleInfoAdapter(getActivity(),
-        //com.iReadingGroup.iReading.R.layout.listitem_article_info,alArticleInfo);//link the arrayList to adapter,using custom layout for each item
         articleInfoAdapter = new ArticleInfoAdapter(getActivity(),
                 com.iReadingGroup.iReading.R.layout.listitem_article_info, alArticleInfo);
         infoListView.setAdapter(articleInfoAdapter);//link the adapter to ListView
@@ -250,7 +249,7 @@ public class ArticleListFragment extends Fragment implements BGARefreshLayout.BG
     /**
      * The type Refreshing task.
      */
-    static class RefreshingTask extends AsyncTask<String, String, String> {
+    static class RefreshingTask extends BaseAsyncTask {
         private WeakReference<ArticleListFragment> weakFragmentRef;
 
         /**
@@ -262,64 +261,30 @@ public class ArticleListFragment extends Fragment implements BGARefreshLayout.BG
             weakFragmentRef = new WeakReference<ArticleListFragment>(fragment);
         }
 
-        @Override
-        protected String doInBackground(String... params) {
-            HttpURLConnection connection = null;
-            BufferedReader reader = null;
-
-            try {
-                URL url = new URL(params[0]);
-                Log.d("here",params[0]);
-                connection = (HttpURLConnection) url.openConnection();
-
-                connection.connect();
-
-
-                InputStream stream = connection.getInputStream();
-
-                reader = new BufferedReader(new InputStreamReader(stream));
-
-                StringBuffer buffer = new StringBuffer();
-                String line = "";
-
-                while ((line = reader.readLine()) != null) {
-                    buffer.append(line + "\n");
-
-                }
-
-                return buffer.toString();
-
-
-            } catch (MalformedURLException e) {
-                e.printStackTrace();
-            } catch (IOException e) {
-                e.printStackTrace();
-            } finally {
-                if (connection != null) {
-                    connection.disconnect();
-                }
-                try {
-                    if (reader != null) {
-                        reader.close();
-                    }
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-            return null;
-        }
 
         @Override
         protected void onPostExecute(String result) {
+
             ArticleListFragment fragment = weakFragmentRef.get();
             if (fragment == null) return;
 
             fragment.pageMap.put(fragment.current_source, 1);
             int count = 0;
-            if (result != null) {
+            if (result == null) {
+                fragment.mRefreshLayout.endRefreshing();
+                Toast.makeText(fragment.getContext(), "无网络或apiKey错误", Toast.LENGTH_SHORT).show();
+            } else if (result.equals("Timeout")) {
+                fragment.mRefreshLayout.endRefreshing();
+                Toast.makeText(fragment.getContext(), "连接超时", Toast.LENGTH_SHORT).show();
+
+            } else {//fetch succeed
+                if (((MyApplication) fragment.getActivity().getApplication()).getFirstStatus()) {
+                    //if first time succeed
+                    ((MyApplication) fragment.getActivity().getApplication()).saveSetting("first", false);
+                    fragment.view.findViewById(R.id.intro_text).setVisibility(View.GONE);
+                }
                 try {   //parse word from json
                     //sample link.:http://dict-co.iciba.com/api/dictionary.php?w=go&key=341DEFE6E5CA504E62A567082590D0BD&type=json
-                    Log.d(TAG, "here "+result);
                     String uri, title, source_title, time;
                     JSONObject reader = new JSONObject(result);
                     JSONObject articles = reader.getJSONObject("articles");
@@ -343,7 +308,7 @@ public class ArticleListFragment extends Fragment implements BGARefreshLayout.BG
                     }
 
                 } catch (JSONException e) {
-
+                    e.printStackTrace();
                 }
 
                 //sync to the listView
@@ -352,13 +317,14 @@ public class ArticleListFragment extends Fragment implements BGARefreshLayout.BG
                 fragment.mRefreshLayout.endRefreshing();// finish fetching from sever
 
             }
+
         }
     }
 
     /**
      * The type Loading task.
      */
-    static class LoadingTask extends AsyncTask<String, String, String> {
+    static class LoadingTask extends BaseAsyncTask {
         private WeakReference<ArticleListFragment> weakFragmentRef;
 
         /**
@@ -370,52 +336,6 @@ public class ArticleListFragment extends Fragment implements BGARefreshLayout.BG
             weakFragmentRef = new WeakReference<ArticleListFragment>(fragment);
         }
 
-        @Override
-        protected String doInBackground(String... params) {
-            HttpURLConnection connection = null;
-            BufferedReader reader = null;
-
-            try {
-                URL url = new URL(params[0]);
-                connection = (HttpURLConnection) url.openConnection();
-
-                connection.connect();
-
-
-                InputStream stream = connection.getInputStream();
-
-                reader = new BufferedReader(new InputStreamReader(stream));
-
-                StringBuffer buffer = new StringBuffer();
-                String line = "";
-
-                while ((line = reader.readLine()) != null) {
-                    buffer.append(line + "\n");
-
-                }
-
-
-                return buffer.toString();
-
-
-            } catch (MalformedURLException e) {
-                e.printStackTrace();
-            } catch (IOException e) {
-                e.printStackTrace();
-            } finally {
-                if (connection != null) {
-                    connection.disconnect();
-                }
-                try {
-                    if (reader != null) {
-                        reader.close();
-                    }
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-            return null;
-        }
 
         @Override
         protected void onPostExecute(String result) {
@@ -424,7 +344,14 @@ public class ArticleListFragment extends Fragment implements BGARefreshLayout.BG
 
             int size = fragment.alArticleInfo.size();
             int count = 0;
-            if (result != null) {
+            if (result == null) {
+                fragment.mRefreshLayout.endLoadingMore();
+                Toast.makeText(fragment.getContext(), "无网络或apiKey错误", Toast.LENGTH_SHORT).show();
+            } else if (result.equals("Timeout")) {
+                fragment.mRefreshLayout.endLoadingMore();
+                Toast.makeText(fragment.getContext(), "连接超时", Toast.LENGTH_SHORT).show();
+            } else {
+
                 try {
                     fragment.mRefreshLayout.endLoadingMore();
                     String uri, title, source_title, time;
@@ -449,9 +376,8 @@ public class ArticleListFragment extends Fragment implements BGARefreshLayout.BG
                     }
 
                 } catch (JSONException e) {
-
+                    e.printStackTrace();
                 }
-
                 //sync to the listView
                 fragment.articleInfoAdapter.notifyItemRangeInserted(size, count);
             }
@@ -488,7 +414,7 @@ public class ArticleListFragment extends Fragment implements BGARefreshLayout.BG
      */
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void onSourceSelectEvent(SourceSelectEvent event) {
-        numberPerLoading = ((MyApplication) (getActivity().getApplication())).getSetting("number");
+        numberPerLoading = ((MyApplication) (getActivity().getApplication())).getNumberSetting();
         int size;
         List<ArticleEntity> cache;
         current_source = event.title;
@@ -498,7 +424,7 @@ public class ArticleListFragment extends Fragment implements BGARefreshLayout.BG
                         "&resultType=articles&articlesSortBy=date&articlesCount=" + numberPerLoading +
                         "&articlesIncludeArticleEventUri=false&articlesIncludeArticleImage=true" +
                         "&articlesArticleBodyLen=0&articlesIncludeConceptLabel=false" +
-                        "&apiKey=475f7fdb-7929-4222-800e-0151bdcd4af2";
+                        "&apiKey=" + apiKey;
                 setSourceForView("所有");
 
                 break;
@@ -601,7 +527,6 @@ public class ArticleListFragment extends Fragment implements BGARefreshLayout.BG
         requestUrl = searchUrlPrefix + event.keyword;
         alArticleInfo.clear();
         articleInfoAdapter.notifyDataSetChanged();
-        Log.d(TAG, "hereonArticleSearchEvent: "+requestUrl);
         mRefreshLayout.beginRefreshing();
 
 
@@ -625,7 +550,6 @@ public class ArticleListFragment extends Fragment implements BGARefreshLayout.BG
     }
 
     private String getRequestUrl(String source_url) {
-        numberPerLoading = ((MyApplication) (getActivity().getApplication())).getSetting("number");
         return "http://eventregistry.org/json/article?sourceUri=" +
                 source_url +
                 "&lang=eng" +
@@ -636,8 +560,9 @@ public class ArticleListFragment extends Fragment implements BGARefreshLayout.BG
                 "&articlesIncludeArticleEventUri=false&" +
                 "articlesIncludeArticleImage=true&" +
                 "articlesArticleBodyLen=0&" +
-                "articlesIncludeConceptLabel=false&" +
-                "apiKey=475f7fdb-7929-4222-800e-0151bdcd4af2";
+                "apiKey=" + apiKey +
+                "&articlesIncludeConceptLabel=false";
+
 
     }
 
@@ -650,7 +575,6 @@ public class ArticleListFragment extends Fragment implements BGARefreshLayout.BG
         } else
             alArticleInfo.addAll(daoArticle.queryBuilder().orderDesc(ArticleEntityDao.Properties.Time).list());
         articleInfoAdapter.notifyDataSetChanged();
-        numberPerLoading = ((MyApplication) (getActivity().getApplication())).getSetting("number");
         pageMap.put(source, pageMap.get(source) / Integer.parseInt(numberPerLoading));
 
     }

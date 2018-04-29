@@ -5,14 +5,13 @@
     android:layout_width="200dp"
     android:layout_height="wrap_content"
     android:padding="10dp"
-    app:bl_arrowHeight="12dp"
     app:bl_arrowDirection="bottom_center"
+    app:bl_arrowHeight="12dp"
     app:bl_arrowWidth="20dp"
     app:bl_bubbleColor="@color/md_white_1000"
     app:bl_cornersRadius="10dp"
-    app:bl_strokeWidth="2dp"
     app:bl_strokeColor="#C8C8C8"
-    >
+    app:bl_strokeWidth="2dp">
 
     <LinearLayout
         android:layout_width="200dp"
@@ -21,8 +20,7 @@
 
         <RelativeLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            >
+            android:layout_height="wrap_content">
 
             <TextView
                 android:id="@+id/word"
@@ -31,7 +29,7 @@
                 android:layout_gravity="left"
                 android:textColor="@color/black"
                 android:textSize="15sp"
-                android:textStyle="bold"/>
+                android:textStyle="bold" />
 
             <com.iReadingGroup.iReading.CollectionImageView
                 android:id="@+id/collect"
@@ -47,33 +45,35 @@
                 />
 
         </RelativeLayout>
-    <LinearLayout
-        android:layout_width="200dp"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:id="@+id/pronLayout"
-        android:visibility="gone"
-        >
-        <TextView
-            android:id="@+id/pron"
-            android:layout_width="wrap_content"
+
+        <LinearLayout
+            android:id="@+id/pronLayout"
+            android:layout_width="200dp"
             android:layout_height="wrap_content"
-            android:layout_gravity="center_vertical"
-            android:textColor="@color/black"
-            android:textSize="13sp"
-            android:paddingEnd="10dp"
-            android:paddingTop="2dp"
-            android:fontFamily="@font/gwipa"
-            android:text="aaaa"
-            />
-        <ImageButton
-            android:id="@+id/voice"
-            android:layout_width="20dp"
-            android:layout_height="20dp"
-            android:src="@drawable/read"
-            android:background="@null"
-            android:scaleType="fitXY"/>
-    </LinearLayout>
+            android:orientation="horizontal"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/pron"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical"
+                android:fontFamily="@font/gwipa"
+                android:paddingEnd="10dp"
+                android:paddingTop="2dp"
+                android:text="aaaa"
+                android:textColor="@color/black"
+                android:textSize="13sp" />
+
+            <ImageButton
+                android:id="@+id/voice"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:background="@null"
+                android:scaleType="fitXY"
+                android:src="@drawable/read" />
+        </LinearLayout>
+
         <me.codeboy.android.aligntextview.AlignTextView
             android:id="@+id/meaning"
             android:layout_width="200dp"

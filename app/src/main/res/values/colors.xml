@@ -2,7 +2,7 @@
 <resources>
     <color name="colorPrimary">#0571b0</color>
     <color name="colorPrimaryDark">#303F9F</color>
-    <color name="colorAccent">#FF4081</color>
+    <color name="colorAccent">#999</color>
     <color name="custom_imoocstyle">#eb4f38</color>
     <color name="colorWhite">#FFF</color>
     <color name="colorBlack">#000</color>
