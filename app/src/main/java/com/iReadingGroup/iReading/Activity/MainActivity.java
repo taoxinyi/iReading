@@ -1,5 +1,6 @@
 package com.iReadingGroup.iReading.Activity;
 
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.content.ContextCompat;
@@ -8,7 +9,6 @@ import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.SearchView;
 import android.support.v7.widget.Toolbar;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -420,6 +420,10 @@ public class MainActivity extends AppCompatActivity implements
         });
         LinearLayout view2 = (LinearLayout) menu.findItem(R.id.action_search).getActionView();
         final SearchView sv = view2.findViewById(R.id.searchView);
+        SearchView.SearchAutoComplete theTextArea = sv.findViewById(R.id.search_src_text);
+        theTextArea.setTextColor(Color.GRAY);
+        theTextArea.setHintTextColor(Color.GRAY);
+        sv.setQueryHint("输入需要查找的文章标题");
         sv.setMaxWidth(Integer.MAX_VALUE);
         sv.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override

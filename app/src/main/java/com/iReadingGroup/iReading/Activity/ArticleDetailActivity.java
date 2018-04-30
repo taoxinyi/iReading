@@ -22,15 +22,11 @@ import com.ganxin.library.LoadDataLayout;
 import com.github.chrisbanes.photoview.PhotoView;
 import com.iReadingGroup.iReading.AsyncTask.AsyncResponse;
 import com.iReadingGroup.iReading.AsyncTask.FetchingArticleAsyncTask;
-import com.iReadingGroup.iReading.Bean.ArticleEntity;
-import com.iReadingGroup.iReading.Bean.ArticleEntityDao;
-import com.iReadingGroup.iReading.Constant;
-import com.iReadingGroup.iReading.Function;
-import com.iReadingGroup.iReading.ToggledImageView;
 import com.iReadingGroup.iReading.Event.WordDatasetChangedEvent;
 import com.iReadingGroup.iReading.Event.changeArticleCollectionDBEvent;
-import com.iReadingGroup.iReading.MyApplication;
+import com.iReadingGroup.iReading.Function;
 import com.iReadingGroup.iReading.R;
+import com.iReadingGroup.iReading.ToggledImageView;
 import com.r0adkll.slidr.Slidr;
 
 import org.greenrobot.eventbus.EventBus;
@@ -71,7 +67,6 @@ public class ArticleDetailActivity extends DetailBaseActivity {
     private String source;
     private String time;
     private String category;
-    private ArticleEntity articleEntity;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -122,8 +117,8 @@ public class ArticleDetailActivity extends DetailBaseActivity {
     private void initializeCollectionButton() {
         ToggledImageView button = findViewById(R.id.collect_article_button);
         //get database status
-        articleEntity = daoArticle.queryBuilder().where(ArticleEntityDao.Properties.Uri.eq(uri)).list().get(0);
-        if (articleEntity.getCollectStatus())
+        boolean isCollected = Function.getArticleCollectedStatus(daoArticle, uri);
+        if (isCollected)
             //already collected
             button.initialize(R.drawable.collect_true);
         else //not collected
@@ -134,7 +129,7 @@ public class ArticleDetailActivity extends DetailBaseActivity {
                 //first toggle image
                 ((ToggledImageView) v).toggleImage();
                 //then post to event to app in order to change db
-                if (articleEntity.getCollectStatus())
+                if (Function.getArticleCollectedStatus(daoArticle, uri))
                     EventBus.getDefault().post(new changeArticleCollectionDBEvent(uri, "remove"));
                 else
                     EventBus.getDefault().post(new changeArticleCollectionDBEvent(uri, "add"));
@@ -166,7 +161,8 @@ public class ArticleDetailActivity extends DetailBaseActivity {
             }
         });
         loadDataLayout.setStatus(LoadDataLayout.LOADING);
-        if (!Function.isNetworkAvailable(getApplicationContext())) loadDataLayout.setStatus(LoadDataLayout.NO_NETWORK);
+        if (!Function.isNetworkAvailable(getApplicationContext()))
+            loadDataLayout.setStatus(LoadDataLayout.NO_NETWORK);
 
 
     }
@@ -209,17 +205,7 @@ public class ArticleDetailActivity extends DetailBaseActivity {
         }
         sum.append("</p>");
         //sum.insert(0,String.format("<image src=%s\"></image>",imageUrl));
-        String htmlBody = "<link rel=\"stylesheet\" type=\"text/css\" href=\"style.css\" />" + sum + "<script>\n" +
-                "       var myHref = document.getElementsByTagName(\"a\");\n" +
-                "        for (var i = 0,mylength = myHref.length; i<mylength; i++) {\n" +
-                "    (function(i){  //这里的i跟外部的i实际不是一个i\n" +
-                "        myHref[i].addEventListener(\"click\",function(e){\n" +
-                "\t\t\tvar rect = myHref[i].getBoundingClientRect();\n" +
-                "\t\t\tAndroid.showMenu((rect.left+rect.right)/2, rect.top + rect.height);\n" +
-                "        },\"false\");\n" +
-                "    })(i);\n" +
-                "}\n" +
-                "</script>";
+        String htmlBody = Function.getHtml(sum.toString());
         return htmlBody;
     }
 
@@ -279,13 +265,8 @@ public class ArticleDetailActivity extends DetailBaseActivity {
             }
         });
         //using iciba api to search the word, type json is small to transfer
-        String apikey = ((MyApplication) getApplication()).getApiKeySetting();
-        asyncTask.execute("http://eventregistry.org/json/article?action=getArticle&" +
-                "resultType=info&infoIncludeArticleBasicInfo=false&infoIncludeArticleEventUri=false&" +
-                "infoIncludeArticleCategories=true&infoArticleBodyLen=-1&infoIncludeArticleImage=true&" +
-                "infoIncludeConceptLabel=false&" +
-                "apiKey=" + apikey +
-                "&articleUri=" + uri);
+        String apikey = Function.getMyApplication(this).getApiKeySetting();
+        asyncTask.execute(Function.getArticleDetailUrl(uri, apikey));
         return article;
     }
 

@@ -1,8 +1,6 @@
 package com.iReadingGroup.iReading.AsyncTask;
 
 import android.os.AsyncTask;
-import android.util.Log;
-import android.widget.Toast;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -11,8 +9,6 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
-
-import static com.chad.library.adapter.base.listener.SimpleClickListener.TAG;
 
 /**
  * Created by xytao on 2018/4/29.
@@ -30,21 +26,15 @@ public class BaseAsyncTask extends AsyncTask<String, String, String> {
             connection.setConnectTimeout(10000);
             connection.setReadTimeout(10000);
             connection.connect();
-
             InputStream stream = connection.getInputStream();
-
             reader = new BufferedReader(new InputStreamReader(stream));
             StringBuffer buffer = new StringBuffer();
             String line;
-
             while ((line = reader.readLine()) != null) {
                 buffer.append(line + "\n");
 
             }
-
             return buffer.toString();
-
-
         } catch (java.net.SocketTimeoutException e) {
             return "Timeout";
         } catch (MalformedURLException e) {

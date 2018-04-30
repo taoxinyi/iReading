@@ -20,39 +20,12 @@ public class WordInfo {
      * @param isShowingMeaning the is showing meaning
      * @param collectStatus    the collect status
      */
-    public WordInfo(String word, String meaning, int imageId,boolean isShowingMeaning,boolean collectStatus) {
+    public WordInfo(String word, String meaning, int imageId, boolean isShowingMeaning, boolean collectStatus) {
         this.word = word;//word
         this.meaning = meaning;//meaning
         this.imageId = imageId;//image
-        this.isShowingMeaning=isShowingMeaning;//whether showing meaning
-        this.collectStatus=collectStatus;
-    }
-
-    /**
-     * Sets word.
-     *
-     * @param word the word
-     */
-    public void setWord(String word) {
-        this.word = word;
-    }
-
-    /**
-     * Set meaning.
-     *
-     * @param meaning the meaning
-     */
-    public void setMeaning(String meaning) {
-        this.meaning = meaning;
-    }
-
-    /**
-     * Sets image id.
-     *
-     * @param imageId the image id
-     */
-    public void setImageId(int imageId) {
-        this.imageId = imageId;
+        this.isShowingMeaning = isShowingMeaning;//whether showing meaning
+        this.collectStatus = collectStatus;
     }
 
     /**
@@ -65,11 +38,22 @@ public class WordInfo {
     }
 
     /**
+     * Sets word.
+     *
+     * @param word the word
+     */
+    public void setWord(String word) {
+        this.word = word;
+    }
+
+    /**
      * Get meaning string.
      *
      * @return the string
      */
-    public String getRealMeaning(){return meaning;}
+    public String getRealMeaning() {
+        return meaning;
+    }
 
     /**
      * Gets meaning.
@@ -77,8 +61,17 @@ public class WordInfo {
      * @return the meaning
      */
     public String getMeaning() {
-        if (isShowingMeaning)return meaning;
+        if (isShowingMeaning) return meaning;
         else return "";
+    }
+
+    /**
+     * Set meaning.
+     *
+     * @param meaning the meaning
+     */
+    public void setMeaning(String meaning) {
+        this.meaning = meaning;
     }
 
     /**
@@ -91,12 +84,20 @@ public class WordInfo {
     }
 
     /**
+     * Sets image id.
+     *
+     * @param imageId the image id
+     */
+    public void setImageId(int imageId) {
+        this.imageId = imageId;
+    }
+
+    /**
      * Sets showing meaning.
      *
      * @param status the status
      */
-    public void setShowingMeaning(boolean status)
-    {
+    public void setShowingMeaning(boolean status) {
         isShowingMeaning = status;
     }
 
@@ -105,12 +106,16 @@ public class WordInfo {
      *
      * @return the boolean
      */
-    public boolean getCollectStatus(){return  collectStatus;}
+    public boolean getCollectStatus() {
+        return collectStatus;
+    }
 
     /**
      * Set collect status.
      *
      * @param collectStatus the collect status
      */
-    public void setCollectStatus(boolean collectStatus){this.collectStatus=collectStatus;}
+    public void setCollectStatus(boolean collectStatus) {
+        this.collectStatus = collectStatus;
+    }
 }

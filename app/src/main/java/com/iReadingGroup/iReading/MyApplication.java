@@ -35,15 +35,17 @@ import java.util.Date;
  * The type My application.
  */
 public class MyApplication extends Application {
-    private ArticleEntityDao daoArticle;
-    private OfflineDictBeanDao daoDictionary;
-    private WordCollectionBeanDao daoCollection;
-    private SharedPreferences settings;
-
+    @SuppressLint("SdCardPath")
+    private static final String DB_PATH = "/data/data/com.iReadingGroup.iReading/databases/";//database external path
+    private static final String DB_NAME = "wordDetail.db";//database name
     /**
      * The Count activity.
      */
     public int countActivity = 0;
+    private ArticleEntityDao daoArticle;
+    private OfflineDictBeanDao daoDictionary;
+    private WordCollectionBeanDao daoCollection;
+    private SharedPreferences settings;
 
     /**
      * Gets dao article.
@@ -52,24 +54,6 @@ public class MyApplication extends Application {
      */
     public ArticleEntityDao getDaoArticle() {
         return daoArticle;
-    }
-
-    /**
-     * Gets dao dictionary.
-     *
-     * @return the dao dictionary
-     */
-    public OfflineDictBeanDao getDaoDictionary() {
-        return daoDictionary;
-    }
-
-    /**
-     * Gets dao collection.
-     *
-     * @return the dao collection
-     */
-    public WordCollectionBeanDao getDaoCollection() {
-        return daoCollection;
     }
 
     /**
@@ -82,12 +66,30 @@ public class MyApplication extends Application {
     }
 
     /**
+     * Gets dao dictionary.
+     *
+     * @return the dao dictionary
+     */
+    public OfflineDictBeanDao getDaoDictionary() {
+        return daoDictionary;
+    }
+
+    /**
      * Sets dao dictionary.
      *
      * @param daoDictionary the dao dictionary
      */
     public void setDaoDictionary(OfflineDictBeanDao daoDictionary) {
         this.daoDictionary = daoDictionary;
+    }
+
+    /**
+     * Gets dao collection.
+     *
+     * @return the dao collection
+     */
+    public WordCollectionBeanDao getDaoCollection() {
+        return daoCollection;
     }
 
     /**
@@ -98,10 +100,6 @@ public class MyApplication extends Application {
     public void setDaoCollection(WordCollectionBeanDao daoCollection) {
         this.daoCollection = daoCollection;
     }
-
-    @SuppressLint("SdCardPath")
-    private static final String DB_PATH = "/data/data/com.iReadingGroup.iReading/databases/";//database external path
-    private static final String DB_NAME = "wordDetail.db";//database name
 
     @Override
     public void onCreate() {
@@ -232,7 +230,6 @@ public class MyApplication extends Application {
     }
 
 
-
     /**
      * Save setting.
      *
@@ -280,7 +277,7 @@ public class MyApplication extends Application {
     }
 
     public int getFetchingPolicy() {
-        return settings.getInt("policy", Constant.POLICY_ONLINE_FIRST);
+        return settings.getInt("policy", Constant.SETTING_POLICY_ONLINE_FIRST);
 
     }
 

@@ -1,6 +1,8 @@
 package com.iReadingGroup.iReading;
 
+import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.TimeZone;
 
 /**
  * Created by taota on 2018/4/23.
@@ -45,5 +47,22 @@ public class TimeUtil {
             return r + "分钟前";
         }
         return "刚刚";
+    }
+
+    public static String getCurrentTimeFromUTC(String utcTime) {
+        String currentTime;
+        try {
+            SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+            formatter.setTimeZone(TimeZone.getTimeZone("UTC"));
+            Date value = formatter.parse(utcTime);
+
+            SimpleDateFormat dateFormatter = new SimpleDateFormat("MM-dd HH:mm"); //this format changeable
+            dateFormatter.setTimeZone(TimeZone.getDefault());
+            currentTime = dateFormatter.format(value);
+
+        } catch (Exception e) {
+            currentTime = "00-00-0000 00:00";
+        }
+        return currentTime;
     }
 }

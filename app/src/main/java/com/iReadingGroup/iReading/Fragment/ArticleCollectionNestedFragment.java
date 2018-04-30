@@ -18,16 +18,15 @@ import com.iReadingGroup.iReading.Adapter.ArticleInfoAdapter;
 import com.iReadingGroup.iReading.Bean.ArticleEntity;
 import com.iReadingGroup.iReading.Bean.ArticleEntityDao;
 import com.iReadingGroup.iReading.Event.ArticleDatabaseChangedEvent;
+import com.iReadingGroup.iReading.Function;
+import com.iReadingGroup.iReading.TimeUtil;
 
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
 
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
-import java.util.TimeZone;
 
 import cn.bingoogolapple.refreshlayout.BGARefreshLayout;
 
@@ -39,11 +38,11 @@ import cn.bingoogolapple.refreshlayout.BGARefreshLayout;
  * Load the articles from database and add them into ArrayList
  * Almost identical to ArticleListFragment, unless here we cannot refresh
  */
-public  class ArticleCollectionNestedFragment extends Fragment implements BGARefreshLayout.BGARefreshLayoutDelegate{
+public class ArticleCollectionNestedFragment extends Fragment implements BGARefreshLayout.BGARefreshLayoutDelegate {
     private BGARefreshLayout mRefreshLayout; //Layout for refreshing and loading
-    private RecyclerView infoListView;
+
     private ArticleInfoAdapter articleInfoAdapter;//Custom adapter for article info
-    private List<ArticleEntity> alArticleInfo=new ArrayList<>();//ArrayList linked to adapter for listview
+    private List<ArticleEntity> alArticleInfo = new ArrayList<>();//ArrayList linked to adapter for listview
     private View view;
     private ArticleEntityDao daoArticle;
 
@@ -51,15 +50,15 @@ public  class ArticleCollectionNestedFragment extends Fragment implements BGARef
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         //Must add in every fragments' onCreateView to avoid duplicate creating.
-        if (null != view){
+        if (null != view) {
             ViewGroup parent = (ViewGroup) view.getParent();
             if (null != parent) {
                 parent.removeView(view);
             }
-        }else {
+        } else {
             //start initializing
             view = inflater.inflate(com.iReadingGroup.iReading.R.layout.fragment_article_info, container, false);//set layout
-            daoArticle = ((MainActivity)getActivity()).getDaoArticle();//get dataset
+            daoArticle = ((MainActivity) getActivity()).getDaoArticle();//get dataset
             initializeUI();
 
         }
@@ -69,7 +68,7 @@ public  class ArticleCollectionNestedFragment extends Fragment implements BGARef
     /**
      * Initialize ui.
      */
-    public void initializeUI(){
+    public void initializeUI() {
         initializeRefreshingLayout();//Initialize refreshing and loading layout
         initializeRecycleView();
     }
@@ -77,7 +76,7 @@ public  class ArticleCollectionNestedFragment extends Fragment implements BGARef
     /**
      * Initialize refreshing layout.
      */
-    public void initializeRefreshingLayout(){
+    public void initializeRefreshingLayout() {
         mRefreshLayout = view.findViewById(com.iReadingGroup.iReading.R.id.rl_modulename_refresh);
         mRefreshLayout.setDelegate(this);
         mRefreshLayout.setIsShowLoadingMoreView(true);
@@ -88,15 +87,15 @@ public  class ArticleCollectionNestedFragment extends Fragment implements BGARef
     /**
      * Initialize list view.
      */
-    public void initializeRecycleView(){//Establish the connection among listView,adapter and arrayList.
+    public void initializeRecycleView() {//Establish the connection among listView,adapter and arrayList.
 
-        infoListView = view.findViewById(com.iReadingGroup.iReading.R.id.list);//
+        RecyclerView infoListView = view.findViewById(com.iReadingGroup.iReading.R.id.list);//
 
-       alArticleInfo=daoArticle.queryBuilder().orderDesc(ArticleEntityDao.Properties.CollectTime)
+        alArticleInfo = daoArticle.queryBuilder().orderDesc(ArticleEntityDao.Properties.CollectTime)
                 .where(ArticleEntityDao.Properties.CollectStatus.eq(true)).list();
 
         articleInfoAdapter = new ArticleInfoAdapter(getActivity(),
-                com.iReadingGroup.iReading.R.layout.listitem_article_info,alArticleInfo);
+                com.iReadingGroup.iReading.R.layout.listitem_article_info, alArticleInfo);
         infoListView.setAdapter(articleInfoAdapter);//link the adapter to ListView
         LinearLayoutManager llm = new LinearLayoutManager(getActivity());
         llm.setOrientation(LinearLayoutManager.VERTICAL);
@@ -105,19 +104,18 @@ public  class ArticleCollectionNestedFragment extends Fragment implements BGARef
 
         articleInfoAdapter.openLoadAnimation(BaseQuickAdapter.ALPHAIN);
         articleInfoAdapter.isFirstOnly(true);
-        infoListView.addOnItemTouchListener(new  OnItemClickListener( ) {
+        infoListView.addOnItemTouchListener(new OnItemClickListener() {
             @Override
-            public void onSimpleItemClick(BaseQuickAdapter parent, View view, int position)
-            {
+            public void onSimpleItemClick(BaseQuickAdapter parent, View view, int position) {
                 ArticleEntity h = alArticleInfo.get(position);
-                String number=h.getName();
-                String uri=h.getUri();
-                Intent intent = new Intent(getActivity(),ArticleDetailActivity.class);
+                String number = h.getName();
+                String uri = h.getUri();
+                Intent intent = new Intent(getActivity(), ArticleDetailActivity.class);
                 Bundle bundle = new Bundle();
                 bundle.putString("name", number);
-                bundle.putString("uri",uri);
-                bundle.putString("time",getDate(h.getTime()));
-                bundle.putString("source",h.getSource());
+                bundle.putString("uri", uri);
+                bundle.putString("time", TimeUtil.getCurrentTimeFromUTC(h.getTime()));
+                bundle.putString("source", h.getSource());
                 intent.putExtras(bundle);
                 startActivity(intent);
                 //FruitList.this.finish();
@@ -128,38 +126,17 @@ public  class ArticleCollectionNestedFragment extends Fragment implements BGARef
     @Override
     public void onBGARefreshLayoutBeginRefreshing(BGARefreshLayout refreshLayout) {
         // Cannot refresh here
-            mRefreshLayout.endRefreshing();
-        }
-
+        mRefreshLayout.endRefreshing();
+    }
 
 
     /**
-     *
      * @param refreshLayout
      * @return
      */
     @Override
     public boolean onBGARefreshLayoutBeginLoadingMore(BGARefreshLayout refreshLayout) {
-        return  false;
-    }
-    private String getDate(String OurDate)
-    {
-        try
-        {
-            SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
-            formatter.setTimeZone(TimeZone.getTimeZone("UTC"));
-            Date value = formatter.parse(OurDate);
-
-            SimpleDateFormat dateFormatter = new SimpleDateFormat("MM-dd HH:mm"); //this format changeable
-            dateFormatter.setTimeZone(TimeZone.getDefault());
-            OurDate = dateFormatter.format(value);
-
-        }
-        catch (Exception e)
-        {
-            OurDate = "00-00-0000 00:00";
-        }
-        return OurDate;
+        return false;
     }
 
     /**
@@ -171,23 +148,21 @@ public  class ArticleCollectionNestedFragment extends Fragment implements BGARef
      * @param event the event
      */
     @Subscribe(threadMode = ThreadMode.MAIN)
-    public void onArticleDatabaseChangedEvent (ArticleDatabaseChangedEvent event) {
-        String uri=event.uri;
-        String operation=event.operation;
-        ArticleEntity article = daoArticle.queryBuilder().where(ArticleEntityDao.Properties.Uri.eq(uri)).list().get(0);
-        int index=-1;
-        for (int i=0;i<alArticleInfo.size();i++) {
+    public void onArticleDatabaseChangedEvent(ArticleDatabaseChangedEvent event) {
+        String uri = event.uri;
+        String operation = event.operation;
+        ArticleEntity article = Function.getArticleEntity(daoArticle, uri);
+        int index = -1;
+        for (int i = 0; i < alArticleInfo.size(); i++) {
             if (alArticleInfo.get(i).getUri().equals(uri)) {
                 index = i;
                 break;
             }
         }
-        if (operation.equals("remove") && index!=-1)
-        {//not collected but in collection list
+        if (operation.equals("remove") && index != -1) {//not collected but in collection list
             alArticleInfo.remove(index);
             articleInfoAdapter.notifyItemRemoved(index);
-        }
-        else if (operation.equals("add")&& index==-1) {//collected but not in the list
+        } else if (operation.equals("add") && index == -1) {//collected but not in the list
             alArticleInfo.add(0, article);
             articleInfoAdapter.notifyItemInserted(0);
         }
@@ -223,7 +198,6 @@ public  class ArticleCollectionNestedFragment extends Fragment implements BGARef
     public void beginLoadingMore() {
         mRefreshLayout.beginLoadingMore();
     }
-
 
 
 }

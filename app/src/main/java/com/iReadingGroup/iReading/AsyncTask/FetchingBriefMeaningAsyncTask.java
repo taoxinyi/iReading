@@ -1,20 +1,10 @@
 package com.iReadingGroup.iReading.AsyncTask;
 
-import android.os.AsyncTask;
-
 import com.iReadingGroup.iReading.WordDetail;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.URL;
 
 /**
  * Created by taota on 2018/3/22.
@@ -33,7 +23,6 @@ public class FetchingBriefMeaningAsyncTask extends BaseAsyncTask {
     public FetchingBriefMeaningAsyncTask(AsyncResponse asyncResponse) {
         delegate = asyncResponse;//Assigning call back interfacethrough constructor
     }
-
 
 
     @Override

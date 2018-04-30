@@ -28,7 +28,7 @@ public class ArticleEntity {
 
     @Generated(hash = 2131867082)
     public ArticleEntity(String uri, String name, String time, String source,
-            String imageUrl, boolean collectStatus, Date collectTime) {
+                         String imageUrl, boolean collectStatus, Date collectTime) {
         this.uri = uri;
         this.name = name;
         this.time = time;
@@ -105,5 +105,5 @@ public class ArticleEntity {
     public void setCollectTime(Date collectTime) {
         this.collectTime = collectTime;
     }
-    
+
 }

@@ -22,11 +22,10 @@ public class MyBroadcastReceiver extends BroadcastReceiver {
             String meaning = intent.getStringExtra("meaning");
             String operation = intent.getStringExtra("operation");
             EventBus.getDefault().post(new WordDatasetChangedEvent(word, meaning, operation));
-        }
-        else if(intent.getAction().equals("com.iReadingGroup.iReading.ARTICLE_DB_CHANGE"))
-        {   String uri = intent.getStringExtra("uri");
+        } else if (intent.getAction().equals("com.iReadingGroup.iReading.ARTICLE_DB_CHANGE")) {
+            String uri = intent.getStringExtra("uri");
             String operation = intent.getStringExtra("operation");
-            EventBus.getDefault().post(new ArticleDatabaseChangedEvent(uri,operation));
+            EventBus.getDefault().post(new ArticleDatabaseChangedEvent(uri, operation));
         }
     }
 }

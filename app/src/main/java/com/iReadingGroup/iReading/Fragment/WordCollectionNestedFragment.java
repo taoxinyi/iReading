@@ -79,7 +79,7 @@ public class WordCollectionNestedFragment extends Fragment {
                     R.layout.listitem_word_info, alWordInfo);//link the arrayList to adapter,using custom layout for each item
             infoListView.setAdapter(wordInfoAdapter);//link the adapter to ListView
 
-            llm = new LinearLayoutManager(getContext(), LinearLayout.VERTICAL,false){
+            llm = new LinearLayoutManager(getContext(), LinearLayout.VERTICAL, false) {
                 @Override
                 public boolean canScrollVertically() {
                     return false;
@@ -122,7 +122,6 @@ public class WordCollectionNestedFragment extends Fragment {
                     }
                 }
             });
-
 
 
         }

@@ -7,10 +7,10 @@ import android.util.AttributeSet;
 /**
  * Created by xytao on 2018/4/28.
  */
-public class ToggledImageView extends AppCompatImageView{
+public class ToggledImageView extends AppCompatImageView {
     private int idCurrentStatus;
-    private int idStatus_1=R.drawable.collect_false;
-    private int idStatus_2=R.drawable.collect_true;
+    private int idStatus_1 = R.drawable.collect_false;
+    private int idStatus_2 = R.drawable.collect_true;
 
     /**
      * Instantiates a new Collection button.
@@ -48,17 +48,16 @@ public class ToggledImageView extends AppCompatImageView{
      * @param idCurrentStatus the id current status
      */
 
-    public void initialize(int idCurrentStatus)
-    {
-        this.idCurrentStatus=idCurrentStatus;
+    public void initialize(int idCurrentStatus) {
+        this.idCurrentStatus = idCurrentStatus;
         this.setImageResource(this.idCurrentStatus);
 
     }
-    public void initialize(int idCurrentStatus,int idStatus_1,int idStatus_2)
-    {
-        this.idCurrentStatus=idCurrentStatus;
-        this.idStatus_1=idStatus_1;
-        this.idStatus_2=idStatus_2;
+
+    public void initialize(int idCurrentStatus, int idStatus_1, int idStatus_2) {
+        this.idCurrentStatus = idCurrentStatus;
+        this.idStatus_1 = idStatus_1;
+        this.idStatus_2 = idStatus_2;
         this.setImageResource(this.idCurrentStatus);
 
     }
@@ -67,7 +66,7 @@ public class ToggledImageView extends AppCompatImageView{
      * Toggle image.
      */
     public void toggleImage() {
-        idCurrentStatus=(idCurrentStatus==idStatus_1)?idStatus_2:idStatus_1;
+        idCurrentStatus = (idCurrentStatus == idStatus_1) ? idStatus_2 : idStatus_1;
         this.setImageResource(this.idCurrentStatus);
     }
 }

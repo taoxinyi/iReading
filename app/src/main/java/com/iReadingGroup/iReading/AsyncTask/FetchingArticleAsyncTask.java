@@ -37,7 +37,7 @@ public class FetchingArticleAsyncTask extends BaseAsyncTask {
     @Override
     protected void onPostExecute(String result) {
         super.onPostExecute(result);
-        if (result==null) delegate.processFinish(null);
+        if (result == null) delegate.processFinish(null);
         else if (result.equals("Timeout")) delegate.processFinish("Timeout");
         else {
             try {   //parse word from json

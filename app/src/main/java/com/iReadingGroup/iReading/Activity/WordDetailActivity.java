@@ -18,8 +18,6 @@ import android.widget.Toast;
 
 import com.iReadingGroup.iReading.AsyncTask.AsyncResponse;
 import com.iReadingGroup.iReading.AsyncTask.FetchingWordDetailAsyncTask;
-import com.iReadingGroup.iReading.Bean.OfflineDictBean;
-import com.iReadingGroup.iReading.Bean.OfflineDictBeanDao;
 import com.iReadingGroup.iReading.Constant;
 import com.iReadingGroup.iReading.Event.ChangeWordCollectionDBEvent;
 import com.iReadingGroup.iReading.Event.WordDatasetChangedEvent;
@@ -168,7 +166,7 @@ public class WordDetailActivity extends DetailBaseActivity {
 
     //fetching detailed meaning according to policy
     private void fetchDetailedMeaning(int policy) {
-        if (policy != Constant.POLICY_OFFLINE_ALWAYS && Function.isNetworkAvailable(this)) {
+        if (policy != Constant.SETTING_POLICY_OFFLINE_ALWAYS && Function.isNetworkAvailable(this)) {
             //enable online policy
             FetchingWordDetailAsyncTask asyncTask = new FetchingWordDetailAsyncTask(new AsyncResponse() {
                 @Override
@@ -177,11 +175,11 @@ public class WordDetailActivity extends DetailBaseActivity {
                     updateUI();//update UI after obtaining data
                 }
             });
-            asyncTask.execute(Constant.URL_SEARCH_ENTIRE_ICIBA + detailed_word.toLowerCase());
+            asyncTask.execute(Function.getWordDetailUrl(detailed_word.toLowerCase()));
         } else {//disable online searching
             makeLayoutGone(expandableLayoutOnline);
             findViewById(R.id.title_offline).setVisibility(View.VISIBLE);
-            if (!getWordOfflineStatus(detailed_word)) {
+            if (!Function.getWordOfflineStatus(daoDictionary, detailed_word)) {
                 makeLayoutGone(expandableLayoutOffline);
                 Toast.makeText(mContext, "采用仅离线模式,该词不在本地词库中", Toast.LENGTH_SHORT).show();
             } else
@@ -199,20 +197,16 @@ public class WordDetailActivity extends DetailBaseActivity {
     }
 
     private void initializeOfflineCollectionUI() {
-        List<OfflineDictBean> l = daoDictionary.queryBuilder().where(OfflineDictBeanDao.Properties.Word.eq(detailed_word)).list();
-
-        if (l.size() > 0) {
+        meaning = Function.getWordOfflineMeaning(daoDictionary, detailed_word);
+        if (meaning != null) {
             collectedInOffline = true;
-            OfflineDictBean w = l.get(0);
-            meaning = w.getMeaning();
-            sentence = w.getSentence();
+            sentence = Function.getWordOfflineSentence(daoDictionary, detailed_word);
             TextView m = findViewById(R.id.word_meaning);
             m.setText(meaning);
             if (sentence != null && !sentence.equals("")) {
                 TextView s = findViewById(R.id.word_sentence);
                 s.setText(sentence);
             }
-
         }
     }
 
@@ -359,18 +353,7 @@ public class WordDetailActivity extends DetailBaseActivity {
 
     private String getWebViewString() {
 
-        return "<link rel=\"stylesheet\" type=\"text/css\" href=\"style.css\" />" + online_meaning + sumString +
-                "<script>\n" +
-                "       var myHref = document.getElementsByTagName(\"a\");\n" +
-                "        for (var i = 0,mylength = myHref.length; i<mylength; i++) {\n" +
-                "    (function(i){  //这里的i跟外部的i实际不是一个i\n" +
-                "        myHref[i].addEventListener(\"click\",function(e){\n" +
-                "\t\t\tvar rect = myHref[i].getBoundingClientRect();\n" +
-                "\t\t\tAndroid.showMenu((rect.left+rect.right)/2, rect.top + rect.height);\n" +
-                "        },\"false\");\n" +
-                "    })(i);\n" +
-                "}\n" +
-                "</script>";
+        return Function.getHtml(online_meaning + sumString);
 
     }
 

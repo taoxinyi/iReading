@@ -19,8 +19,8 @@ public class changeArticleCollectionDBEvent {
      * @param uri       the count
      * @param operation the operation
      */
-    public changeArticleCollectionDBEvent(String uri,String operation) {
+    public changeArticleCollectionDBEvent(String uri, String operation) {
         this.uri = uri;
-        this.operation=operation;
+        this.operation = operation;
     }
 }

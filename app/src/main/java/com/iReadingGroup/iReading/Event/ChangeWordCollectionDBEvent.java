@@ -24,9 +24,9 @@ public class ChangeWordCollectionDBEvent {
      * @param meaning   the meaning
      * @param operation the operation
      */
-    public ChangeWordCollectionDBEvent(String word, String meaning,String operation) {
+    public ChangeWordCollectionDBEvent(String word, String meaning, String operation) {
         this.word = word;
-        this.meaning=meaning;
-        this.operation=operation;
+        this.meaning = meaning;
+        this.operation = operation;
     }
 }

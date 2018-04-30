@@ -3,7 +3,7 @@ package com.iReadingGroup.iReading.Event;
 /**
  * Created by taota on 2018/4/6.
  */
-public class WordDatasetChangedEvent  {
+public class WordDatasetChangedEvent {
     /**
      * The Count.
      */
@@ -24,9 +24,9 @@ public class WordDatasetChangedEvent  {
      * @param meaning   the meaning
      * @param operation the operation
      */
-    public WordDatasetChangedEvent(String word,String meaning,String operation) {
+    public WordDatasetChangedEvent(String word, String meaning, String operation) {
         this.word = word;
-        this.meaning=meaning;
-        this.operation=operation;
+        this.meaning = meaning;
+        this.operation = operation;
     }
 }

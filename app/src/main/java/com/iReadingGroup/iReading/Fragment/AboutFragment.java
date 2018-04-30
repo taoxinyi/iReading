@@ -26,6 +26,39 @@ public class AboutFragment extends MaterialAboutFragment {
     public static final String ALIPAY_PERSON = "HTTPS://QR.ALIPAY.COM/FKX06332TUSRAIPEXK1818";
     private MaterialAboutList mal = new MaterialAboutList();
 
+    /**
+     * Open alipay pay page boolean.
+     *
+     * @param context the context
+     * @param qrcode  the qrcode
+     * @return the boolean
+     */
+    public static boolean openAlipayPayPage(Context context, String qrcode) {
+        try {
+            qrcode = URLEncoder.encode(qrcode, "utf-8");
+        } catch (Exception e) {
+        }
+        try {
+            final String alipayqr = "alipayqr://platformapi/startapp?saId=10000007&clientVersion=3.7.0.0718&qrcode=" + qrcode;
+            openUri(context, alipayqr + "%3F_s%3Dweb-other&_t=" + System.currentTimeMillis());
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    /**
+     * 发送一个intent
+     *
+     * @param context
+     * @param s
+     */
+    private static void openUri(Context context, String s) {
+        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(s));
+        context.startActivity(intent);
+    }
+
     @Override
     protected MaterialAboutList getMaterialAboutList(final Context activityContext) {
         if (mal.getCards().size() == 0) {
@@ -98,39 +131,6 @@ public class AboutFragment extends MaterialAboutFragment {
         } else {
             Toast.makeText(getContext(), "跳转失败", Toast.LENGTH_SHORT).show();
         }
-    }
-
-    /**
-     * Open alipay pay page boolean.
-     *
-     * @param context the context
-     * @param qrcode  the qrcode
-     * @return the boolean
-     */
-    public static boolean openAlipayPayPage(Context context, String qrcode) {
-        try {
-            qrcode = URLEncoder.encode(qrcode, "utf-8");
-        } catch (Exception e) {
-        }
-        try {
-            final String alipayqr = "alipayqr://platformapi/startapp?saId=10000007&clientVersion=3.7.0.0718&qrcode=" + qrcode;
-            openUri(context, alipayqr + "%3F_s%3Dweb-other&_t=" + System.currentTimeMillis());
-            return true;
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return false;
-    }
-
-    /**
-     * 发送一个intent
-     *
-     * @param context
-     * @param s
-     */
-    private static void openUri(Context context, String s) {
-        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(s));
-        context.startActivity(intent);
     }
 
 }

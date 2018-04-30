@@ -5,7 +5,7 @@ import org.greenrobot.greendao.annotation.Generated;
 import org.greenrobot.greendao.annotation.Id;
 import org.greenrobot.greendao.annotation.Property;
 
-@Entity(nameInDb = "WordInfo",createInDb = false)
+@Entity(nameInDb = "WordInfo", createInDb = false)
 public class OfflineDictBean {
     //Loading offline dictionary and Keep instance into this class
 
@@ -16,7 +16,7 @@ public class OfflineDictBean {
     private String word;
     @Property(nameInDb = "meaning")
     private String meaning;
-    @Property (nameInDb = "sentence")
+    @Property(nameInDb = "sentence")
     private String sentence;
 
     @Generated(hash = 1101762644)

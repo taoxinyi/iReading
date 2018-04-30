@@ -22,7 +22,7 @@ import android.widget.Toast;
 import com.bigkoo.alertview.AlertView;
 import com.bigkoo.alertview.OnItemClickListener;
 import com.iReadingGroup.iReading.Bean.ArticleEntityDao;
-import com.iReadingGroup.iReading.ClearCache;
+import com.iReadingGroup.iReading.Constant;
 import com.iReadingGroup.iReading.Function;
 import com.iReadingGroup.iReading.MyApplication;
 import com.iReadingGroup.iReading.R;
@@ -54,17 +54,17 @@ public class SettingsActivity extends AppCompatActivity {
 
 
     }
-    private void initializeClearHistory()
-    {
-        final LSettingItem mSettingItemHistory = findViewById(R.id.item_clear_history);
-        ArticleEntityDao daoArticle=((MyApplication)getApplication()).getDaoArticle();
-        final int num=Function.getCollectedArticlesList(daoArticle,false).size();
 
-        mSettingItemHistory.setRightText("历史文章总数: "+num+"");
+    private void initializeClearHistory() {
+        final LSettingItem mSettingItemHistory = findViewById(R.id.item_clear_history);
+        ArticleEntityDao daoArticle = ((MyApplication) getApplication()).getDaoArticle();
+        final int num = Function.getCollectedArticlesList(daoArticle, false).size();
+
+        mSettingItemHistory.setRightText("历史文章总数: " + num + "");
         mSettingItemHistory.setmOnLSettingItemClick(new LSettingItem.OnLSettingItemClick() {
             @Override
             public void click(boolean isChecked) {
-                new AlertView("是否确定清除历史文章", "注意：后将保留已收藏的文章\n" ,
+                new AlertView("是否确定清除历史文章", "注意：后将保留已收藏的文章\n",
                         "取消", new String[]{"确定"}, null, mContent,
                         AlertView.Style.Alert, new OnItemClickListener() {
                     @Override
@@ -80,17 +80,18 @@ public class SettingsActivity extends AppCompatActivity {
             }
         });
     }
+
     private void initializeClearCache() {
         final LSettingItem mSettingItemOne = findViewById(R.id.item_one);
-        final String size = ClearCache.getTotalCacheSize(getApplicationContext());
+        final String size = Function.getTotalCacheSize(getApplicationContext());
         mSettingItemOne.setRightText("当前缓存大小：" + size);
         mSettingItemOne.setmOnLSettingItemClick(new LSettingItem.OnLSettingItemClick() {
             @Override
             public void click(boolean isChecked) {
 
                 Toast.makeText(getApplicationContext(), "清除缓存" + size, Toast.LENGTH_SHORT).show();
-                ClearCache.clearAllCache(getApplicationContext());
-                mSettingItemOne.setRightText("当前缓存大小：" + ClearCache.getTotalCacheSize(getApplicationContext()));
+                Function.clearAllCache(getApplicationContext());
+                mSettingItemOne.setRightText("当前缓存大小：" + Function.getTotalCacheSize(getApplicationContext()));
 
             }
         });
@@ -99,7 +100,7 @@ public class SettingsActivity extends AppCompatActivity {
     private void initializeSetNumber() {
         final LSettingItem NumberSettingItem = findViewById(R.id.item_number);
         NumberSettingItem.setRightText(((MyApplication) getApplication()).getNumberSetting());
-        final String[] list = {"1", "5", "10", "15", "20"};
+        final String[] list = Constant.SETTINGS_REFRESHING_LIST;
         NumberSettingItem.setmOnLSettingItemClick(new LSettingItem.OnLSettingItemClick() {
             @Override
             public void click(boolean isChecked) {
@@ -122,7 +123,7 @@ public class SettingsActivity extends AppCompatActivity {
 
     private void initializeSetPage() {
         final LSettingItem NumberSettingItem = findViewById(R.id.item_page);
-        final String[] list = {"阅读", "查词", "收藏"};
+        final String[] list = Constant.SETTINGS_LAUNCH_LIST;
         int index = ((MyApplication) getApplication()).getPageSetting();
         NumberSettingItem.setRightText(list[index]);
         NumberSettingItem.setmOnLSettingItemClick(new LSettingItem.OnLSettingItemClick() {
@@ -144,9 +145,10 @@ public class SettingsActivity extends AppCompatActivity {
             }
         });
     }
-    private void initializeSetPolicy(){
+
+    private void initializeSetPolicy() {
         final LSettingItem PolicySettingItem = findViewById(R.id.item_fetch);
-        final String[] list = {"优先联网查询", "优先离线查询", "使用流量时优先离线查询","仅离线查询"};
+        final String[] list = Constant.SETTINGS_POLICY_LIST;
         int index = ((MyApplication) getApplication()).getFetchingPolicy();
         PolicySettingItem.setRightText(list[index]);
         PolicySettingItem.setmOnLSettingItemClick(new LSettingItem.OnLSettingItemClick() {
@@ -169,20 +171,21 @@ public class SettingsActivity extends AppCompatActivity {
         });
 
     }
+
     private void initializeSetKey() {
         final LSettingItem KeySettingItem = findViewById(R.id.item_apikey);
         KeySettingItem.setRightText(getProcessedApiKey());
         ViewGroup extView = (ViewGroup) LayoutInflater.from(mContent).inflate(R.layout.alertext_form, null);
         TextView registerUrl = extView.findViewById(R.id.registerUrl);
         registerUrl.setHighlightColor(Color.TRANSPARENT);
-        final String url = "https://eventregistry.org/register";
-        Spannable span = Spannable.Factory.getInstance().newSpannable(url);
+        Spannable span = Spannable.Factory.getInstance().newSpannable(Constant.SETTING_REGISTER_URL);
         span.setSpan(new ClickableSpan() {
             @Override
             public void onClick(View v) {
-                Intent intent= new Intent(Intent.ACTION_VIEW, Uri.parse(url));
-                startActivity(intent);            }
-        }, 0, url.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(Constant.SETTING_REGISTER_URL));
+                startActivity(intent);
+            }
+        }, 0, Constant.SETTING_REGISTER_URL.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         registerUrl.setText(span);
 
         registerUrl.setMovementMethod(LinkMovementMethod.getInstance());

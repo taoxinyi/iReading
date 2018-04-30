@@ -7,7 +7,6 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.RecyclerView;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -28,9 +27,9 @@ import com.iReadingGroup.iReading.Event.ArticleSearchEvent;
 import com.iReadingGroup.iReading.Event.BackToTopEvent;
 import com.iReadingGroup.iReading.Event.SourceSelectEvent;
 import com.iReadingGroup.iReading.Function;
-import com.iReadingGroup.iReading.MyApplication;
 import com.iReadingGroup.iReading.R;
 import com.iReadingGroup.iReading.SpeedyLinearLayoutManager;
+import com.iReadingGroup.iReading.TimeUtil;
 
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
@@ -40,17 +39,12 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.lang.ref.WeakReference;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
-import java.util.TimeZone;
 
 import cn.bingoogolapple.refreshlayout.BGAMoocStyleRefreshViewHolder;
 import cn.bingoogolapple.refreshlayout.BGARefreshLayout;
-
-import static android.content.ContentValues.TAG;
 
 
 /**
@@ -81,34 +75,24 @@ public class ArticleListFragment extends Fragment implements BGARefreshLayout.BG
     private String searchUrlPrefix;
     private SpeedyLinearLayoutManager layoutManager;
     private String apiKey;
-    private MyApplication myApplication;
 
     @Override
     public void onActivityCreated(Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
-        numberPerLoading = myApplication.getNumberSetting();
-        apiKey = myApplication.getApiKeySetting();
-        Log.d(daoArticle.loadAll().size() + "", "onActivityCreated: ireading");
-        boolean history = myApplication.getHistoryStatus();
+        numberPerLoading = Function.getMyApplication(getContext()).getNumberSetting();
+        apiKey = Function.getMyApplication(getContext()).getApiKeySetting();
+        boolean history = Function.getMyApplication(getContext()).getHistoryStatus();
         if (!history) {
             Function.clearAllUncollectedArticles(daoArticle);
             alArticleInfo.clear();
             alArticleInfo.addAll(daoArticle.loadAll());
-            Log.d(TAG, "onattach: " + alArticleInfo.size());
             articleInfoAdapter.notifyDataSetChanged();
-            myApplication.saveSetting("history", true);
+            Function.getMyApplication(getContext()).saveSetting("history", true);
 
 
         }
         if (requestUrl == null)
-            requestUrl = "http://eventregistry.org/json/article?" +
-                    "lang=eng&action=getArticles&resultType=articles&articlesSortBy=date&" +
-                    "articlesCount=" + numberPerLoading +
-                    "&articlesIncludeArticleEventUri=false&" +
-                    "articlesIncludeArticleImage=true&" +
-                    "apiKey=" + apiKey +
-                    "&articlesArticleBodyLen=0&articlesIncludeConceptLabel=false";
-
+            requestUrl = Function.getDefaultRequestUrl(numberPerLoading, apiKey);
         else {
             requestUrl = requestUrl.replaceAll("(articlesCount=)[^&]*(&)", String.format("$1%s$2", numberPerLoading));
             requestUrl = requestUrl.replaceAll("(apiKey=)[^&]*(&)", String.format("$1%s$2", apiKey));
@@ -170,7 +154,7 @@ public class ArticleListFragment extends Fragment implements BGARefreshLayout.BG
         refreshViewHolder.setLoadingMoreText("加载历史文章……");
         mRefreshLayout.setRefreshViewHolder(refreshViewHolder);
         //first time,show intro
-        boolean isFirstUser = myApplication.getFirstStatus();
+        boolean isFirstUser = Function.getMyApplication(getContext()).getFirstStatus();
         if (isFirstUser)
             mRefreshLayout.setBackgroundResource(R.mipmap.intro);
     }
@@ -182,13 +166,8 @@ public class ArticleListFragment extends Fragment implements BGARefreshLayout.BG
     public void initializeListView() {//Establish the connection among listView,adapter and arrayList.
 
         infoListView = view.findViewById(R.id.list);//
-
         alArticleInfo = daoArticle.queryBuilder().orderDesc(ArticleEntityDao.Properties.Time).list();
-
-
         alArticleInfoCache.addAll(alArticleInfo);
-
-
         articleInfoAdapter = new ArticleInfoAdapter(getActivity(),
                 com.iReadingGroup.iReading.R.layout.listitem_article_info, alArticleInfo);
         infoListView.setAdapter(articleInfoAdapter);//link the adapter to ListView
@@ -209,7 +188,7 @@ public class ArticleListFragment extends Fragment implements BGARefreshLayout.BG
                 Bundle bundle = new Bundle();
                 bundle.putString("name", number);
                 bundle.putString("uri", uri);
-                bundle.putString("time", getDate(h.getTime()));
+                bundle.putString("time", TimeUtil.getCurrentTimeFromUTC(h.getTime()));
                 bundle.putString("source", h.getSource());
                 intent.putExtras(bundle);
                 startActivity(intent);
@@ -246,9 +225,9 @@ public class ArticleListFragment extends Fragment implements BGARefreshLayout.BG
 
     @Override
     public void onBGARefreshLayoutBeginRefreshing(BGARefreshLayout refreshLayout) {
-        if (myApplication.getFirstStatus()) {//if first
+        if (Function.getMyApplication(getContext()).getFirstStatus()) {//if first
             mRefreshLayout.setBackgroundColor(Color.TRANSPARENT);
-            myApplication.saveSetting("first",false);
+            Function.getMyApplication(getContext()).saveSetting("first", false);
         }
         // Refreshing the latest data from server.
         if (Function.isNetworkAvailable(getContext())) {
@@ -258,6 +237,240 @@ public class ArticleListFragment extends Fragment implements BGARefreshLayout.BG
             // network is not connected,end
             mRefreshLayout.endRefreshing();
         }
+    }
+
+    @Override
+    public boolean onBGARefreshLayoutBeginLoadingMore(BGARefreshLayout refreshLayout) {
+        //  Loading more (history) data from server or cache, Return false to disable the refreshing action.
+
+        if (Function.isNetworkAvailable(getContext())) {
+            pageMap.put(current_source, pageMap.get(current_source) + 1);
+            new LoadingTask(this).execute(requestUrl + "&articlesPage=" + pageMap.get(current_source) + "");
+            return true;
+        } else {
+            // The network is not connected
+            Toast.makeText(getContext(), "网络不可用", Toast.LENGTH_SHORT).show();
+            return false;
+        }
+    }
+
+    @Override
+    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+        inflater.inflate(R.menu.menu_main, menu);
+    }
+
+    /**
+     * On message event.
+     *
+     * @param event the event
+     */
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void onSourceSelectEvent(SourceSelectEvent event) {
+        numberPerLoading = Function.getMyApplication(getContext()).getNumberSetting();
+        int size;
+        List<ArticleEntity> cache;
+        current_source = event.title;
+        switch (event.title) {
+            case "所有": {//all
+                requestUrl = Function.getDefaultRequestUrl(numberPerLoading, apiKey);
+                setSourceForView("所有");
+
+                break;
+            }
+            case "National Geographic": {   //national geographic
+                requestUrl = getRequestUrl("news.nationalgeographic.com");
+                setSourceForView("National Geographic");
+                break;
+            }
+            case "Nature": {   //nature
+                requestUrl = getRequestUrl("nature.com");
+                setSourceForView("Nature");
+                break;
+            }
+            case "The Economist": {   //the economist
+                requestUrl = getRequestUrl("economist.com");
+                setSourceForView("The Economist");
+                break;
+            }
+            case "TIME": {   //TIME
+                requestUrl = getRequestUrl("time.com");
+                setSourceForView("TIME");
+                break;
+            }
+            case "The New York Times": {   //The New York Times
+                requestUrl = getRequestUrl("nytimes.com");
+                setSourceForView("The New York Times");
+                break;
+            }
+            case "Bloomberg Business": {   //Bloomberg Business
+                requestUrl = getRequestUrl("bloomberg.com");
+                setSourceForView("Bloomberg Business");
+                break;
+            }
+            case "CNN": {   //CNN
+                requestUrl = getRequestUrl("edition.cnn.com");
+                setSourceForView("CNN");
+                break;
+            }
+            case "Fox News": {   //Fox
+                requestUrl = getRequestUrl("foxnews.com");
+                setSourceForView("Fox News");
+                break;
+            }
+            case "Forbes": {   //Forbes
+                requestUrl = getRequestUrl("forbes.com");
+                setSourceForView("Forbes");
+                break;
+            }
+            case "Washington Post": {   //Washington Post
+                requestUrl = getRequestUrl("washingtonpost.com");
+                setSourceForView("Washington Post");
+                break;
+            }
+            case "The Guardian": {   //The Guardian
+                requestUrl = getRequestUrl("theguardian.com");
+                setSourceForView("The Guardian");
+                break;
+            }
+            case "The Times": {   //The Times
+                requestUrl = getRequestUrl("thetimes.co.uk");
+                setSourceForView("The Times");
+                break;
+            }
+            case "Mail Online": {   //Mail Online
+                requestUrl = getRequestUrl("dailymail.co.uk");
+                setSourceForView("Mail Online");
+                break;
+            }
+            case "BBC": {   //BBC
+                requestUrl = getRequestUrl("bbc.com");
+                setSourceForView("BBC");
+                break;
+            }
+            case "PEOPLE": {   //PEOPLE
+                requestUrl = getRequestUrl("people.com");
+                setSourceForView("PEOPLE");
+                break;
+            }
+        }
+        searchUrlPrefix = requestUrl + "&keywordLoc=title&keyword=";
+        alArticleInfoCache.clear();
+        alArticleInfoCache.addAll(alArticleInfo);
+
+    }
+
+    /**
+     * On article search event.
+     *
+     * @param event the event
+     */
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void onArticleSearchEvent(ArticleSearchEvent event) {
+        if (!flag_search) {
+            flag_search = true;
+            requestUrlCache = requestUrl;
+
+        }
+        requestUrl = searchUrlPrefix + event.keyword;
+        alArticleInfo.clear();
+        articleInfoAdapter.notifyDataSetChanged();
+        mRefreshLayout.beginRefreshing();
+
+
+    }
+
+    /**
+     * On article search done event.
+     *
+     * @param event the event
+     */
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void onArticleSearchDoneEvent(ArticleSearchDoneEvent event) {
+        flag_search = false;
+
+        alArticleInfo.clear();
+        alArticleInfo.addAll(alArticleInfoCache);
+        articleInfoAdapter.notifyDataSetChanged();
+        requestUrl = requestUrlCache;
+
+    }
+
+    private String getRequestUrl(String source_url) {
+        return Function.getSourceRequestUrl(source_url, numberPerLoading, apiKey);
+
+    }
+
+    private void setSourceForView(String source) {
+        alArticleInfo.clear();
+        if (!source.equals("所有")) {
+            //add this source
+            alArticleInfo.addAll(daoArticle.queryBuilder().orderDesc(ArticleEntityDao.Properties.Time).where(ArticleEntityDao.Properties.Source.like(source + "%")).list());
+        } else
+            alArticleInfo.addAll(daoArticle.queryBuilder().orderDesc(ArticleEntityDao.Properties.Time).list());
+        articleInfoAdapter.notifyDataSetChanged();
+        pageMap.put(source, pageMap.get(source) / Integer.parseInt(numberPerLoading));
+
+    }
+
+    /**
+     * On article database changed event.
+     *
+     * @param event the event
+     */
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void onArticleDatabaseChangedEvent(ArticleDatabaseChangedEvent event) {
+        int first = layoutManager.findFirstVisibleItemPosition();
+        int last = layoutManager.findLastVisibleItemPosition();
+        articleInfoAdapter.notifyItemRangeChanged(first, last, "ChangeSwipeButton");
+    }
+
+    /**
+     * On back to top event.
+     *
+     * @param event the event
+     */
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void onBackToTopEvent(BackToTopEvent event) {
+        infoListView.smoothScrollToPosition(0);
+
+    }
+
+    @Override
+    public void onAttach(Context context) {
+        super.onAttach(context);
+        daoArticle = Function.getMyApplication(getContext()).getDaoArticle();
+        EventBus.getDefault().register(this);
+    }
+
+    @Override
+    public void onDetach() {
+        super.onDetach();
+        EventBus.getDefault().unregister(this);
+
+    }
+
+    /**
+     * Begin refreshing.
+     */
+// 通过代码方式控制进入正在刷新状态。应用场景：某些应用在 activity 的 onStart 方法中调用，自动进入正在刷新状态获取最新数据
+    public void beginRefreshing() {
+        mRefreshLayout.beginRefreshing();
+    }
+
+    /**
+     * Begin loading more.
+     */
+// 通过代码方式控制进入加载更多状态
+    public void beginLoadingMore() {
+        mRefreshLayout.beginLoadingMore();
+    }
+
+    private boolean getArticleCachedStatus(String uri) {
+        current_uri_list = new ArrayList<>();
+        for (ArticleEntity exist : daoArticle.loadAll()) {
+            current_uri_list.add(exist.getUri());
+        }
+        return current_uri_list.contains(uri);
     }
 
     /**
@@ -392,281 +605,6 @@ public class ArticleListFragment extends Fragment implements BGARefreshLayout.BG
                 fragment.articleInfoAdapter.notifyItemRangeInserted(size, count);
             }
         }
-    }
-
-
-    @Override
-    public boolean onBGARefreshLayoutBeginLoadingMore(BGARefreshLayout refreshLayout) {
-        //  Loading more (history) data from server or cache, Return false to disable the refreshing action.
-
-        if (Function.isNetworkAvailable(getContext())) {
-            pageMap.put(current_source, pageMap.get(current_source) + 1);
-            new LoadingTask(this).execute(requestUrl + "&articlesPage=" + pageMap.get(current_source) + "");
-            return true;
-        } else {
-            // The network is not connected
-            Toast.makeText(getContext(), "网络不可用", Toast.LENGTH_SHORT).show();
-            return false;
-        }
-    }
-
-
-    @Override
-    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
-        inflater.inflate(R.menu.menu_main, menu);
-    }
-
-
-    /**
-     * On message event.
-     *
-     * @param event the event
-     */
-    @Subscribe(threadMode = ThreadMode.MAIN)
-    public void onSourceSelectEvent(SourceSelectEvent event) {
-        numberPerLoading = myApplication.getNumberSetting();
-        int size;
-        List<ArticleEntity> cache;
-        current_source = event.title;
-        switch (event.title) {
-            case "所有": {//all
-                requestUrl = "http://eventregistry.org/json/article?lang=eng&action=getArticles" +
-                        "&resultType=articles&articlesSortBy=date&articlesCount=" + numberPerLoading +
-                        "&articlesIncludeArticleEventUri=false&articlesIncludeArticleImage=true" +
-                        "&articlesArticleBodyLen=0&articlesIncludeConceptLabel=false" +
-                        "&apiKey=" + apiKey;
-                setSourceForView("所有");
-
-                break;
-            }
-            case "National Geographic": {   //national geographic
-                requestUrl = getRequestUrl("news.nationalgeographic.com");
-                setSourceForView("National Geographic");
-                break;
-            }
-            case "Nature": {   //nature
-                requestUrl = getRequestUrl("nature.com");
-                setSourceForView("Nature");
-                break;
-            }
-            case "The Economist": {   //the economist
-                requestUrl = getRequestUrl("economist.com");
-                setSourceForView("The Economist");
-                break;
-            }
-            case "TIME": {   //TIME
-                requestUrl = getRequestUrl("time.com");
-                setSourceForView("TIME");
-                break;
-            }
-            case "The New York Times": {   //The New York Times
-                requestUrl = getRequestUrl("nytimes.com");
-                setSourceForView("The New York Times");
-                break;
-            }
-            case "Bloomberg Business": {   //Bloomberg Business
-                requestUrl = getRequestUrl("bloomberg.com");
-                setSourceForView("Bloomberg Business");
-                break;
-            }
-            case "CNN": {   //CNN
-                requestUrl = getRequestUrl("edition.cnn.com");
-                setSourceForView("CNN");
-                break;
-            }
-            case "Fox News": {   //Fox
-                requestUrl = getRequestUrl("foxnews.com");
-                setSourceForView("Fox News");
-                break;
-            }
-            case "Forbes": {   //Forbes
-                requestUrl = getRequestUrl("forbes.com");
-                setSourceForView("Forbes");
-                break;
-            }
-            case "Washington Post": {   //Washington Post
-                requestUrl = getRequestUrl("washingtonpost.com");
-                setSourceForView("Washington Post");
-                break;
-            }
-            case "The Guardian": {   //The Guardian
-                requestUrl = getRequestUrl("theguardian.com");
-                setSourceForView("The Guardian");
-                break;
-            }
-            case "The Times": {   //The Times
-                requestUrl = getRequestUrl("thetimes.co.uk");
-                setSourceForView("The Times");
-                break;
-            }
-            case "Mail Online": {   //Mail Online
-                requestUrl = getRequestUrl("dailymail.co.uk");
-                setSourceForView("Mail Online");
-                break;
-            }
-            case "BBC": {   //BBC
-                requestUrl = getRequestUrl("bbc.com");
-                setSourceForView("BBC");
-                break;
-            }
-            case "PEOPLE": {   //PEOPLE
-                requestUrl = getRequestUrl("people.com");
-                setSourceForView("PEOPLE");
-                break;
-            }
-        }
-        searchUrlPrefix = requestUrl + "&keywordLoc=title&keyword=";
-        alArticleInfoCache.clear();
-        alArticleInfoCache.addAll(alArticleInfo);
-
-    }
-
-
-    /**
-     * On article search event.
-     *
-     * @param event the event
-     */
-    @Subscribe(threadMode = ThreadMode.MAIN)
-    public void onArticleSearchEvent(ArticleSearchEvent event) {
-        if (!flag_search) {
-            flag_search = true;
-            requestUrlCache = requestUrl;
-
-        }
-        requestUrl = searchUrlPrefix + event.keyword;
-        alArticleInfo.clear();
-        articleInfoAdapter.notifyDataSetChanged();
-        mRefreshLayout.beginRefreshing();
-
-
-    }
-
-
-    /**
-     * On article search done event.
-     *
-     * @param event the event
-     */
-    @Subscribe(threadMode = ThreadMode.MAIN)
-    public void onArticleSearchDoneEvent(ArticleSearchDoneEvent event) {
-        flag_search = false;
-
-        alArticleInfo.clear();
-        alArticleInfo.addAll(alArticleInfoCache);
-        articleInfoAdapter.notifyDataSetChanged();
-        requestUrl = requestUrlCache;
-
-    }
-
-    private String getRequestUrl(String source_url) {
-        return "http://eventregistry.org/json/article?sourceUri=" +
-                source_url +
-                "&lang=eng" +
-                "&action=getArticles&" +
-                "resultType=articles&" +
-                "articlesSortBy=date&" +
-                "articlesCount=" + numberPerLoading +
-                "&articlesIncludeArticleEventUri=false&" +
-                "articlesIncludeArticleImage=true&" +
-                "articlesArticleBodyLen=0&" +
-                "apiKey=" + apiKey +
-                "&articlesIncludeConceptLabel=false";
-
-
-    }
-
-    private void setSourceForView(String source) {
-        int size;
-        List<ArticleEntity> cache;
-        alArticleInfo.clear();
-        if (source != "所有") {
-            alArticleInfo.addAll(daoArticle.queryBuilder().orderDesc(ArticleEntityDao.Properties.Time).where(ArticleEntityDao.Properties.Source.like(source + "%")).list());
-        } else
-            alArticleInfo.addAll(daoArticle.queryBuilder().orderDesc(ArticleEntityDao.Properties.Time).list());
-        articleInfoAdapter.notifyDataSetChanged();
-        pageMap.put(source, pageMap.get(source) / Integer.parseInt(numberPerLoading));
-
-    }
-
-    private String getDate(String OurDate) {
-        try {
-            SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
-            formatter.setTimeZone(TimeZone.getTimeZone("UTC"));
-            Date value = formatter.parse(OurDate);
-
-            SimpleDateFormat dateFormatter = new SimpleDateFormat("MM-dd HH:mm"); //this format changeable
-            dateFormatter.setTimeZone(TimeZone.getDefault());
-            OurDate = dateFormatter.format(value);
-
-        } catch (Exception e) {
-            OurDate = "00-00-0000 00:00";
-        }
-        return OurDate;
-    }
-
-    /**
-     * On article database changed event.
-     *
-     * @param event the event
-     */
-    @Subscribe(threadMode = ThreadMode.MAIN)
-    public void onArticleDatabaseChangedEvent(ArticleDatabaseChangedEvent event) {
-        int first = layoutManager.findFirstVisibleItemPosition();
-        int last = layoutManager.findLastVisibleItemPosition();
-        articleInfoAdapter.notifyItemRangeChanged(first, last, "ChangeSwipeButton");
-    }
-
-    /**
-     * On back to top event.
-     *
-     * @param event the event
-     */
-    @Subscribe(threadMode = ThreadMode.MAIN)
-    public void onBackToTopEvent(BackToTopEvent event) {
-        infoListView.smoothScrollToPosition(0);
-
-    }
-
-    @Override
-    public void onAttach(Context context) {
-        super.onAttach(context);
-        myApplication = (MyApplication) context.getApplicationContext();
-        daoArticle = myApplication.getDaoArticle();
-        EventBus.getDefault().register(this);
-    }
-
-
-    @Override
-    public void onDetach() {
-        super.onDetach();
-        EventBus.getDefault().unregister(this);
-
-    }
-
-
-    /**
-     * Begin refreshing.
-     */
-// 通过代码方式控制进入正在刷新状态。应用场景：某些应用在 activity 的 onStart 方法中调用，自动进入正在刷新状态获取最新数据
-    public void beginRefreshing() {
-        mRefreshLayout.beginRefreshing();
-    }
-
-    /**
-     * Begin loading more.
-     */
-// 通过代码方式控制进入加载更多状态
-    public void beginLoadingMore() {
-        mRefreshLayout.beginLoadingMore();
-    }
-
-    private boolean getArticleCachedStatus(String uri) {
-        current_uri_list = new ArrayList<>();
-        for (ArticleEntity exist : daoArticle.loadAll()) {
-            current_uri_list.add(exist.getUri());
-        }
-        return current_uri_list.contains(uri);
     }
 
 }

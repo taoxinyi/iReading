@@ -19,9 +19,8 @@ public class ArticleDatabaseChangedEvent {
      * @param uri       the count
      * @param operation the operation
      */
-    public ArticleDatabaseChangedEvent(String uri, String operation)
-    {
+    public ArticleDatabaseChangedEvent(String uri, String operation) {
         this.uri = uri;
-        this.operation=operation;
+        this.operation = operation;
     }
 }

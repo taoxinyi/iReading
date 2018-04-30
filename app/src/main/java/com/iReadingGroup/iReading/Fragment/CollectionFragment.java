@@ -21,7 +21,6 @@ import com.iReadingGroup.iReading.R;
  */
 public class CollectionFragment extends Fragment {
 
-    private View view;
     /**
      * The M title.
      */
@@ -38,7 +37,7 @@ public class CollectionFragment extends Fragment {
      * The M view pager.
      */
     ViewPager mViewPager;
-
+    private View view;
 
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
@@ -109,13 +108,13 @@ public class CollectionFragment extends Fragment {
                 switch (position) {
                     case 0:
                         mViewPager.setCurrentItem(0);
-                        ((MainActivity)getActivity()).button.setVisible(true);
-                        ((MainActivity)getActivity()).last_nested_page=0;
+                        ((MainActivity) getActivity()).button.setVisible(true);
+                        ((MainActivity) getActivity()).last_nested_page = 0;
                         break;
                     case 1:
                         mViewPager.setCurrentItem(1);
-                        ((MainActivity)getActivity()).button.setVisible(false);
-                        ((MainActivity)getActivity()).last_nested_page=1;
+                        ((MainActivity) getActivity()).button.setVisible(false);
+                        ((MainActivity) getActivity()).last_nested_page = 1;
                         break;
 
                 }
@@ -139,18 +138,11 @@ public class CollectionFragment extends Fragment {
     }
 
 
-
-
-
-
     @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
         super.onCreateOptionsMenu(menu, inflater);
 
     }
-
-
-
 
 
 }

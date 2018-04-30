@@ -9,17 +9,16 @@ import android.view.View;
 public class DoubleClickBackToContentTopListener implements View.OnClickListener {
 
     private final long delayTime = 300;
-    private long lastClickTime = 0;
     private final IBackToContentTopView backToContentTopView;
+    private long lastClickTime = 0;
 
     /**
-     * The interface Back to content top view.
+     * Instantiates a new Double click back to content top listener.
+     *
+     * @param backToContentTopView the back to content top view
      */
-    public interface IBackToContentTopView {
-        /**
-         * Back to content top.
-         */
-        void backToContentTop();
+    public DoubleClickBackToContentTopListener(@NonNull IBackToContentTopView backToContentTopView) {
+        this.backToContentTopView = backToContentTopView;
     }
 
     @Override
@@ -33,21 +32,22 @@ public class DoubleClickBackToContentTopListener implements View.OnClickListener
     }
 
     /**
-     * Instantiates a new Double click back to content top listener.
-     *
-     * @param backToContentTopView the back to content top view
-     */
-    public DoubleClickBackToContentTopListener(@NonNull IBackToContentTopView backToContentTopView) {
-        this.backToContentTopView = backToContentTopView;
-    }
-
-    /**
      * On double click.
      *
      * @param v the v
      */
     public void onDoubleClick(View v) {
         backToContentTopView.backToContentTop();
+    }
+
+    /**
+     * The interface Back to content top view.
+     */
+    public interface IBackToContentTopView {
+        /**
+         * Back to content top.
+         */
+        void backToContentTop();
     }
 
 }

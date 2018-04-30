@@ -23,6 +23,7 @@ import com.iReadingGroup.iReading.Bean.OfflineDictBeanDao;
 import com.iReadingGroup.iReading.Bean.WordCollectionBeanDao;
 import com.iReadingGroup.iReading.Event.ChangeWordCollectionDBEvent;
 import com.iReadingGroup.iReading.Event.WordDatasetChangedEvent;
+import com.iReadingGroup.iReading.Function;
 import com.iReadingGroup.iReading.R;
 import com.iReadingGroup.iReading.WordInfo;
 
@@ -44,12 +45,10 @@ public class WordSearchFragment extends Fragment {
      * The constant BUNDLE_TITLE.
      */
     private View v;
-    private RecyclerView infoListView;////infoListView for list of brief info of each article
     private WordInfoAdapter wordInfoAdapter;//Custom adapter for article info
     private ArrayList<WordInfo> alWordInfo = new ArrayList<>();//ArrayList linked to adapter for listview
     private WordCollectionBeanDao daoCollection;
     private OfflineDictBeanDao daoDictionary;
-    private String current_query = "";
 
 
     @Override
@@ -75,11 +74,12 @@ public class WordSearchFragment extends Fragment {
 
             daoDictionary = ((MainActivity) getActivity()).getDaoDictionary();
             daoCollection = ((MainActivity) getActivity()).getDaoCollection();
-            infoListView = v.findViewById(R.id.list_word_search);//
+            RecyclerView infoListView = v.findViewById(R.id.list_word_search);//
             List<OfflineDictBean> l = daoDictionary.queryBuilder().limit(20).list();
             //sample of add initial articles' info.
             for (OfflineDictBean word : l) {
-                WordInfo a = new WordInfo(word.getWord(), word.getMeaning(), getCollectionIcon(word.getWord()), true, getWordCollectionStatus(word.getWord()));
+                WordInfo a = new WordInfo(word.getWord(), word.getMeaning(), getCollectionIcon(word.getWord()),
+                        true, Function.getWordCollectionStatus(daoCollection, word.getWord()));
                 alWordInfo.add(a);
             }
 
@@ -115,53 +115,57 @@ public class WordSearchFragment extends Fragment {
                 }
             });
             //searchview's listener
-            sv.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
-                                          @Override
-                                          public boolean onQueryTextSubmit(String query) {
-                                              goToWordDetail(query);
-                                              sv.clearFocus();
-                                              return true;
-                                          }
+            sv.setOnQueryTextListener
+                    (new SearchView.OnQueryTextListener() {
+                         @Override
+                         public boolean onQueryTextSubmit(String query) {
+                             goToWordDetail(query);
+                             sv.clearFocus();
+                             return true;
+                         }
 
-                                          @Override
-                                          public boolean onQueryTextChange(String query) {
-                                              search(query);
-                                              return true;
-                                          }
+                         @Override
+                         public boolean onQueryTextChange(String query) {
+                             search(query);
+                             return true;
+                         }
 
-                                          public void search(String query) {
-                                              current_query = query;
-                                              if (query.length() == 0)//if search blank
-                                              {
-                                                  alWordInfo.clear();
-                                                  List<OfflineDictBean> l = daoDictionary.queryBuilder().limit(20).list();
-                                                  //sample of add initial articles' info.
-                                                  for (OfflineDictBean word : l) {
-                                                      WordInfo a = new WordInfo(word.getWord(), word.getMeaning(), getCollectionIcon(word.getWord()), true, getWordCollectionStatus(word.getWord()));
-                                                      alWordInfo.add(a);
-                                                  }
-                                                  wordInfoAdapter.notifyDataSetChanged();
-                                              } else {//if search not blank
-                                                  List<OfflineDictBean> joes = daoDictionary.queryBuilder()
-                                                          .where(OfflineDictBeanDao.Properties.Word.like(query + "%"))
-                                                          .list();
-                                                  if (joes.size() == 0) {
-                                                      alWordInfo.clear();
-                                                      wordInfoAdapter.notifyDataSetChanged();
-                                                  } else {
-                                                      alWordInfo.clear();
-                                                      for (int i = 0; i < min(joes.size(), 20); i++) {
-                                                          WordInfo lin = new WordInfo(joes.get(i).getWord(), joes.get(i).getMeaning(), getCollectionIcon(joes.get(i).getWord()), true, getWordCollectionStatus(joes.get(i).getWord()));
-                                                          alWordInfo.add(lin);
-                                                      }
+                         public void search(String query) {
+                             if (query.length() == 0)//if search blank
+                             {
+                                 alWordInfo.clear();
+                                 List<OfflineDictBean> l = daoDictionary.queryBuilder().limit(20).list();
+                                 //sample of add initial articles' info.
+                                 for (OfflineDictBean word : l) {
+                                     WordInfo a = new WordInfo(word.getWord(), word.getMeaning(),
+                                             getCollectionIcon(word.getWord()), true,
+                                             Function.getWordCollectionStatus(daoCollection, word.getWord()));
+                                     alWordInfo.add(a);
+                                 }
+                                 wordInfoAdapter.notifyDataSetChanged();
+                             } else {//if search not blank
+                                 List<OfflineDictBean> l = daoDictionary.queryBuilder()
+                                         .where(OfflineDictBeanDao.Properties.Word.like(query + "%"))
+                                         .list();
+                                 if (l.size() == 0) {
+                                     alWordInfo.clear();
+                                     wordInfoAdapter.notifyDataSetChanged();
+                                 } else {
+                                     alWordInfo.clear();
+                                     for (int i = 0; i < min(l.size(), 20); i++) {
+                                         WordInfo lin = new WordInfo(l.get(i).getWord(), l.get(i).getMeaning(),
+                                                 getCollectionIcon(l.get(i).getWord()), true,
+                                                 Function.getWordCollectionStatus(daoCollection, l.get(i).getWord()));
+                                         alWordInfo.add(lin);
+                                     }
 
-                                                      //sync to the listView
-                                                      wordInfoAdapter.notifyDataSetChanged();
-                                                  }
-                                              }
-                                          }
-                                      }
-            );
+                                     //sync to the listView
+                                     wordInfoAdapter.notifyDataSetChanged();
+                                 }
+                             }
+                         }
+                     }
+                    );
 
         }
 
@@ -169,15 +173,11 @@ public class WordSearchFragment extends Fragment {
     }
 
     private int getCollectionIcon(String word) {
-        if (!getWordCollectionStatus(word))
+        if (!Function.getWordCollectionStatus(daoCollection, word))
             return R.drawable.collect_false;
         else return R.drawable.collect_true;
     }
 
-    private boolean getWordCollectionStatus(String word) {
-        return daoCollection.queryBuilder().where(WordCollectionBeanDao.Properties.Word.eq(word)).list().size() != 0;
-
-    }
 
     private void goToWordDetail(String word) {
 

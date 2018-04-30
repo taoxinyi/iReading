@@ -6,8 +6,6 @@ import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
-import android.net.ConnectivityManager;
-import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
@@ -33,15 +31,15 @@ import com.daasuu.bl.BubblePopupHelper;
 import com.iReadingGroup.iReading.AsyncTask.AsyncResponse;
 import com.iReadingGroup.iReading.AsyncTask.FetchingBriefMeaningAsyncTask;
 import com.iReadingGroup.iReading.Bean.ArticleEntityDao;
-import com.iReadingGroup.iReading.Bean.OfflineDictBean;
 import com.iReadingGroup.iReading.Bean.OfflineDictBeanDao;
 import com.iReadingGroup.iReading.Bean.WordCollectionBean;
 import com.iReadingGroup.iReading.Bean.WordCollectionBeanDao;
-import com.iReadingGroup.iReading.ToggledImageView;
 import com.iReadingGroup.iReading.Constant;
 import com.iReadingGroup.iReading.Event.ChangeWordCollectionDBEvent;
+import com.iReadingGroup.iReading.Function;
 import com.iReadingGroup.iReading.MyApplication;
 import com.iReadingGroup.iReading.R;
+import com.iReadingGroup.iReading.ToggledImageView;
 import com.iReadingGroup.iReading.WordDetail;
 
 import org.greenrobot.eventbus.EventBus;
@@ -148,43 +146,6 @@ public abstract class DetailBaseActivity extends AppCompatActivity {
         daoArticle = ((MyApplication) getApplication()).getDaoArticle();
     }
 
-    /**
-     * The type My java script interface.
-     */
-    protected class MyJavaScriptInterface {
-        private Context ctx;
-
-        /**
-         * Instantiates a new My java script interface.
-         *
-         * @param ctx the ctx
-         */
-        public MyJavaScriptInterface(Context ctx) {
-            this.ctx = ctx;
-        }
-
-        /**
-         * Show menu.
-         *
-         * @param x the x
-         * @param y the y
-         */
-        @JavascriptInterface
-        public void showMenu(int x, int y) {
-            final int px = (int) (x * ctx.getResources().getDisplayMetrics().density);
-            final int py = (int) (y * ctx.getResources().getDisplayMetrics().density);
-
-            Handler mainHandler = new Handler(Looper.getMainLooper());
-            Runnable myRunnable = new Runnable() {
-                @Override
-                public void run() {
-                    managePopup(px, py);
-                }
-            };
-            mainHandler.post(myRunnable);
-        }
-    }
-
     private void managePopup(int px, int py) {
         x = px;
         y = -textWebview.getHeight() + py;
@@ -216,56 +177,27 @@ public abstract class DetailBaseActivity extends AppCompatActivity {
 
     }
 
-    /**
-     * The type My web view client.
-     */
-    public class MyWebViewClient extends WebViewClient {
-
-        /**
-         * Instantiates a new My web view client.
-         */
-
-        @Override
-        public boolean shouldOverrideUrlLoading(final WebView view, String url) {
-            clickedTextView = false;
-            String mWord = url.substring(4).toLowerCase();
-            //if clicked on a word
-            //if the asyncTask finishes fetching word meaning from Internet
-            current_word = mWord;
-            FetchBriefMeaning();
-            return true;
-        }
-    }
-
     protected void FetchBriefMeaning() {
         Log.d("", "FetchBriefMeaning: " + ((MyApplication) getApplication()).getFetchingPolicy());
         switch (((MyApplication) getApplication()).getFetchingPolicy()) {
-            case Constant.POLICY_ONLINE_FIRST:
+            case Constant.SETTING_POLICY_ONLINE_FIRST:
                 fetchingFromOnlineFirst();
                 break;
-            case Constant.POLICY_OFFLINE_FIRST:
+            case Constant.SETTING_POLICY_OFFLINE_FIRST:
                 if (!ShowFromOffline()) fetchingBriefMeaningOnline();
                 break;
-            case Constant.POLICY_MOBILE_OFFLINE_FIRST:
-                if (isMobile()) {
-                    Log.d("", "FetchBriefMeaning: mobile");
+            case Constant.SETTING_POLICY_MOBILE_OFFLINE_FIRST:
+                if (Function.isMobileConnected(this)) {
                     if (!ShowFromOffline()) fetchingBriefMeaningOnline();
                 } else//online
                     fetchingBriefMeaningOnline();
                 break;
-            case Constant.POLICY_OFFLINE_ALWAYS:
+            case Constant.SETTING_POLICY_OFFLINE_ALWAYS:
                 ShowFromOffline();
                 break;
         }
     }
 
-    private boolean isMobile() {
-        ConnectivityManager cm;
-        cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
-        return cm.getNetworkInfo(ConnectivityManager.TYPE_MOBILE).getState() == NetworkInfo.State.CONNECTED;
-
-
-    }
 
     private void fetchingBriefMeaningOnline() {
         FetchingBriefMeaningAsyncTask asyncTask = new FetchingBriefMeaningAsyncTask(new AsyncResponse() {
@@ -275,7 +207,7 @@ public abstract class DetailBaseActivity extends AppCompatActivity {
             }
         });
         //using iciba api to search the word, type json is small to transfer
-        asyncTask.execute(Constant.URL_SEARCH_BRIEF_ICIBA + current_word);
+        asyncTask.execute(Function.getWordBriefUrl(current_word));
     }
 
     private void fetchingFromOnlineFirst() {
@@ -286,7 +218,7 @@ public abstract class DetailBaseActivity extends AppCompatActivity {
             }
         });
         //using iciba api to search the word, type json is small to transfer
-        asyncTask.execute(Constant.URL_SEARCH_BRIEF_ICIBA + current_word);
+        asyncTask.execute(Function.getWordBriefUrl(current_word));
     }
 
     private boolean showFromOnline(Object output) {
@@ -322,22 +254,14 @@ public abstract class DetailBaseActivity extends AppCompatActivity {
      */
     protected boolean ShowFromOffline() {
         //find meaning in offline dictionary
-        List<OfflineDictBean> l = daoDictionary.queryBuilder()
-                .where(OfflineDictBeanDao.Properties.Word.eq(current_word))
-                .list();
-        if (l.size() > 0) {
-            current_meaning = l.get(0).getMeaning();
+        current_meaning = Function.getWordOfflineMeaning(daoDictionary, current_word);
+        if (current_meaning != null) {
             showPopupWindow(current_word, current_meaning, null, null, Constant.METHOD_FROM_OFFLINE);
             return true;
         } else return false;
     }
-    protected boolean getWordOfflineStatus(String word) {
-        //find meaning in offline dictionary
-        List<OfflineDictBean> l = daoDictionary.queryBuilder()
-                .where(OfflineDictBeanDao.Properties.Word.eq(word))
-                .list();
-        return l.size()>0;
-    }
+
+
     /**
      * Show popup window.
      */
@@ -512,6 +436,59 @@ public abstract class DetailBaseActivity extends AppCompatActivity {
         super.onStop();
     }
 
+    /**
+     * The type My java script interface.
+     */
+    protected class MyJavaScriptInterface {
+        private Context ctx;
+
+        /**
+         * Instantiates a new My java script interface.
+         *
+         * @param ctx the ctx
+         */
+        private MyJavaScriptInterface(Context ctx) {
+            this.ctx = ctx;
+        }
+
+        /**
+         * Show menu.
+         *
+         * @param x the x
+         * @param y the y
+         */
+        @JavascriptInterface
+        public void showMenu(int x, int y) {
+            final int px = (int) (x * ctx.getResources().getDisplayMetrics().density);
+            final int py = (int) (y * ctx.getResources().getDisplayMetrics().density);
+
+            Handler mainHandler = new Handler(Looper.getMainLooper());
+            Runnable myRunnable = new Runnable() {
+                @Override
+                public void run() {
+                    managePopup(px, py);
+                }
+            };
+            mainHandler.post(myRunnable);
+        }
+    }
+
+    /**
+     * The type My web view client.
+     */
+    public class MyWebViewClient extends WebViewClient {
+
+        /**
+         * Instantiates a new My web view client.
+         */
+        @Override
+        public boolean shouldOverrideUrlLoading(final WebView view, String url) {
+            clickedTextView = false;
+            current_word = url.substring(4).toLowerCase();
+            FetchBriefMeaning();
+            return true;
+        }
+    }
 
 
 }
