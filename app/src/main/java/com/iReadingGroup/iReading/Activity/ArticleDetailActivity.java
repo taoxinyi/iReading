@@ -24,7 +24,9 @@ import com.iReadingGroup.iReading.AsyncTask.AsyncResponse;
 import com.iReadingGroup.iReading.AsyncTask.FetchingArticleAsyncTask;
 import com.iReadingGroup.iReading.Bean.ArticleEntity;
 import com.iReadingGroup.iReading.Bean.ArticleEntityDao;
-import com.iReadingGroup.iReading.CollectionImageView;
+import com.iReadingGroup.iReading.Constant;
+import com.iReadingGroup.iReading.Function;
+import com.iReadingGroup.iReading.ToggledImageView;
 import com.iReadingGroup.iReading.Event.WordDatasetChangedEvent;
 import com.iReadingGroup.iReading.Event.changeArticleCollectionDBEvent;
 import com.iReadingGroup.iReading.MyApplication;
@@ -77,7 +79,7 @@ public class ArticleDetailActivity extends DetailBaseActivity {
         setContentView(com.iReadingGroup.iReading.R.layout.activity_article_detail);
         initializeLoadingLayout();
 
-        if (isNetworkAvailable()) {
+        if (Function.isNetworkAvailable(this)) {
             //get arguments from intent to bundle
             articleTitleFromBundle = getArticleTitleFromBundle();
             uri = getUriFromBundle();
@@ -118,7 +120,7 @@ public class ArticleDetailActivity extends DetailBaseActivity {
     }
 
     private void initializeCollectionButton() {
-        CollectionImageView button = findViewById(R.id.collect_article_button);
+        ToggledImageView button = findViewById(R.id.collect_article_button);
         //get database status
         articleEntity = daoArticle.queryBuilder().where(ArticleEntityDao.Properties.Uri.eq(uri)).list().get(0);
         if (articleEntity.getCollectStatus())
@@ -130,7 +132,7 @@ public class ArticleDetailActivity extends DetailBaseActivity {
             @Override
             public void onClick(View v) {
                 //first toggle image
-                ((CollectionImageView) v).toggleImage();
+                ((ToggledImageView) v).toggleImage();
                 //then post to event to app in order to change db
                 if (articleEntity.getCollectStatus())
                     EventBus.getDefault().post(new changeArticleCollectionDBEvent(uri, "remove"));
@@ -149,7 +151,7 @@ public class ArticleDetailActivity extends DetailBaseActivity {
             @Override
             public void onReload(View v, int status) {
                 loadDataLayout.setStatus(LoadDataLayout.LOADING);
-                if (isNetworkAvailable()) {
+                if (Function.isNetworkAvailable(getApplicationContext())) {
                     //get arguments from intent to bundle
                     articleTitleFromBundle = getArticleTitleFromBundle();
                     uri = getUriFromBundle();
@@ -164,7 +166,7 @@ public class ArticleDetailActivity extends DetailBaseActivity {
             }
         });
         loadDataLayout.setStatus(LoadDataLayout.LOADING);
-        if (!isNetworkAvailable()) loadDataLayout.setStatus(LoadDataLayout.NO_NETWORK);
+        if (!Function.isNetworkAvailable(getApplicationContext())) loadDataLayout.setStatus(LoadDataLayout.NO_NETWORK);
 
 
     }

@@ -1,11 +1,16 @@
 package com.iReadingGroup.iReading.Adapter;
 
 import android.content.Context;
+import android.content.Intent;
+import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ImageView;
 
 import com.chad.library.adapter.base.BaseQuickAdapter;
 import com.chad.library.adapter.base.BaseViewHolder;
+import com.chad.library.adapter.base.listener.OnItemClickListener;
+import com.iReadingGroup.iReading.Activity.ArticleDetailActivity;
 import com.iReadingGroup.iReading.Event.ChangeWordCollectionDBEvent;
 import com.iReadingGroup.iReading.R;
 import com.iReadingGroup.iReading.WordInfo;
@@ -60,9 +65,10 @@ public class WordInfoAdapter extends BaseQuickAdapter<WordInfo, BaseViewHolder> 
         helper.setText(R.id.word_word_info, item.getWord());
         helper.setText(R.id.meaning_word_info, item.getMeaning());
         helper.setImageResource(R.id.img_word_info, item.getImageId());
+        helper.addOnClickListener(R.id.img_word_info);
+
 
         final Button a = helper.getView(R.id.swipe_collection);
-
         if (item.getCollectStatus())
             a.setText("取消收藏");
         else
@@ -81,5 +87,6 @@ public class WordInfoAdapter extends BaseQuickAdapter<WordInfo, BaseViewHolder> 
         });
 
     }
+
 
 }

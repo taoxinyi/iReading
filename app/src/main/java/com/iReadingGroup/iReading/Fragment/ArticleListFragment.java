@@ -2,12 +2,12 @@ package com.iReadingGroup.iReading.Fragment;
 
 import android.content.Context;
 import android.content.Intent;
-import android.net.ConnectivityManager;
-import android.net.NetworkInfo;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -18,7 +18,6 @@ import android.widget.Toast;
 import com.chad.library.adapter.base.BaseQuickAdapter;
 import com.chad.library.adapter.base.listener.OnItemClickListener;
 import com.iReadingGroup.iReading.Activity.ArticleDetailActivity;
-import com.iReadingGroup.iReading.Activity.MainActivity;
 import com.iReadingGroup.iReading.Adapter.ArticleInfoAdapter;
 import com.iReadingGroup.iReading.AsyncTask.BaseAsyncTask;
 import com.iReadingGroup.iReading.Bean.ArticleEntity;
@@ -28,6 +27,7 @@ import com.iReadingGroup.iReading.Event.ArticleSearchDoneEvent;
 import com.iReadingGroup.iReading.Event.ArticleSearchEvent;
 import com.iReadingGroup.iReading.Event.BackToTopEvent;
 import com.iReadingGroup.iReading.Event.SourceSelectEvent;
+import com.iReadingGroup.iReading.Function;
 import com.iReadingGroup.iReading.MyApplication;
 import com.iReadingGroup.iReading.R;
 import com.iReadingGroup.iReading.SpeedyLinearLayoutManager;
@@ -49,6 +49,8 @@ import java.util.TimeZone;
 
 import cn.bingoogolapple.refreshlayout.BGAMoocStyleRefreshViewHolder;
 import cn.bingoogolapple.refreshlayout.BGARefreshLayout;
+
+import static android.content.ContentValues.TAG;
 
 
 /**
@@ -79,12 +81,25 @@ public class ArticleListFragment extends Fragment implements BGARefreshLayout.BG
     private String searchUrlPrefix;
     private SpeedyLinearLayoutManager layoutManager;
     private String apiKey;
+    private MyApplication myApplication;
 
     @Override
     public void onActivityCreated(Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
-        numberPerLoading = ((MyApplication) getActivity().getApplication()).getNumberSetting();
-        apiKey = ((MyApplication) getActivity().getApplication()).getApiKeySetting();
+        numberPerLoading = myApplication.getNumberSetting();
+        apiKey = myApplication.getApiKeySetting();
+        Log.d(daoArticle.loadAll().size() + "", "onActivityCreated: ireading");
+        boolean history = myApplication.getHistoryStatus();
+        if (!history) {
+            Function.clearAllUncollectedArticles(daoArticle);
+            alArticleInfo.clear();
+            alArticleInfo.addAll(daoArticle.loadAll());
+            Log.d(TAG, "onattach: " + alArticleInfo.size());
+            articleInfoAdapter.notifyDataSetChanged();
+            myApplication.saveSetting("history", true);
+
+
+        }
         if (requestUrl == null)
             requestUrl = "http://eventregistry.org/json/article?" +
                     "lang=eng&action=getArticles&resultType=articles&articlesSortBy=date&" +
@@ -101,6 +116,7 @@ public class ArticleListFragment extends Fragment implements BGARefreshLayout.BG
 
         searchUrlPrefix = requestUrl + "&keywordLoc=title&keyword=";
 
+
     }
 
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -114,7 +130,6 @@ public class ArticleListFragment extends Fragment implements BGARefreshLayout.BG
         } else {
             //start initializing
             view = inflater.inflate(com.iReadingGroup.iReading.R.layout.fragment_article_info, container, false);//set layout
-            daoArticle = ((MainActivity) getActivity()).getDaoArticle();
             initializeUI();
 
             final Handler handler = new Handler();
@@ -154,6 +169,10 @@ public class ArticleListFragment extends Fragment implements BGARefreshLayout.BG
         mRefreshLayout.setIsShowLoadingMoreView(true);
         refreshViewHolder.setLoadingMoreText("加载历史文章……");
         mRefreshLayout.setRefreshViewHolder(refreshViewHolder);
+        //first time,show intro
+        boolean isFirstUser = myApplication.getFirstStatus();
+        if (isFirstUser)
+            mRefreshLayout.setBackgroundResource(R.mipmap.intro);
     }
 
 
@@ -165,10 +184,7 @@ public class ArticleListFragment extends Fragment implements BGARefreshLayout.BG
         infoListView = view.findViewById(R.id.list);//
 
         alArticleInfo = daoArticle.queryBuilder().orderDesc(ArticleEntityDao.Properties.Time).list();
-        //first time,show intro
-        boolean isFirstUser = ((MyApplication) getActivity().getApplication()).getFirstStatus();
-        if (isFirstUser)
-            view.findViewById(R.id.intro_text).setVisibility(View.VISIBLE);
+
 
         alArticleInfoCache.addAll(alArticleInfo);
 
@@ -227,17 +243,15 @@ public class ArticleListFragment extends Fragment implements BGARefreshLayout.BG
 
     }
 
-    private boolean isNetworkAvailable() {
-        ConnectivityManager connectivityManager
-                = (ConnectivityManager) getActivity().getSystemService(Context.CONNECTIVITY_SERVICE);
-        NetworkInfo activeNetworkInfo = connectivityManager.getActiveNetworkInfo();
-        return activeNetworkInfo != null && activeNetworkInfo.isConnected();
-    }
 
     @Override
     public void onBGARefreshLayoutBeginRefreshing(BGARefreshLayout refreshLayout) {
+        if (myApplication.getFirstStatus()) {//if first
+            mRefreshLayout.setBackgroundColor(Color.TRANSPARENT);
+            myApplication.saveSetting("first",false);
+        }
         // Refreshing the latest data from server.
-        if (isNetworkAvailable()) {
+        if (Function.isNetworkAvailable(getContext())) {
             // if the network is good, continue.
             new RefreshingTask(this).execute(requestUrl + "&articlesPage=1");
         } else {
@@ -278,11 +292,7 @@ public class ArticleListFragment extends Fragment implements BGARefreshLayout.BG
                 Toast.makeText(fragment.getContext(), "连接超时", Toast.LENGTH_SHORT).show();
 
             } else {//fetch succeed
-                if (((MyApplication) fragment.getActivity().getApplication()).getFirstStatus()) {
-                    //if first time succeed
-                    ((MyApplication) fragment.getActivity().getApplication()).saveSetting("first", false);
-                    fragment.view.findViewById(R.id.intro_text).setVisibility(View.GONE);
-                }
+
                 try {   //parse word from json
                     //sample link.:http://dict-co.iciba.com/api/dictionary.php?w=go&key=341DEFE6E5CA504E62A567082590D0BD&type=json
                     String uri, title, source_title, time;
@@ -346,7 +356,7 @@ public class ArticleListFragment extends Fragment implements BGARefreshLayout.BG
             int count = 0;
             if (result == null) {
                 fragment.mRefreshLayout.endLoadingMore();
-                Toast.makeText(fragment.getContext(), "无网络或apiKey错误", Toast.LENGTH_SHORT).show();
+                Toast.makeText(fragment.getContext(), "无网络或fapiKey错误", Toast.LENGTH_SHORT).show();
             } else if (result.equals("Timeout")) {
                 fragment.mRefreshLayout.endLoadingMore();
                 Toast.makeText(fragment.getContext(), "连接超时", Toast.LENGTH_SHORT).show();
@@ -389,7 +399,7 @@ public class ArticleListFragment extends Fragment implements BGARefreshLayout.BG
     public boolean onBGARefreshLayoutBeginLoadingMore(BGARefreshLayout refreshLayout) {
         //  Loading more (history) data from server or cache, Return false to disable the refreshing action.
 
-        if (isNetworkAvailable()) {
+        if (Function.isNetworkAvailable(getContext())) {
             pageMap.put(current_source, pageMap.get(current_source) + 1);
             new LoadingTask(this).execute(requestUrl + "&articlesPage=" + pageMap.get(current_source) + "");
             return true;
@@ -414,7 +424,7 @@ public class ArticleListFragment extends Fragment implements BGARefreshLayout.BG
      */
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void onSourceSelectEvent(SourceSelectEvent event) {
-        numberPerLoading = ((MyApplication) (getActivity().getApplication())).getNumberSetting();
+        numberPerLoading = myApplication.getNumberSetting();
         int size;
         List<ArticleEntity> cache;
         current_source = event.title;
@@ -621,6 +631,8 @@ public class ArticleListFragment extends Fragment implements BGARefreshLayout.BG
     @Override
     public void onAttach(Context context) {
         super.onAttach(context);
+        myApplication = (MyApplication) context.getApplicationContext();
+        daoArticle = myApplication.getDaoArticle();
         EventBus.getDefault().register(this);
     }
 

@@ -49,13 +49,11 @@ public class ArticleInfoAdapter extends BaseQuickAdapter<ArticleEntity, BaseView
         String command = payloads.get(0).toString();
         if (payloads.isEmpty()) {
             convert(helper, item);
-        }
-        else if (command.equals("ChangeSwipeButton")){
+        } else if (command.equals("ChangeSwipeButton")) {
             Button a = helper.getView(R.id.swipe_collection);
             if (item.getCollectStatus()) a.setText("取消收藏");
             else a.setText("收藏");
-        }
-        else {
+        } else {
             Date currentTime = Calendar.getInstance().getTime();
             helper.setText(R.id.txt_time, getRelativeTime(item.getTime()));
         }
@@ -71,8 +69,9 @@ public class ArticleInfoAdapter extends BaseQuickAdapter<ArticleEntity, BaseView
                 .centerCrop()
                 .error(R.mipmap.icon)
                 .diskCacheStrategy(DiskCacheStrategy.AUTOMATIC)
-                ;
-        Glide.with( mContext).load(item.getImageUrl()).apply(options).into((ImageView) helper.getView(R.id.img));
+                .skipMemoryCache(true)
+                .override(360, 360);
+        Glide.with(mContext).load(item.getImageUrl()).apply(options).into((ImageView) helper.getView(R.id.img));
         final Button a = helper.getView(R.id.swipe_collection);
 
         if (item.getCollectStatus()) a.setText("取消收藏");

@@ -21,7 +21,9 @@ import android.widget.Toast;
 
 import com.bigkoo.alertview.AlertView;
 import com.bigkoo.alertview.OnItemClickListener;
+import com.iReadingGroup.iReading.Bean.ArticleEntityDao;
 import com.iReadingGroup.iReading.ClearCache;
+import com.iReadingGroup.iReading.Function;
 import com.iReadingGroup.iReading.MyApplication;
 import com.iReadingGroup.iReading.R;
 import com.leon.lib.settingview.LSettingItem;
@@ -48,11 +50,36 @@ public class SettingsActivity extends AppCompatActivity {
         initializeToolBar();
         initializeSetKey();
         initializeSetPolicy();
+        initializeClearHistory();
 
-//更改右侧文字
 
     }
+    private void initializeClearHistory()
+    {
+        final LSettingItem mSettingItemHistory = findViewById(R.id.item_clear_history);
+        ArticleEntityDao daoArticle=((MyApplication)getApplication()).getDaoArticle();
+        final int num=Function.getCollectedArticlesList(daoArticle,false).size();
 
+        mSettingItemHistory.setRightText("历史文章总数: "+num+"");
+        mSettingItemHistory.setmOnLSettingItemClick(new LSettingItem.OnLSettingItemClick() {
+            @Override
+            public void click(boolean isChecked) {
+                new AlertView("是否确定清除历史文章", "注意：后将保留已收藏的文章\n" ,
+                        "取消", new String[]{"确定"}, null, mContent,
+                        AlertView.Style.Alert, new OnItemClickListener() {
+                    @Override
+                    public void onItemClick(Object o, int position) {
+                        if (position != AlertView.CANCELPOSITION) {
+                            ((MyApplication) getApplication()).saveSetting("history", false);
+                            mSettingItemHistory.setRightText("历史文章总数: 0");
+                            Toast.makeText(mContent, "清除历史文章：" + num, Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                }).show();
+
+            }
+        });
+    }
     private void initializeClearCache() {
         final LSettingItem mSettingItemOne = findViewById(R.id.item_one);
         final String size = ClearCache.getTotalCacheSize(getApplicationContext());
@@ -163,7 +190,7 @@ public class SettingsActivity extends AppCompatActivity {
         final InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
         final EditText editText = (EditText) extView.findViewById(R.id.edittext);
         final AlertView mAlertViewExt = new AlertView("修改你的apiKey",
-                "当网络通畅时无法加载文章，可能是由于apiKey点数用完，请及时注册修改,点击如下连接后粘贴apiKey",
+                "当网络通畅时无法加载文章，可能是由于apiKey点数用完，请及时注册修改，点击如下连接后粘贴apiKey",
                 "取消", new String[]{"确定"}, null, mContent, AlertView.Style.Alert,
                 new OnItemClickListener() {
                     public void onItemClick(Object o, int position) {

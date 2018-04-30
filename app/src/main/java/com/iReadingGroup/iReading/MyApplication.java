@@ -38,7 +38,7 @@ public class MyApplication extends Application {
     private ArticleEntityDao daoArticle;
     private OfflineDictBeanDao daoDictionary;
     private WordCollectionBeanDao daoCollection;
-    private SharedPreferences settings ;
+    private SharedPreferences settings;
 
     /**
      * The Count activity.
@@ -114,7 +114,7 @@ public class MyApplication extends Application {
         filter.addAction("com.iReadingGroup.iReading.WORD_DB_CHANGE");
         filter.addAction("com.iReadingGroup.iReading.ARTICLE_DB_CHANGE");
         this.registerReceiver(br, filter);
-        settings= getSharedPreferences("setting", 0);
+        settings = getSharedPreferences("setting", 0);
 
     }
 
@@ -198,8 +198,6 @@ public class MyApplication extends Application {
         sendBroadcast(intent);
 
 
-
-
     }
 
     /**
@@ -233,6 +231,8 @@ public class MyApplication extends Application {
         sendBroadcast(intent);
     }
 
+
+
     /**
      * Save setting.
      *
@@ -244,11 +244,13 @@ public class MyApplication extends Application {
         editor.putString(name, value);
         editor.apply();
     }
+
     public void saveSetting(String name, int value) {
         SharedPreferences.Editor editor = settings.edit();
         editor.putInt(name, value);
         editor.apply();
     }
+
     public void saveSetting(String name, boolean value) {
         SharedPreferences.Editor editor = settings.edit();
         editor.putBoolean(name, value);
@@ -263,6 +265,7 @@ public class MyApplication extends Application {
     public String getNumberSetting() {
         return settings.getString("number", "10");
     }
+
     public String getApiKeySetting() {
         return settings.getString("key", "796f3d25-ffc3-4587-93a8-140a700a307d");
     }
@@ -270,15 +273,19 @@ public class MyApplication extends Application {
     public int getPageSetting() {
         return settings.getInt("page", 0);
     }
-    public boolean getFirstStatus()
-    {
+
+    public boolean getFirstStatus() {
         return settings.getBoolean("first", true);
 
     }
-    public int getFetchingPolicy()
-    {
+
+    public int getFetchingPolicy() {
         return settings.getInt("policy", Constant.POLICY_ONLINE_FIRST);
 
     }
 
+    public boolean getHistoryStatus() {
+        return settings.getBoolean("history", true);
+
+    }
 }

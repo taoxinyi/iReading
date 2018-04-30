@@ -63,7 +63,7 @@
                 android:textColor="@color/white"
                 android:textSize="22sp" />
 
-            <com.iReadingGroup.iReading.CollectionImageView
+            <com.iReadingGroup.iReading.ToggledImageView
                 android:id="@+id/collect_article_button"
                 android:layout_width="30dp"
                 android:layout_height="30dp"
@@ -124,11 +124,9 @@
                         android:id="@+id/time"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:paddingStart="10dp"
-                        android:paddingEnd="10dp"
                         android:fontFamily="Times New Roman"
                         android:textColor="@color/gray"
-                        android:textSize="15sp" />
+                        android:textSize="14sp" />
                 </LinearLayout>
 
                 <TextView

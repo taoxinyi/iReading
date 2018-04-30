@@ -12,6 +12,7 @@ import android.view.ViewGroup;
 import android.widget.LinearLayout;
 
 import com.chad.library.adapter.base.BaseQuickAdapter;
+import com.chad.library.adapter.base.listener.OnItemChildClickListener;
 import com.chad.library.adapter.base.listener.OnItemClickListener;
 import com.iReadingGroup.iReading.Activity.MainActivity;
 import com.iReadingGroup.iReading.Activity.WordDetailActivity;
@@ -20,6 +21,7 @@ import com.iReadingGroup.iReading.Bean.OfflineDictBeanDao;
 import com.iReadingGroup.iReading.Bean.WordCollectionBean;
 import com.iReadingGroup.iReading.Bean.WordCollectionBeanDao;
 import com.iReadingGroup.iReading.Event.ButtonCheckEvent;
+import com.iReadingGroup.iReading.Event.ChangeWordCollectionDBEvent;
 import com.iReadingGroup.iReading.Event.WordDatasetChangedEvent;
 import com.iReadingGroup.iReading.R;
 import com.iReadingGroup.iReading.WordInfo;
@@ -107,7 +109,17 @@ public class WordCollectionNestedFragment extends Fragment {
                     bundle.putString("meaning", meaning);
                     intent.putExtras(bundle);
                     startActivity(intent);
-                    //FruitList.this.finish();
+                }
+            });
+            infoListView.addOnItemTouchListener(new OnItemChildClickListener() {
+                @Override
+                public void onSimpleItemChildClick(BaseQuickAdapter adapter, View view, int position) {
+                    WordInfo item = alWordInfo.get(position);
+                    if (item.getCollectStatus()) {
+                        EventBus.getDefault().post(new ChangeWordCollectionDBEvent(item.getWord(), item.getMeaning(), "remove"));
+                    } else {
+                        EventBus.getDefault().post(new ChangeWordCollectionDBEvent(item.getWord(), item.getMeaning(), "add"));
+                    }
                 }
             });
 

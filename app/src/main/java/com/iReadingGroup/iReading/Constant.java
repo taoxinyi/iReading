@@ -1,5 +1,9 @@
 package com.iReadingGroup.iReading;
 
+import android.content.Context;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
+
 /**
  * Created by xytao on 2018/4/29.
  */
@@ -16,5 +20,11 @@ public class Constant {
     public static final String URL_SEARCH_BRIEF_ICIBA ="https://dict-co.iciba.com/api/dictionary.php?key=341DEFE6E5CA504E62A567082590D0BD&type=json&w=";
     public static final String URL_SEARCH_ENTIRE_ICIBA ="https://dict-co.iciba.com/api/dictionary.php?key=341DEFE6E5CA504E62A567082590D0BD&w=";
 
+    public static boolean isNetworkAvailable(Context context) {
+        ConnectivityManager connectivityManager
+                = (ConnectivityManager)context.getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo activeNetworkInfo = connectivityManager.getActiveNetworkInfo();
+        return activeNetworkInfo != null && activeNetworkInfo.isConnected();
+    }
 
 }

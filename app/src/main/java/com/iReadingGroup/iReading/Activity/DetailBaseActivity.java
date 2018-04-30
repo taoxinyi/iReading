@@ -37,7 +37,7 @@ import com.iReadingGroup.iReading.Bean.OfflineDictBean;
 import com.iReadingGroup.iReading.Bean.OfflineDictBeanDao;
 import com.iReadingGroup.iReading.Bean.WordCollectionBean;
 import com.iReadingGroup.iReading.Bean.WordCollectionBeanDao;
-import com.iReadingGroup.iReading.CollectionImageView;
+import com.iReadingGroup.iReading.ToggledImageView;
 import com.iReadingGroup.iReading.Constant;
 import com.iReadingGroup.iReading.Event.ChangeWordCollectionDBEvent;
 import com.iReadingGroup.iReading.MyApplication;
@@ -99,7 +99,7 @@ public abstract class DetailBaseActivity extends AppCompatActivity {
     /**
      * The Ppw collection button.
      */
-    protected CollectionImageView ppwCollectionImageView;
+    protected ToggledImageView ppwCollectionImageView;
 
 
     /**
@@ -203,6 +203,7 @@ public abstract class DetailBaseActivity extends AppCompatActivity {
         textWebview.getSettings().setJavaScriptEnabled(true);
         textWebview.addJavascriptInterface(new MyJavaScriptInterface(this), "Android");
         textWebview.setBackgroundColor(0);
+
         // disable scroll on touch
         textWebview.setOnTouchListener(new View.OnTouchListener() {
             @Override
@@ -429,15 +430,16 @@ public abstract class DetailBaseActivity extends AppCompatActivity {
                 // 拦截后 PopupWindow的onTouchEvent不被调用，这样点击外部区域无法dismiss
             }
         });
-        bubbleLayout.setOnClickListener(new View.OnClickListener() {   //once click, goto WordDetailActivity
+        bubbleLayout.setOnLongClickListener(new View.OnLongClickListener() {   //once long click, goto WordDetailActivity
             @Override
-            public void onClick(View v) {
+            public boolean onLongClick(View v) {
                 Intent intent = new Intent(getApplicationContext(), WordDetailActivity.class);
                 Bundle bundle = new Bundle();
                 bundle.putString("word", current_word);
                 bundle.putString("meaning", current_meaning);
                 intent.putExtras(bundle);
                 startActivity(intent);
+                return true;
             }
         });
     }
@@ -468,7 +470,7 @@ public abstract class DetailBaseActivity extends AppCompatActivity {
             //collect word function.
             @Override
             public void onClick(View v) {
-                ((CollectionImageView) v).toggleImage();
+                ((ToggledImageView) v).toggleImage();
                 if (getWordCollectedStatus(current_word)) {
                     //already in the db, the user means to removed this word from collection
                     EventBus.getDefault().post(new ChangeWordCollectionDBEvent(current_word, current_meaning, "remove"));
@@ -511,12 +513,5 @@ public abstract class DetailBaseActivity extends AppCompatActivity {
     }
 
 
-    protected boolean isNetworkAvailable() {
-        ConnectivityManager connectivityManager
-                = (ConnectivityManager) getApplication().getSystemService(Context.CONNECTIVITY_SERVICE);
-        NetworkInfo activeNetworkInfo = connectivityManager.getActiveNetworkInfo();
-        return activeNetworkInfo != null && activeNetworkInfo.isConnected();
-
-    }
 
 }

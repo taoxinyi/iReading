@@ -31,7 +31,7 @@
                 android:textSize="15sp"
                 android:textStyle="bold" />
 
-            <com.iReadingGroup.iReading.CollectionImageView
+            <com.iReadingGroup.iReading.ToggledImageView
                 android:id="@+id/collect"
                 android:layout_width="20dp"
                 android:layout_height="20dp"

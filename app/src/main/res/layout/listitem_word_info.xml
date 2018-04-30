@@ -5,18 +5,21 @@
     android:layout_height="50dp"
     android:layout_marginLeft="10dp"
     android:layout_marginRight="10dp"
-    android:orientation="horizontal">
+    android:orientation="horizontal"
+    >
 
-    <com.iReadingGroup.iReading.CollectionImageView
+    <com.iReadingGroup.iReading.ToggledImageView
         android:id="@+id/img_word_info"
         android:layout_width="50dp"
         android:layout_height="50dp"
         android:layout_gravity="center"
-        android:padding="10dp" />
+        android:padding="10dp"
+        />
 
     <com.mcxtzhang.swipemenulib.SwipeMenuLayout xmlns:android="http://schemas.android.com/apk/res/android"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:id="@+id/word_item"
         app:ios="true">
 
         <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"

@@ -6,8 +6,8 @@ import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.content.ContextCompat;
-import android.util.Log;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
 import android.webkit.WebView;
 import android.widget.ImageButton;
@@ -20,12 +20,13 @@ import com.iReadingGroup.iReading.AsyncTask.AsyncResponse;
 import com.iReadingGroup.iReading.AsyncTask.FetchingWordDetailAsyncTask;
 import com.iReadingGroup.iReading.Bean.OfflineDictBean;
 import com.iReadingGroup.iReading.Bean.OfflineDictBeanDao;
-import com.iReadingGroup.iReading.CollectionImageView;
 import com.iReadingGroup.iReading.Constant;
 import com.iReadingGroup.iReading.Event.ChangeWordCollectionDBEvent;
 import com.iReadingGroup.iReading.Event.WordDatasetChangedEvent;
+import com.iReadingGroup.iReading.Function;
 import com.iReadingGroup.iReading.MyApplication;
 import com.iReadingGroup.iReading.R;
+import com.iReadingGroup.iReading.ToggledImageView;
 import com.iReadingGroup.iReading.WordDetail;
 import com.r0adkll.slidr.Slidr;
 
@@ -50,11 +51,11 @@ public class WordDetailActivity extends DetailBaseActivity {
     private WordDetail wordDetail;
     private Context mContext;
     private String sumString = "";
-    private CollectionImageView collectionImageViewToolbar;
+    private ToggledImageView collectionImageViewToolbar;
     private View pronView;
     private ScrollView scrollView;
-    private boolean expandLast = false;
-    private boolean current_expand = false;
+    private boolean isOfflineTitleExpanded = false;
+    private boolean isOfflineTitleClicked = false;//indicating wht
     private boolean collectedInOffline = false;
     private ExpandableLayout expandableLayoutOnline, expandableLayoutOffline;
 
@@ -64,31 +65,47 @@ public class WordDetailActivity extends DetailBaseActivity {
         setContentView(R.layout.activity_word_detail);
         Slidr.attach(this);
 
-        ((MyApplication) getApplication()).countActivity++;
+        ((MyApplication) getApplication()).countActivity++;//record the Word activity number
 
         mContext = this;
         //get arguments from intent to bundle
         detailed_word = getWordFromBundle();
         detailed_meaning = getMeaningFromBundle();
+
+        initializeWordTextView();
+        initializeStatusBar(R.color.colorPrimary);
+        initializeDatabase();
+        initializeToolBar(R.id.toolbar, R.id.backLayout, R.id.title, detailed_word);
+        initializeImageButton();
+        initializeOfflineCollectionUI();
+        initializeScrollView();//make scrollview handle size change automatically
+        //make offline GONE at first
+        pronView = findViewById(R.id.proView);
+        initializeOnlineExpandableLayout();
+        initializeOfflineExpandableLayout();
+        fetchDetailedMeaning(((MyApplication) getApplication()).getFetchingPolicy());
+
+    }
+
+    /**
+     * initialize the Textview indicating the  detailed word,both offline and online;
+     */
+    private void initializeWordTextView() {
         TextView word = findViewById(R.id.word_online);
         word.setText(detailed_word);
         word = findViewById(R.id.word_offline);
         word.setText(detailed_word);
+    }
 
-        initializeStatusBar(R.color.colorPrimary);
-        initializeDatabase();
-        initializeToolBar(R.id.toolbar, R.id.backLayout, R.id.title, detailed_word);
-
-        initializeImageButton();
-        initializeOfflineCollectionUI();
-
-        //make offline GONE at first
-        pronView = findViewById(R.id.proView);
+    /**
+     * if offline is folded and need to expand, scroll to bottom after it expanded
+     */
+    private void initializeScrollView() {
         scrollView = findViewById(R.id.scroll);
         scrollView.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
             @Override
             public void onGlobalLayout() {
-                if (expandLast && current_expand)
+                if (isOfflineTitleExpanded && isOfflineTitleClicked)
                     scrollView.post(new Runnable() {
                         public void run() {
                             scrollView.fullScroll(View.FOCUS_DOWN);
@@ -97,16 +114,20 @@ public class WordDetailActivity extends DetailBaseActivity {
                     });
             }
         });
+    }
 
-
-
+    /**
+     * Initialize Online ExpandableLayout
+     * toggle arrow change when click
+     */
+    private void initializeOnlineExpandableLayout() {
         expandableLayoutOnline = findViewById(R.id.expandable_iciba);
         TextView a = findViewById(R.id.expand_iciba);
         final ImageView b = findViewById(R.id.arrow_iciba);
         a.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                current_expand = false;
+                isOfflineTitleClicked = false;
                 if (expandableLayoutOnline.isExpanded()) {
                     expandableLayoutOnline.collapse();
                     b.setImageResource(R.drawable.arrow_down);
@@ -118,6 +139,9 @@ public class WordDetailActivity extends DetailBaseActivity {
             }
 
         });
+    }
+
+    private void initializeOfflineExpandableLayout() {
         expandableLayoutOffline = findViewById(R.id.expandable_offline);
         TextView a1 = findViewById(R.id.expand_offline);
         final ImageView b1 = findViewById(R.id.arrow_offline);
@@ -125,13 +149,13 @@ public class WordDetailActivity extends DetailBaseActivity {
         a1.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                current_expand = true;
-                expandLast = false;
+                isOfflineTitleClicked = true;
+                isOfflineTitleExpanded = false;
                 if (expandableLayoutOffline.isExpanded()) {
                     expandableLayoutOffline.collapse();
                     b1.setImageResource(R.drawable.arrow_down);
                 } else {
-                    expandLast = true;
+                    isOfflineTitleExpanded = true;
                     expandableLayoutOffline.expand();
                     b1.setImageResource(R.drawable.arrow_up);
 
@@ -140,7 +164,11 @@ public class WordDetailActivity extends DetailBaseActivity {
             }
 
         });
-        if (((MyApplication) getApplication()).getFetchingPolicy() != Constant.POLICY_OFFLINE_ALWAYS) {
+    }
+
+    //fetching detailed meaning according to policy
+    private void fetchDetailedMeaning(int policy) {
+        if (policy != Constant.POLICY_OFFLINE_ALWAYS && Function.isNetworkAvailable(this)) {
             //enable online policy
             FetchingWordDetailAsyncTask asyncTask = new FetchingWordDetailAsyncTask(new AsyncResponse() {
                 @Override
@@ -150,12 +178,23 @@ public class WordDetailActivity extends DetailBaseActivity {
                 }
             });
             asyncTask.execute(Constant.URL_SEARCH_ENTIRE_ICIBA + detailed_word.toLowerCase());
-        } else {
-            expandableLayoutOnline.setVisibility(View.GONE);
+        } else {//disable online searching
+            makeLayoutGone(expandableLayoutOnline);
             findViewById(R.id.title_offline).setVisibility(View.VISIBLE);
-            if (!getWordOfflineStatus(detailed_word))
-
+            if (!getWordOfflineStatus(detailed_word)) {
+                makeLayoutGone(expandableLayoutOffline);
                 Toast.makeText(mContext, "采用仅离线模式,该词不在本地词库中", Toast.LENGTH_SHORT).show();
+            } else
+                expandableLayoutOffline.setVisibility(View.VISIBLE);
+
+        }
+    }
+
+    private void makeLayoutGone(ViewGroup v) {
+        v.setVisibility(View.GONE);
+        for (int i = 0; i < v.getChildCount(); i++) {
+            View child = v.getChildAt(i);
+            child.setVisibility(View.GONE);
         }
     }
 
@@ -201,12 +240,8 @@ public class WordDetailActivity extends DetailBaseActivity {
                                             String url) {
                 if (collectedInOffline)//if in offline
                     expandableLayoutOffline.setVisibility(View.VISIBLE);
-                else { // if not in offline ,make them all gone
-                    for (int i = 0; i < expandableLayoutOffline.getChildCount(); i++) {
-                        View child = expandableLayoutOffline.getChildAt(i);
-                        child.setVisibility(View.GONE);
-                    }
-                }
+                else  // if not in offline ,make them all gone
+                    makeLayoutGone(expandableLayoutOffline);
                 //offline title visible
                 findViewById(R.id.title_offline).setVisibility(View.VISIBLE);
                 //pro view visible
@@ -215,13 +250,8 @@ public class WordDetailActivity extends DetailBaseActivity {
                 view.setVisibility(View.VISIBLE);
                 if (!wordDetail.getMeaning().isEmpty()) {//if online fetched something
                     expandableLayoutOnline.setVisibility(View.VISIBLE);
-                } else { // if online fetched nothing,make them all gone
-                    for (int i = 0; i < expandableLayoutOnline.getChildCount(); i++) {
-                        View child = expandableLayoutOnline.getChildAt(i);
-                        child.setVisibility(View.GONE);
-                    }
-
-                }
+                } else  // if online fetched nothing,make them all gone
+                    makeLayoutGone(expandableLayoutOnline);
             }
 
         });
@@ -303,7 +333,7 @@ public class WordDetailActivity extends DetailBaseActivity {
             //collect word function.
             @Override
             public void onClick(View v) {
-                ((CollectionImageView) v).toggleImage();
+                ((ToggledImageView) v).toggleImage();
                 if (getWordCollectedStatus(detailed_word)) {
                     //already in the db, the user means to removed this word from collection
                     EventBus.getDefault().post(new ChangeWordCollectionDBEvent(detailed_word, detailed_meaning, "remove"));

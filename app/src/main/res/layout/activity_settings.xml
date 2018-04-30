@@ -91,16 +91,23 @@
         leon:isShowRightText="true"
         leon:isShowUnderLine="false"
         leon:leftText="修改API-KEY" />
-
     <com.leon.lib.settingview.LSettingItem
-        android:id="@+id/item_one"
+        android:id="@+id/item_clear_history"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:paddingTop="10dp"
         leon:isShowRightText="true"
         leon:isShowUnderLine="false"
+        leon:leftText="清除历史浏览"
+
+        />
+    <com.leon.lib.settingview.LSettingItem
+        android:id="@+id/item_one"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        leon:isShowRightText="true"
+        leon:isShowUnderLine="false"
         leon:leftText="清除缓存"
-        leon:rightText="清除缓存"
 
         />
 </LinearLayout>

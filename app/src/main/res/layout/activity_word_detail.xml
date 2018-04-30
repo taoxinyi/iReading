@@ -56,7 +56,7 @@
             android:textColor="@color/white"
             android:textSize="22sp" />
 
-        <com.iReadingGroup.iReading.CollectionImageView
+        <com.iReadingGroup.iReading.ToggledImageView
             android:id="@+id/collect_word_button"
             android:layout_width="30dp"
             android:layout_height="30dp"

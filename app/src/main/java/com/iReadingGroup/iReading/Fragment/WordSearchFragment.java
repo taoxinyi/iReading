@@ -13,6 +13,7 @@ import android.view.ViewGroup;
 import android.widget.LinearLayout;
 
 import com.chad.library.adapter.base.BaseQuickAdapter;
+import com.chad.library.adapter.base.listener.OnItemChildClickListener;
 import com.chad.library.adapter.base.listener.OnItemClickListener;
 import com.iReadingGroup.iReading.Activity.MainActivity;
 import com.iReadingGroup.iReading.Activity.WordDetailActivity;
@@ -20,6 +21,7 @@ import com.iReadingGroup.iReading.Adapter.WordInfoAdapter;
 import com.iReadingGroup.iReading.Bean.OfflineDictBean;
 import com.iReadingGroup.iReading.Bean.OfflineDictBeanDao;
 import com.iReadingGroup.iReading.Bean.WordCollectionBeanDao;
+import com.iReadingGroup.iReading.Event.ChangeWordCollectionDBEvent;
 import com.iReadingGroup.iReading.Event.WordDatasetChangedEvent;
 import com.iReadingGroup.iReading.R;
 import com.iReadingGroup.iReading.WordInfo;
@@ -48,7 +50,6 @@ public class WordSearchFragment extends Fragment {
     private WordCollectionBeanDao daoCollection;
     private OfflineDictBeanDao daoDictionary;
     private String current_query = "";
-
 
 
     @Override
@@ -86,7 +87,7 @@ public class WordSearchFragment extends Fragment {
             wordInfoAdapter = new WordInfoAdapter(getActivity(),
                     R.layout.listitem_word_info, alWordInfo);//link the arrayList to adapter,using custom layout for each item
             infoListView.setAdapter(wordInfoAdapter);//link the adapter to ListView
-            LinearLayoutManager llm = new LinearLayoutManager(getContext(), LinearLayout.VERTICAL,false){
+            LinearLayoutManager llm = new LinearLayoutManager(getContext(), LinearLayout.VERTICAL, false) {
                 @Override
                 public boolean canScrollVertically() {
                     return false;
@@ -98,8 +99,19 @@ public class WordSearchFragment extends Fragment {
                 public void onSimpleItemClick(BaseQuickAdapter parent, View view, int position) {
                     sv.clearFocus();
                     WordInfo h = alWordInfo.get(position);
-                    String current_word=h.getWord();
+                    String current_word = h.getWord();
                     goToWordDetail(current_word);
+                }
+            });
+            infoListView.addOnItemTouchListener(new OnItemChildClickListener() {
+                @Override
+                public void onSimpleItemChildClick(BaseQuickAdapter adapter, View view, int position) {
+                    WordInfo item = alWordInfo.get(position);
+                    if (item.getCollectStatus()) {
+                        EventBus.getDefault().post(new ChangeWordCollectionDBEvent(item.getWord(), item.getMeaning(), "remove"));
+                    } else {
+                        EventBus.getDefault().post(new ChangeWordCollectionDBEvent(item.getWord(), item.getMeaning(), "add"));
+                    }
                 }
             });
             //searchview's listener
@@ -166,8 +178,8 @@ public class WordSearchFragment extends Fragment {
         return daoCollection.queryBuilder().where(WordCollectionBeanDao.Properties.Word.eq(word)).list().size() != 0;
 
     }
-    private void goToWordDetail(String word)
-    {
+
+    private void goToWordDetail(String word) {
 
         Intent intent = new Intent(getActivity(), WordDetailActivity.class);
         Bundle bundle = new Bundle();
@@ -186,22 +198,17 @@ public class WordSearchFragment extends Fragment {
     public void WordDatasetChangedEvent(WordDatasetChangedEvent event) {
         String word = event.word;
         String meaning = event.meaning;
-        String operation=event.operation;
-        for (int i=0;i<alWordInfo.size();i++)
-        {
-            if (alWordInfo.get(i).getWord().equals(word))
-            {
-                if (operation.equals("remove"))
-                {
+        String operation = event.operation;
+        for (int i = 0; i < alWordInfo.size(); i++) {
+            if (alWordInfo.get(i).getWord().equals(word)) {
+                if (operation.equals("remove")) {
                     alWordInfo.get(i).setCollectStatus(false);
                     alWordInfo.get(i).setImageId(R.drawable.collect_false);
-                }
-                else
-                {
+                } else {
                     alWordInfo.get(i).setCollectStatus(true);
                     alWordInfo.get(i).setImageId(R.drawable.collect_true);
                 }
-                wordInfoAdapter.notifyItemChanged(i,"partial");
+                wordInfoAdapter.notifyItemChanged(i, "partial");
                 break;
             }
         }
@@ -216,13 +223,9 @@ public class WordSearchFragment extends Fragment {
 
     }
 
-    /**
-     * On start.
-     * Unregister for EventBus on CollectWordEvent
-     */
+
     @Override
     public void onStop() {
-        //get rid of the CollectWordEvent before it dies.
         EventBus.getDefault().unregister(this);
         super.onStop();
     }
