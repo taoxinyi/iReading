@@ -3,7 +3,7 @@
     - [1.1. demo](#11-demo)
 - [2. MyApplication](#2-myapplication)
     - [2.1. MainActivity](#21-mainactivity)
-        - [2.1.1. ArticleListFragment  阅读](#211-articlelistfragment)
+        - [2.1.1. ArticleListFragment 阅读](#211-articlelistfragment)
         - [2.1.2. WordSearchFragment 查词](#212-wordsearchfragment)
         - [2.1.3. CollectionFragment 收藏](#213-collectionfragment)
         - [2.1.4. AboutFragment 关于](#214-aboutfragment)
@@ -18,11 +18,16 @@
 
 <!-- /TOC -->
 # 1. iReading
+
+![logo](/screenshots/logo.png "logo")
+
 iReading, an English Learning Android App aims to improve people's English reading experience, which features browsing news/articles, single tapping to fetch the meaning and providing offline/online dictionary.
 ## 1.1. demo
 
 
-![Demo](/demo/demo.gif "Demo")
+![Demo1](/screenshots/image1.gif "Demo1")
+
+![Demo2](/screenshots/image2.gif "Demo2")
 
 # 2. MyApplication
 
