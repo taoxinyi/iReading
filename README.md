@@ -24,10 +24,10 @@
 iReading, an English Learning Android App aims to improve people's English reading experience, which features browsing news/articles, single tapping to fetch the meaning and providing offline/online dictionary.
 ## 1.1. demo
 
+<img src="/screenshots/image1.gif" alt="demo1" height="500">
 
-![Demo1](/screenshots/image1.gif "Demo1")
+<img src="/screenshots/image2.gif" alt="demo2" height="500">
 
-![Demo2](/screenshots/image2.gif "Demo2")
 
 # 2. MyApplication
 
